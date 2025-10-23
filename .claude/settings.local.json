@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(do echo \"$file:\")",
+      "Bash(node --version:*)",
+      "Bash(pnpm --version:*)",
+      "Bash(npm install:*)",
+      "Bash(pnpm create:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm prisma:generate:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(pnpm run lint:*)",
+      "Bash(pnpm run typecheck:*)",
+      "Bash(pnpm run test:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr merge:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
