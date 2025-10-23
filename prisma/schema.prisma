@@ -1,0 +1,180 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================================
+// Epic 1: Foundation & Profile System
+// ============================================================================
+
+model User {
+  id            String   @id @default(cuid())
+  clerkId       String   @unique
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  role          UserRole @default(STUDENT)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  student       Student?
+
+  @@index([clerkId])
+  @@index([email])
+}
+
+enum UserRole {
+  STUDENT
+  COUNSELOR
+  PARENT
+  ADMIN
+}
+
+model Student {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  firstName      String
+  lastName       String
+  dateOfBirth    DateTime?
+  phone          String?
+
+  profile        Profile?
+  applications   Application[]
+  documents      Document[]
+  essays         Essay[]
+  matches        Match[]
+  outcomes       Outcome[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Profile {
+  id                String   @id @default(cuid())
+  studentId         String   @unique
+  student           Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  // Academic Data
+  gpa               Float?
+  gpaScale          Float    @default(4.0)
+  satScore          Int?
+  actScore          Int?
+  classRank         Int?
+  classSize         Int?
+  graduationYear    Int?
+  currentGrade      String?
+
+  // Demographics
+  gender            String?
+  ethnicity         String[]
+  state             String?
+  city              String?
+  zipCode           String?
+  citizenship       String?
+
+  // Financial
+  financialNeed     FinancialNeed?
+  pellGrantEligible Boolean  @default(false)
+  efcRange          String?
+
+  // Major & Field
+  intendedMajor     String?
+  fieldOfStudy      String?
+  careerGoals       String?
+
+  // Experience
+  extracurriculars  Json?
+  volunteerHours    Int      @default(0)
+  workExperience    Json?
+  leadershipRoles   Json?
+  awardsHonors      Json?
+
+  // Special Circumstances
+  firstGeneration   Boolean  @default(false)
+  militaryAffiliation String?
+  disabilities      String?
+  additionalContext String?
+
+  // Profile Metadata
+  completionPercentage Float  @default(0)
+  strengthScore        Float  @default(0)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([graduationYear])
+  @@index([intendedMajor])
+}
+
+enum FinancialNeed {
+  LOW
+  MODERATE
+  HIGH
+  VERY_HIGH
+}
+
+// ============================================================================
+// Epic 2-5: Future Tables (Placeholders for relations)
+// ============================================================================
+
+model Application {
+  id         String   @id @default(cuid())
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([studentId])
+}
+
+model Document {
+  id         String   @id @default(cuid())
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([studentId])
+}
+
+model Essay {
+  id         String   @id @default(cuid())
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([studentId])
+}
+
+model Match {
+  id         String   @id @default(cuid())
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([studentId])
+}
+
+model Outcome {
+  id         String   @id @default(cuid())
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([studentId])
+}
