@@ -101,6 +101,14 @@ playwright/.cache/
 
 # BMAD specific
 bmad/bmm/kb.md
+docs/
+bmad/
+
+#CLAUDE spcecific
+!.claude/commands/bmad
+
+#Gemini Specific
+.gemini/
 
 # Documentation build outputs
 docs/.vitepress/dist/
