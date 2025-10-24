@@ -40,16 +40,16 @@ describe('Profile Router - Integration Tests', () => {
     classRank: 15,
     classSize: 300,
     graduationYear: 2025,
-    currentGrade: '12th Grade',
+    currentGrade: '12th Grade' as const,
     gender: 'Male',
-    ethnicity: ['Asian'],
-    state: 'CA',
+    ethnicity: ['Asian' as const],
+    state: 'CA' as const,
     city: 'Los Angeles',
     zipCode: '90210',
-    citizenship: 'US Citizen',
+    citizenship: 'US Citizen' as const,
     financialNeed: FinancialNeed.MODERATE,
     pellGrantEligible: false,
-    efcRange: '$5,001-$10,000',
+    efcRange: '$5,001-$10,000' as const,
     completionPercentage: 100,
     strengthScore: 0,
     intendedMajor: null,
@@ -118,8 +118,8 @@ describe('Profile Router - Integration Tests', () => {
       gpa: 3.8,
       gpaScale: 4.0,
       graduationYear: 2025,
-      state: 'CA',
-      citizenship: 'US Citizen',
+      state: 'CA' as const,
+      citizenship: 'US Citizen' as const,
       financialNeed: FinancialNeed.MODERATE,
     }
 
@@ -151,9 +151,9 @@ describe('Profile Router - Integration Tests', () => {
       const caller = profileRouter.createCaller(mockCtx as any)
       await caller.create(createInput)
 
-      const createCall = vi.mocked(prisma.profile.create).mock.calls[0][0]
-      expect(createCall.data.completionPercentage).toBeGreaterThan(0)
-      expect(createCall.data.completionPercentage).toBeLessThanOrEqual(100)
+      const createCall = vi.mocked(prisma.profile.create).mock.calls[0]?.[0]
+      expect(createCall?.data.completionPercentage).toBeGreaterThan(0)
+      expect(createCall?.data.completionPercentage).toBeLessThanOrEqual(100)
     })
 
     it('should throw BAD_REQUEST when profile already exists', async () => {
@@ -236,8 +236,8 @@ describe('Profile Router - Integration Tests', () => {
       const caller = profileRouter.createCaller(mockCtx as any)
       await caller.update(updateInput)
 
-      const updateCall = vi.mocked(prisma.profile.update).mock.calls[0][0]
-      expect(updateCall.data.completionPercentage).toBeDefined()
+      const updateCall = vi.mocked(prisma.profile.update).mock.calls[0]?.[0]
+      expect(updateCall?.data.completionPercentage).toBeDefined()
     })
 
     it('should throw NOT_FOUND when profile does not exist', async () => {

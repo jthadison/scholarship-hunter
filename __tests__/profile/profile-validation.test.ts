@@ -230,8 +230,8 @@ describe('Profile Completeness Calculation', () => {
   it('should calculate 70% when all required fields complete, no optional fields', () => {
     const profile = {
       graduationYear: 2025,
-      citizenship: 'US Citizen',
-      state: 'CA',
+      citizenship: 'US Citizen' as const,
+      state: 'CA' as const,
       financialNeed: FinancialNeed.MODERATE,
     }
     const result = calculateProfileCompleteness(profile)
@@ -243,8 +243,8 @@ describe('Profile Completeness Calculation', () => {
     const profile = {
       // Required
       graduationYear: 2025,
-      citizenship: 'US Citizen',
-      state: 'CA',
+      citizenship: 'US Citizen' as const,
+      state: 'CA' as const,
       financialNeed: FinancialNeed.MODERATE,
       // Optional
       gpa: 3.8,
@@ -252,13 +252,13 @@ describe('Profile Completeness Calculation', () => {
       actScore: 32,
       classRank: 15,
       classSize: 300,
-      currentGrade: '12th Grade',
+      currentGrade: '12th Grade' as const,
       gender: 'Female',
-      ethnicity: ['Asian'],
+      ethnicity: ['Asian' as const],
       city: 'Los Angeles',
       zipCode: '90210',
       pellGrantEligible: true,
-      efcRange: '$0-$5,000',
+      efcRange: '$0-$5,000' as const,
     }
     const result = calculateProfileCompleteness(profile)
     expect(result.completionPercentage).toBe(100)
@@ -280,8 +280,8 @@ describe('Profile Completeness Calculation', () => {
   it('should list missing recommended fields', () => {
     const profile = {
       graduationYear: 2025,
-      citizenship: 'US Citizen',
-      state: 'CA',
+      citizenship: 'US Citizen' as const,
+      state: 'CA' as const,
       financialNeed: FinancialNeed.MODERATE,
       // Missing all optional fields
     }
@@ -293,18 +293,18 @@ describe('Profile Completeness Calculation', () => {
   it('should handle arrays (ethnicity) correctly', () => {
     const profileWithEthnicity = {
       graduationYear: 2025,
-      citizenship: 'US Citizen',
-      state: 'CA',
+      citizenship: 'US Citizen' as const,
+      state: 'CA' as const,
       financialNeed: FinancialNeed.MODERATE,
-      ethnicity: ['Asian', 'White/Caucasian'],
+      ethnicity: ['Asian' as const, 'White/Caucasian' as const],
     }
     const resultWith = calculateProfileCompleteness(profileWithEthnicity)
     expect(resultWith.optionalFieldsComplete).toBe(1)
 
     const profileWithoutEthnicity = {
       graduationYear: 2025,
-      citizenship: 'US Citizen',
-      state: 'CA',
+      citizenship: 'US Citizen' as const,
+      state: 'CA' as const,
       financialNeed: FinancialNeed.MODERATE,
       ethnicity: [],
     }
@@ -323,7 +323,7 @@ describe('Complete Profile Schemas', () => {
       classRank: 15,
       classSize: 300,
       graduationYear: 2025,
-      currentGrade: '12th Grade',
+      currentGrade: '12th Grade' as const,
     }
     const result = academicProfileSchema.safeParse(profile)
     expect(result.success).toBe(true)
@@ -332,11 +332,11 @@ describe('Complete Profile Schemas', () => {
   it('should validate complete demographic profile', () => {
     const profile = {
       gender: 'Female',
-      ethnicity: ['Asian'],
-      state: 'CA',
+      ethnicity: ['Asian' as const],
+      state: 'CA' as const,
       city: 'Los Angeles',
       zipCode: '90210',
-      citizenship: 'US Citizen',
+      citizenship: 'US Citizen' as const,
     }
     const result = demographicProfileSchema.safeParse(profile)
     expect(result.success).toBe(true)
@@ -346,7 +346,7 @@ describe('Complete Profile Schemas', () => {
     const profile = {
       financialNeed: FinancialNeed.HIGH,
       pellGrantEligible: true,
-      efcRange: '$0-$5,000',
+      efcRange: '$0-$5,000' as const,
     }
     const result = financialProfileSchema.safeParse(profile)
     expect(result.success).toBe(true)
