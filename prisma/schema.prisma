@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -24,7 +24,7 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  student       Student?
+  student Student?
 
   @@index([clerkId])
   @@index([email])
@@ -38,80 +38,81 @@ enum UserRole {
 }
 
 model Student {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  firstName      String
-  lastName       String
-  dateOfBirth    DateTime?
-  phone          String?
+  firstName   String
+  lastName    String
+  dateOfBirth DateTime?
+  phone       String?
 
-  profile        Profile?
-  applications   Application[]
-  documents      Document[]
-  essays         Essay[]
-  matches        Match[]
-  outcomes       Outcome[]
+  profile            Profile?
+  applications       Application[]
+  documents          Document[]
+  essays             Essay[]
+  matches            Match[]
+  outcomes           Outcome[]
+  analyticsSnapshots AnalyticsSnapshot[]
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }
 
 model Profile {
-  id                String   @id @default(cuid())
-  studentId         String   @unique
-  student           Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  studentId String  @unique
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   // Academic Data
-  gpa               Float?
-  gpaScale          Float    @default(4.0)
-  satScore          Int?
-  actScore          Int?
-  classRank         Int?
-  classSize         Int?
-  graduationYear    Int?
-  currentGrade      String?
+  gpa            Float?
+  gpaScale       Float   @default(4.0)
+  satScore       Int?
+  actScore       Int?
+  classRank      Int?
+  classSize      Int?
+  graduationYear Int?
+  currentGrade   String?
 
   // Demographics
-  gender            String?
-  ethnicity         String[]
-  state             String?
-  city              String?
-  zipCode           String?
-  citizenship       String?
+  gender      String?
+  ethnicity   String[]
+  state       String?
+  city        String?
+  zipCode     String?
+  citizenship String?
 
   // Financial
   financialNeed     FinancialNeed?
-  pellGrantEligible Boolean  @default(false)
+  pellGrantEligible Boolean        @default(false)
   efcRange          String?
 
   // Major & Field
-  intendedMajor     String?
-  fieldOfStudy      String?
-  careerGoals       String?
+  intendedMajor String?
+  fieldOfStudy  String?
+  careerGoals   String?
 
   // Experience
-  extracurriculars  Json?
-  volunteerHours    Int      @default(0)
-  workExperience    Json?
-  leadershipRoles   Json?
-  awardsHonors      Json?
+  extracurriculars Json?
+  volunteerHours   Int   @default(0)
+  workExperience   Json?
+  leadershipRoles  Json?
+  awardsHonors     Json?
 
   // Special Circumstances
-  firstGeneration   Boolean  @default(false)
+  firstGeneration     Boolean @default(false)
   militaryAffiliation String?
-  disabilities      String?
-  additionalContext String?
+  disabilities        String?
+  additionalContext   String?
 
   // Profile Metadata
-  completionPercentage Float  @default(0)
-  strengthScore        Float  @default(0)
+  completionPercentage Float @default(0)
+  strengthScore        Float @default(0)
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([studentId])
   @@index([graduationYear])
@@ -126,55 +127,424 @@ enum FinancialNeed {
 }
 
 // ============================================================================
-// Epic 2-5: Future Tables (Placeholders for relations)
+// Epic 2: Matching Module
 // ============================================================================
 
-model Application {
-  id         String   @id @default(cuid())
-  studentId  String
-  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+model Scholarship {
+  id String @id @default(cuid())
 
-  @@index([studentId])
-}
+  // Basic Info
+  name         String
+  provider     String
+  description  String  @db.Text
+  website      String?
+  contactEmail String?
 
-model Document {
-  id         String   @id @default(cuid())
-  studentId  String
-  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  // Award Details
+  awardAmount    Int // Minimum award amount in dollars
+  awardAmountMax Int? // Maximum if range
+  numberOfAwards Int     @default(1)
+  renewable      Boolean @default(false)
 
-  @@index([studentId])
-}
+  // Deadlines
+  deadline         DateTime
+  announcementDate DateTime?
 
-model Essay {
-  id         String   @id @default(cuid())
-  studentId  String
-  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  // Eligibility Criteria (JSON for flexibility)
+  eligibilityCriteria Json?
 
-  @@index([studentId])
+  // Application Requirements
+  essayPrompts        Json? // Array of essay prompts
+  requiredDocuments   String[] // Array of document types
+  recommendationCount Int      @default(0)
+
+  // Competition Metadata
+  applicantPoolSize Int?
+  acceptanceRate    Float? // 0.0 to 1.0
+
+  // Source Verification
+  sourceUrl    String?
+  lastVerified DateTime?
+  verified     Boolean   @default(false)
+
+  // Search/Discovery
+  tags     String[]
+  category String?
+
+  applications Application[]
+  matches      Match[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([deadline])
+  @@index([awardAmount])
+  @@index([provider])
+  @@index([category])
+  @@index([verified, deadline])
 }
 
 model Match {
-  id         String   @id @default(cuid())
-  studentId  String
-  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String @id @default(cuid())
+  studentId     String
+  scholarshipId String
 
-  @@index([studentId])
+  student     Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  scholarship Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+
+  // Score Fields
+  overallMatchScore    Float // 0-100
+  academicScore        Float @default(0)
+  demographicScore     Float @default(0)
+  majorFieldScore      Float @default(0)
+  experienceScore      Float @default(0)
+  financialScore       Float @default(0)
+  specialCriteriaScore Float @default(0)
+
+  // Strategic Metrics
+  successProbability Float        @default(0) // 0.0 to 1.0
+  priorityTier       PriorityTier @default(IF_TIME_PERMITS)
+  strategicValue     Float        @default(0) // ROI calculation
+  applicationEffort  EffortLevel  @default(MEDIUM)
+
+  // Gap Analysis
+  missingCriteria   Json?
+  improvementImpact Json?
+
+  // Metadata
+  calculatedAt DateTime @default(now())
+  notified     Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, scholarshipId])
+  @@index([studentId, priorityTier])
+  @@index([scholarshipId])
+  @@index([overallMatchScore])
 }
 
-model Outcome {
-  id         String   @id @default(cuid())
-  studentId  String
-  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+enum PriorityTier {
+  MUST_APPLY
+  SHOULD_APPLY
+  IF_TIME_PERMITS
+  HIGH_VALUE_REACH
+}
+
+enum EffortLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// ============================================================================
+// Epic 3: Application Module
+// ============================================================================
+
+model Application {
+  id            String @id @default(cuid())
+  studentId     String
+  scholarshipId String
+
+  student     Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  scholarship Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+
+  // Status Tracking
+  status       ApplicationStatus @default(NOT_STARTED)
+  priorityTier PriorityTier?
+
+  // Progress Tracking
+  essayCount         Int     @default(0)
+  essayComplete      Boolean @default(false)
+  documentsRequired  Int     @default(0)
+  documentsUploaded  Int     @default(0)
+  recsRequired       Int     @default(0)
+  recsReceived       Int     @default(0)
+  progressPercentage Float   @default(0) // 0-100
+
+  // Timeline Dates
+  dateAdded        DateTime  @default(now())
+  targetSubmitDate DateTime?
+  actualSubmitDate DateTime?
+  outcomeDate      DateTime?
+
+  // Notes
+  notes String? @db.Text
+
+  timeline        Timeline?
+  outcome         Outcome?
+  essays          Essay[]
+  documents       Document[]
+  recommendations Recommendation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, scholarshipId])
+  @@index([studentId, status])
+  @@index([status])
+  @@index([targetSubmitDate])
+}
+
+model Timeline {
+  id            String      @id @default(cuid())
+  applicationId String      @unique
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  // Milestone Dates
+  startEssayDate  DateTime?
+  requestRecsDate DateTime?
+  uploadDocsDate  DateTime?
+  finalReviewDate DateTime?
+  submitDate      DateTime?
+
+  // Conflict Detection
+  hasConflicts  Boolean  @default(false)
+  conflictsWith String[] // Array of application IDs
+
+  // Workload Estimation
+  estimatedHours Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId])
+  @@index([submitDate])
+}
+
+enum ApplicationStatus {
+  NOT_STARTED
+  TODO
+  IN_PROGRESS
+  READY_FOR_REVIEW
+  SUBMITTED
+  AWAITING_DECISION
+  AWARDED
+  DENIED
+  WITHDRAWN
+}
+
+// ============================================================================
+// Epic 4: Content Module
+// ============================================================================
+
+model Document {
+  id            String  @id @default(cuid())
+  studentId     String
+  applicationId String?
+
+  student     Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  // Document Metadata
+  name     String
+  type     DocumentType
+  fileName String
+  fileSize Int // Bytes
+  mimeType String
+
+  // Storage
+  storagePath String
+  bucketName  String @default("documents")
+
+  // Version Control
+  version           Int        @default(1)
+  previousVersionId String?
+  previousVersion   Document?  @relation("DocumentVersions", fields: [previousVersionId], references: [id], onDelete: SetNull)
+  nextVersions      Document[] @relation("DocumentVersions")
+
+  // Compliance Validation
+  compliant        Boolean @default(false)
+  validationErrors Json?
+
+  recommendations Recommendation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([studentId])
+  @@index([applicationId])
+  @@index([type])
+}
+
+model Essay {
+  id            String  @id @default(cuid())
+  studentId     String
+  applicationId String?
+
+  student     Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  // Content
+  title     String
+  prompt    String @db.Text
+  content   String @db.Text
+  wordCount Int    @default(0)
+
+  // Phase Tracking
+  phase      EssayPhase @default(DISCOVERY)
+  isComplete Boolean    @default(false)
+
+  // AI Metadata
+  aiGenerated  Boolean @default(false)
+  aiPromptUsed String? @db.Text
+  aiModel      String?
+  personalized Boolean @default(false)
+
+  // Quality Assessment
+  qualityScore           Float? // 0-100
+  qualityBreakdown       Json?
+  improvementSuggestions String? @db.Text
+
+  // Version Control
+  version           Int     @default(1)
+  previousVersionId String?
+  previousVersion   Essay?  @relation("EssayVersions", fields: [previousVersionId], references: [id], onDelete: SetNull)
+  nextVersions      Essay[] @relation("EssayVersions")
+
+  // Reusability
+  themes             String[] // Tags for matching to prompts
+  adaptabilityScores Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([applicationId])
+  @@index([phase])
+}
+
+model Recommendation {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  // Recommender Info
+  name         String
+  email        String
+  relationship String
+
+  // Tracking
+  status         RecommendationStatus @default(PENDING_REQUEST)
+  requestedAt    DateTime?
+  reminderSentAt DateTime?
+  receivedAt     DateTime?
+  submittedAt    DateTime?
+
+  // Upload Token
+  uploadToken      String    @unique
+  uploadLinkExpiry DateTime?
+
+  // Document Reference
+  documentId String?
+  document   Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId])
+  @@index([status])
+  @@index([uploadToken])
+}
+
+enum DocumentType {
+  TRANSCRIPT
+  RESUME
+  PERSONAL_STATEMENT
+  FINANCIAL_DOCUMENT
+  RECOMMENDATION_LETTER
+  SUPPLEMENTAL_MATERIAL
+  OTHER
+}
+
+enum EssayPhase {
+  DISCOVERY
+  STRUCTURE
+  DRAFTING
+  REVISION
+  POLISH
+  FINALIZATION
+}
+
+enum RecommendationStatus {
+  PENDING_REQUEST
+  REQUESTED
+  REMINDED
+  RECEIVED
+  SUBMITTED
+}
+
+// ============================================================================
+// Epic 5: Analytics Module
+// ============================================================================
+
+model Outcome {
+  id            String @id @default(cuid())
+  studentId     String
+  applicationId String @unique
+
+  student     Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  // Outcome Details
+  result              OutcomeResult
+  awardAmountReceived Int? // Dollars
+  decisionDate        DateTime?
+
+  // Feedback
+  feedback String? @db.Text
+  notes    String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([applicationId])
+  @@index([result])
+  @@index([decisionDate])
+}
+
+model AnalyticsSnapshot {
+  id        String  @id @default(cuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  // Time Period
+  snapshotDate DateTime @default(now())
+  periodStart  DateTime
+  periodEnd    DateTime
+
+  // Success Metrics
+  totalApplications Int   @default(0)
+  totalSubmitted    Int   @default(0)
+  totalAwarded      Int   @default(0)
+  totalDenied       Int   @default(0)
+  successRate       Float @default(0) // 0.0 to 1.0
+
+  // Funding Metrics
+  totalFundingSecured Int   @default(0) // Dollars
+  averageAwardAmount  Float @default(0) // Dollars
+  potentialFunding    Int   @default(0) // Dollars from pending
+
+  // Profile Metrics
+  profileStrengthScore Float @default(0) // 0-100
+  profileCompletion    Float @default(0) // 0-100
+
+  // Activity Metrics
+  matchesGenerated  Int @default(0)
+  essaysWritten     Int @default(0)
+  documentsUploaded Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId, snapshotDate])
+  @@index([periodStart])
+}
+
+enum OutcomeResult {
+  AWARDED
+  DENIED
+  WAITLISTED
+  WITHDRAWN
 }
