@@ -37,7 +37,7 @@ export function DemographicProfileForm({
   defaultValues,
   onSubmit,
 }: DemographicProfileFormProps) {
-  const form = useForm({
+  const form = useForm<DemographicProfile>({
     resolver: zodResolver(demographicProfileSchema),
     defaultValues,
   })

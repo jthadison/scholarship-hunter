@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
-  academicProfileSchema,
+  academicProfileFormSchema,
   type AcademicProfile,
   CURRENT_GRADE_OPTIONS,
 } from '../lib/profile-validation'
@@ -34,8 +34,8 @@ export function AcademicProfileForm({
   defaultValues,
   onSubmit,
 }: AcademicProfileFormProps) {
-  const form = useForm<AcademicProfile>({
-    resolver: zodResolver(academicProfileSchema),
+  const form = useForm({
+    resolver: zodResolver(academicProfileFormSchema),
     defaultValues: {
       gpaScale: 4.0,
       ...defaultValues,

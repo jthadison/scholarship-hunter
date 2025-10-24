@@ -243,7 +243,7 @@ export const demographicProfileSchema = z.object({
 
 export const financialProfileSchema = z.object({
   financialNeed: financialNeedSchema,
-  pellGrantEligible: z.boolean().optional(),
+  pellGrantEligible: pellGrantEligibleSchema,
   efcRange: efcRangeSchema
 })
 

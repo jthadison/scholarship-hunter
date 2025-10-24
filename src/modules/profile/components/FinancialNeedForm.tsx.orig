@@ -61,7 +61,7 @@ export function FinancialNeedForm({
   defaultValues,
   onSubmit,
 }: FinancialNeedFormProps) {
-  const form = useForm({
+  const form = useForm<FinancialProfile>({
     resolver: zodResolver(financialProfileSchema),
     defaultValues: {
       pellGrantEligible: false,

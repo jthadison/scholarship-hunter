@@ -1,8 +1,9 @@
 import { router, protectedProcedure } from '../trpc'
 import { prisma } from '../db'
 import { TRPCError } from '@trpc/server'
+import { z } from 'zod'
 import {
-  academicProfileSchema,
+  academicProfileFormSchema,
   demographicProfileSchema,
   financialProfileSchema,
   calculateProfileCompleteness,
@@ -12,16 +13,18 @@ import {
 // Input Schemas for Profile Operations
 // ============================================================================
 
-// Combine all profile schemas and make all fields optional
-const createProfileInputSchema = academicProfileSchema
-  .merge(demographicProfileSchema)
-  .merge(financialProfileSchema)
-  .partial()
+// Combine all profile schemas using object spread (avoids ZodEffects issues)
+const createProfileInputSchema = z.object({
+  ...academicProfileFormSchema.shape,
+  ...demographicProfileSchema.shape,
+  ...financialProfileSchema.shape,
+}).partial()
 
-const updateProfileInputSchema = academicProfileSchema
-  .merge(demographicProfileSchema)
-  .merge(financialProfileSchema)
-  .partial()
+const updateProfileInputSchema = z.object({
+  ...academicProfileFormSchema.shape,
+  ...demographicProfileSchema.shape,
+  ...financialProfileSchema.shape,
+}).partial()
 
 // ============================================================================
 // Profile Router
@@ -84,14 +87,19 @@ export const profileRouter = router({
         })
       }
 
-      // Calculate completeness percentage
-      const completenessResult = calculateProfileCompleteness(input)
+      // Calculate completeness percentage (with type assertion)
+      const completenessResult = calculateProfileCompleteness(input as any)
+
+      // Clean up null values for Prisma (convert null to undefined)
+      const cleanInput = Object.fromEntries(
+        Object.entries(input).map(([key, value]) => [key, value === null ? undefined : value])
+      )
 
       // Create profile with calculated metadata
       const profile = await prisma.profile.create({
         data: {
           studentId: student.id,
-          ...input,
+          ...cleanInput,
           completionPercentage: completenessResult.completionPercentage,
         },
       })
@@ -136,8 +144,13 @@ export const profileRouter = router({
         ...input,
       }
 
-      // Recalculate completeness percentage
-      const completenessResult = calculateProfileCompleteness(mergedProfile)
+      // Recalculate completeness percentage (with type assertion for Prisma fields)
+      const completenessResult = calculateProfileCompleteness(mergedProfile as any)
+
+      // Clean up null values for Prisma
+      const cleanInput = Object.fromEntries(
+        Object.entries(input).map(([key, value]) => [key, value === null ? undefined : value])
+      )
 
       // Update profile with new data and recalculated metadata
       const updatedProfile = await prisma.profile.update({
@@ -145,7 +158,7 @@ export const profileRouter = router({
           id: student.profile.id,
         },
         data: {
-          ...input,
+          ...cleanInput,
           completionPercentage: completenessResult.completionPercentage,
         },
       })
@@ -204,6 +217,6 @@ export const profileRouter = router({
       }
     }
 
-    return calculateProfileCompleteness(student.profile)
+    return calculateProfileCompleteness(student.profile as any)
   }),
 })
