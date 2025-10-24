@@ -7,6 +7,27 @@ import {
   demographicProfileSchema,
   financialProfileSchema,
   calculateProfileCompleteness,
+  // Story 1.5: Major & Field validation
+  intendedMajorSchema,
+  fieldOfStudySchema,
+  careerGoalsSchema,
+  // Story 1.5: Experience validation
+  extracurricularActivitySchema,
+  extracurricularsArraySchema,
+  workExperienceSchema,
+  workExperienceArraySchema,
+  leadershipRoleSchema,
+  leadershipRolesArraySchema,
+  awardHonorSchema,
+  awardsHonorsArraySchema,
+  // Story 1.5: Special circumstances validation
+  firstGenerationSchema,
+  militaryAffiliationSchema,
+  disabilitiesSchema,
+  additionalContextSchema,
+  // Story 1.5: Helper functions
+  calculateVolunteerHours,
+  getFieldOfStudyFromMajor,
 } from '@/modules/profile/lib/profile-validation'
 
 // ============================================================================
@@ -18,12 +39,40 @@ const createProfileInputSchema = z.object({
   ...academicProfileFormSchema.shape,
   ...demographicProfileSchema.shape,
   ...financialProfileSchema.shape,
+  // Story 1.5: Major & Field of Study
+  intendedMajor: intendedMajorSchema,
+  fieldOfStudy: fieldOfStudySchema,
+  careerGoals: careerGoalsSchema,
+  // Story 1.5: Experience fields
+  extracurriculars: extracurricularsArraySchema,
+  workExperience: workExperienceArraySchema,
+  leadershipRoles: leadershipRolesArraySchema,
+  awardsHonors: awardsHonorsArraySchema,
+  // Story 1.5: Special circumstances
+  firstGeneration: firstGenerationSchema,
+  militaryAffiliation: militaryAffiliationSchema,
+  disabilities: disabilitiesSchema,
+  additionalContext: additionalContextSchema,
 }).partial()
 
 const updateProfileInputSchema = z.object({
   ...academicProfileFormSchema.shape,
   ...demographicProfileSchema.shape,
   ...financialProfileSchema.shape,
+  // Story 1.5: Major & Field of Study
+  intendedMajor: intendedMajorSchema,
+  fieldOfStudy: fieldOfStudySchema,
+  careerGoals: careerGoalsSchema,
+  // Story 1.5: Experience fields
+  extracurriculars: extracurricularsArraySchema,
+  workExperience: workExperienceArraySchema,
+  leadershipRoles: leadershipRolesArraySchema,
+  awardsHonors: awardsHonorsArraySchema,
+  // Story 1.5: Special circumstances
+  firstGeneration: firstGenerationSchema,
+  militaryAffiliation: militaryAffiliationSchema,
+  disabilities: disabilitiesSchema,
+  additionalContext: additionalContextSchema,
 }).partial()
 
 // ============================================================================
@@ -109,7 +158,7 @@ export const profileRouter = router({
 
   /**
    * Update existing profile with partial data
-   * Recalculates completionPercentage automatically
+   * Recalculates completionPercentage, volunteerHours, and fieldOfStudy automatically (Story 1.5)
    */
   update: protectedProcedure
     .input(updateProfileInputSchema)
@@ -138,10 +187,24 @@ export const profileRouter = router({
         })
       }
 
+      // Story 1.5: Auto-calculate volunteer hours from extracurriculars
+      let volunteerHours = student.profile.volunteerHours
+      if (input.extracurriculars !== undefined) {
+        volunteerHours = calculateVolunteerHours(input.extracurriculars as any)
+      }
+
+      // Story 1.5: Auto-populate field of study from major
+      let fieldOfStudy = input.fieldOfStudy
+      if (input.intendedMajor !== undefined && !input.fieldOfStudy) {
+        fieldOfStudy = getFieldOfStudyFromMajor(input.intendedMajor) as any
+      }
+
       // Merge existing profile with updates for completeness calculation
       const mergedProfile = {
         ...student.profile,
         ...input,
+        volunteerHours,
+        fieldOfStudy,
       }
 
       // Recalculate completeness percentage (with type assertion for Prisma fields)
@@ -159,6 +222,8 @@ export const profileRouter = router({
         },
         data: {
           ...cleanInput,
+          volunteerHours,
+          fieldOfStudy,
           completionPercentage: completenessResult.completionPercentage,
         },
       })
@@ -219,4 +284,153 @@ export const profileRouter = router({
 
     return calculateProfileCompleteness(student.profile as any)
   }),
+
+  // ============================================================================
+  // Story 1.5: Helper Mutations for Array Operations
+  // ============================================================================
+
+  /**
+   * Add single extracurricular activity to profile
+   * Auto-calculates volunteer hours if Community Service category
+   */
+  addExtracurricular: protectedProcedure
+    .input(extracurricularActivitySchema)
+    .mutation(async ({ ctx, input }) => {
+      const student = await prisma.student.findUnique({
+        where: { userId: ctx.userId },
+        include: { profile: true },
+      })
+
+      if (!student?.profile) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Profile not found.',
+        })
+      }
+
+      // Get existing extracurriculars array
+      const existingActivities = (student.profile.extracurriculars as any[]) || []
+      const updatedActivities = [...existingActivities, input]
+
+      // Auto-calculate volunteer hours
+      const volunteerHours = calculateVolunteerHours(updatedActivities)
+
+      // If leadership role, also add to leadershipRoles array
+      let leadershipRoles = (student.profile.leadershipRoles as any[]) || []
+      if (input.isLeadership && input.leadershipTitle) {
+        leadershipRoles = [
+          ...leadershipRoles,
+          {
+            title: input.leadershipTitle,
+            organization: input.name,
+            startDate: new Date().toISOString(),
+            description: input.description,
+          },
+        ]
+      }
+
+      const updatedProfile = await prisma.profile.update({
+        where: { id: student.profile.id },
+        data: {
+          extracurriculars: updatedActivities,
+          leadershipRoles,
+          volunteerHours,
+        },
+      })
+
+      return updatedProfile
+    }),
+
+  /**
+   * Add work experience entry to profile
+   */
+  addWorkExperience: protectedProcedure
+    .input(workExperienceSchema)
+    .mutation(async ({ ctx, input }) => {
+      const student = await prisma.student.findUnique({
+        where: { userId: ctx.userId },
+        include: { profile: true },
+      })
+
+      if (!student?.profile) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Profile not found.',
+        })
+      }
+
+      const existingWork = (student.profile.workExperience as any[]) || []
+      const updatedWork = [...existingWork, input]
+
+      const updatedProfile = await prisma.profile.update({
+        where: { id: student.profile.id },
+        data: {
+          workExperience: updatedWork,
+        },
+      })
+
+      return updatedProfile
+    }),
+
+  /**
+   * Add leadership role entry to profile
+   */
+  addLeadership: protectedProcedure
+    .input(leadershipRoleSchema)
+    .mutation(async ({ ctx, input }) => {
+      const student = await prisma.student.findUnique({
+        where: { userId: ctx.userId },
+        include: { profile: true },
+      })
+
+      if (!student?.profile) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Profile not found.',
+        })
+      }
+
+      const existingRoles = (student.profile.leadershipRoles as any[]) || []
+      const updatedRoles = [...existingRoles, input]
+
+      const updatedProfile = await prisma.profile.update({
+        where: { id: student.profile.id },
+        data: {
+          leadershipRoles: updatedRoles,
+        },
+      })
+
+      return updatedProfile
+    }),
+
+  /**
+   * Add award/honor entry to profile
+   */
+  addAward: protectedProcedure
+    .input(awardHonorSchema)
+    .mutation(async ({ ctx, input }) => {
+      const student = await prisma.student.findUnique({
+        where: { userId: ctx.userId },
+        include: { profile: true },
+      })
+
+      if (!student?.profile) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Profile not found.',
+        })
+      }
+
+      const existingAwards = (student.profile.awardsHonors as any[]) || []
+      const updatedAwards = [...existingAwards, input]
+
+      const updatedProfile = await prisma.profile.update({
+        where: { id: student.profile.id },
+        data: {
+          awardsHonors: updatedAwards,
+        },
+      })
+
+      return updatedProfile
+    }),
 })

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { FinancialNeed } from '@prisma/client'
+import majorsData from '../../../data/majors.json'
 
 // ============================================================================
 // Validation Constants
@@ -184,6 +185,196 @@ export const efcRangeSchema = z.enum([
   .optional()
 
 // ============================================================================
+// Major & Field of Study Validations (Story 1.5)
+// ============================================================================
+
+// Extract major list from JSON for validation
+const validMajors = Object.keys((majorsData as any).majorToFieldMap)
+
+export const intendedMajorSchema = z.string()
+  .refine(
+    (major) => validMajors.includes(major) || major === 'Other',
+    'Please select a valid major from the list'
+  )
+  .nullable()
+  .optional()
+
+export const fieldOfStudySchema = z.enum([
+  'STEM',
+  'Business',
+  'Humanities',
+  'Social Sciences',
+  'Health Sciences',
+  'Arts',
+  'Communications',
+  'Education',
+  'Agriculture',
+  'Law',
+  'Other'
+]).nullable()
+  .optional()
+
+export const careerGoalsSchema = z.string()
+  .max(500, 'Career goals must be 500 characters or less')
+  .nullable()
+  .optional()
+
+// ============================================================================
+// Experience Field Validations (Story 1.5)
+// ============================================================================
+
+export const extracurricularActivitySchema = z.object({
+  name: z.string()
+    .min(1, 'Activity name is required')
+    .max(100, 'Activity name must be 100 characters or less'),
+  category: z.enum([
+    'Sports',
+    'Academic Clubs',
+    'Arts/Music',
+    'Community Service',
+    'Other'
+  ]),
+  hoursPerWeek: z.number()
+    .min(0, 'Hours per week must be at least 0')
+    .max(40, 'Hours per week cannot exceed 40')
+    .int('Hours per week must be a whole number'),
+  yearsInvolved: z.number()
+    .min(0, 'Years involved must be at least 0')
+    .max(6, 'Years involved cannot exceed 6')
+    .int('Years involved must be a whole number'),
+  description: z.string()
+    .max(200, 'Description must be 200 characters or less')
+    .optional(),
+  isLeadership: z.boolean().optional(),
+  leadershipTitle: z.string()
+    .max(100, 'Leadership title must be 100 characters or less')
+    .optional()
+})
+
+export const extracurricularsArraySchema = z.array(extracurricularActivitySchema)
+  .nullable()
+  .optional()
+
+export const workExperienceSchema = z.object({
+  jobTitle: z.string()
+    .min(1, 'Job title is required')
+    .max(100, 'Job title must be 100 characters or less'),
+  employer: z.string()
+    .min(1, 'Employer is required')
+    .max(100, 'Employer name must be 100 characters or less'),
+  startDate: z.string()
+    .refine((date) => !isNaN(Date.parse(date)), 'Start date must be a valid date'),
+  endDate: z.string()
+    .refine((date) => !isNaN(Date.parse(date)), 'End date must be a valid date')
+    .optional(),
+  hoursPerWeek: z.number()
+    .min(0, 'Hours per week must be at least 0')
+    .max(80, 'Hours per week cannot exceed 80')
+    .int('Hours per week must be a whole number'),
+  description: z.string()
+    .max(300, 'Description must be 300 characters or less')
+    .optional()
+}).refine(
+  (data) => {
+    // If both dates provided, endDate must be after startDate
+    if (data.endDate) {
+      return new Date(data.endDate) >= new Date(data.startDate)
+    }
+    return true
+  },
+  {
+    message: 'End date must be after start date',
+    path: ['endDate']
+  }
+)
+
+export const workExperienceArraySchema = z.array(workExperienceSchema)
+  .nullable()
+  .optional()
+
+export const leadershipRoleSchema = z.object({
+  title: z.string()
+    .min(1, 'Leadership title is required')
+    .max(100, 'Title must be 100 characters or less'),
+  organization: z.string()
+    .min(1, 'Organization is required')
+    .max(100, 'Organization name must be 100 characters or less'),
+  startDate: z.string()
+    .refine((date) => !isNaN(Date.parse(date)), 'Start date must be a valid date'),
+  endDate: z.string()
+    .refine((date) => !isNaN(Date.parse(date)), 'End date must be a valid date')
+    .optional(),
+  description: z.string()
+    .max(200, 'Description must be 200 characters or less')
+    .optional()
+}).refine(
+  (data) => {
+    if (data.endDate) {
+      return new Date(data.endDate) >= new Date(data.startDate)
+    }
+    return true
+  },
+  {
+    message: 'End date must be after start date',
+    path: ['endDate']
+  }
+)
+
+export const leadershipRolesArraySchema = z.array(leadershipRoleSchema)
+  .nullable()
+  .optional()
+
+export const awardHonorSchema = z.object({
+  name: z.string()
+    .min(1, 'Award name is required')
+    .max(150, 'Award name must be 150 characters or less'),
+  issuer: z.string()
+    .min(1, 'Issuing organization is required')
+    .max(100, 'Issuer name must be 100 characters or less'),
+  date: z.string()
+    .refine((date) => !isNaN(Date.parse(date)), 'Date must be a valid date'),
+  level: z.enum(['School', 'Local', 'State', 'National', 'International']),
+  description: z.string()
+    .max(200, 'Description must be 200 characters or less')
+    .optional()
+})
+
+export const awardsHonorsArraySchema = z.array(awardHonorSchema)
+  .nullable()
+  .optional()
+
+export const volunteerHoursSchema = z.number()
+  .int('Volunteer hours must be a whole number')
+  .min(0, 'Volunteer hours cannot be negative')
+  .default(0)
+
+// ============================================================================
+// Special Circumstances Validations (Story 1.5)
+// ============================================================================
+
+export const firstGenerationSchema = z.boolean().default(false)
+
+export const militaryAffiliationSchema = z.enum([
+  'None',
+  'Active Duty',
+  'Veteran',
+  'Reserves/National Guard',
+  'Military Dependent',
+  'Gold Star Family'
+]).nullable()
+  .optional()
+
+export const disabilitiesSchema = z.string()
+  .max(200, 'Disabilities field must be 200 characters or less')
+  .nullable()
+  .optional()
+
+export const additionalContextSchema = z.string()
+  .max(2000, 'Additional context must be 2000 characters or less')
+  .nullable()
+  .optional()
+
+// ============================================================================
 // Complete Profile Schemas
 // ============================================================================
 
@@ -300,6 +491,43 @@ export const completeProfileSchema = z.object({
 )
 
 // ============================================================================
+// Helper Functions (Story 1.5)
+// ============================================================================
+
+/**
+ * Calculate total volunteer hours from extracurricular activities
+ * Formula: sum(hoursPerWeek * 52 * yearsInvolved) for Community Service activities
+ * @param extracurriculars - Array of extracurricular activities
+ * @returns Total estimated volunteer hours
+ */
+export function calculateVolunteerHours(
+  extracurriculars: Array<{ category: string; hoursPerWeek: number; yearsInvolved: number }> | null | undefined
+): number {
+  if (!extracurriculars || !Array.isArray(extracurriculars)) {
+    return 0
+  }
+
+  return extracurriculars
+    .filter(activity => activity.category === 'Community Service')
+    .reduce((total, activity) => {
+      const hoursPerYear = activity.hoursPerWeek * 52
+      const totalHours = hoursPerYear * activity.yearsInvolved
+      return total + totalHours
+    }, 0)
+}
+
+/**
+ * Get field of study from major using majors.json mapping
+ * @param major - Selected major
+ * @returns Field of study category
+ */
+export function getFieldOfStudyFromMajor(major: string | null | undefined): string | null {
+  if (!major) return null
+  const mapping = (majorsData as any).majorToFieldMap
+  return mapping[major] || null
+}
+
+// ============================================================================
 // Profile Completeness Calculation
 // ============================================================================
 
@@ -315,22 +543,35 @@ export interface ProfileCompletenessResult {
 
 /**
  * Calculate profile completeness percentage based on field completion
- * Required fields weighted at 70%, optional fields at 30%
- * @param profile - Profile data to analyze
+ * Required fields weighted at 60%, optional fields at 40% (updated for Story 1.5)
+ * @param profile - Profile data to analyze (extended with experience & special circumstances)
  * @returns ProfileCompletenessResult with percentage and missing field lists
  */
 export function calculateProfileCompleteness(
-  profile: Partial<z.infer<typeof completeProfileSchema>>
+  profile: Partial<z.infer<typeof completeProfileSchema> & {
+    intendedMajor?: string | null
+    fieldOfStudy?: string | null
+    careerGoals?: string | null
+    extracurriculars?: any[] | null
+    workExperience?: any[] | null
+    leadershipRoles?: any[] | null
+    awardsHonors?: any[] | null
+    firstGeneration?: boolean
+    militaryAffiliation?: string | null
+    disabilities?: string | null
+    additionalContext?: string | null
+  }>
 ): ProfileCompletenessResult {
-  // Required fields (70% weight) - Critical for matching
+  // Required fields (60% weight) - Critical for matching
   const requiredFields: (keyof typeof profile)[] = [
     'graduationYear',
     'citizenship',
     'state',
-    'financialNeed'
+    'financialNeed',
+    'intendedMajor' // Story 1.5: Major is required (10% weight)
   ]
 
-  // Optional but recommended fields (30% weight) - Enhance matching
+  // Optional but recommended fields (40% weight) - Enhance matching
   const optionalFields: (keyof typeof profile)[] = [
     'gpa',
     'satScore',
@@ -343,7 +584,13 @@ export function calculateProfileCompleteness(
     'city',
     'zipCode',
     'pellGrantEligible',
-    'efcRange'
+    'efcRange',
+    // Story 1.5: Experience fields (optional but recommended)
+    'extracurriculars', // 5% weight
+    'workExperience',   // 3% weight
+    'leadershipRoles',  // 5% weight
+    'awardsHonors',     // 2% weight
+    'militaryAffiliation' // 2% weight (special circumstances)
   ]
 
   const missingRequired: string[] = []
@@ -380,9 +627,9 @@ export function calculateProfileCompleteness(
     }
   }
 
-  // Calculate weighted percentage
-  const requiredPercentage = (requiredComplete / requiredFields.length) * 70
-  const optionalPercentage = (optionalComplete / optionalFields.length) * 30
+  // Calculate weighted percentage (60% required, 40% optional - Story 1.5)
+  const requiredPercentage = (requiredComplete / requiredFields.length) * 60
+  const optionalPercentage = (optionalComplete / optionalFields.length) * 40
   const completionPercentage = Math.round(requiredPercentage + optionalPercentage)
 
   return {
@@ -417,7 +664,22 @@ function fieldNameToLabel(fieldName: string): string {
     citizenship: 'Citizenship Status',
     financialNeed: 'Financial Need Level',
     pellGrantEligible: 'Pell Grant Eligibility',
-    efcRange: 'Expected Family Contribution (EFC)'
+    efcRange: 'Expected Family Contribution (EFC)',
+    // Story 1.5: Major & field of study
+    intendedMajor: 'Intended Major',
+    fieldOfStudy: 'Field of Study',
+    careerGoals: 'Career Goals',
+    // Story 1.5: Experience fields
+    extracurriculars: 'Extracurricular Activities',
+    workExperience: 'Work Experience',
+    leadershipRoles: 'Leadership Roles',
+    awardsHonors: 'Awards & Honors',
+    volunteerHours: 'Volunteer Hours',
+    // Story 1.5: Special circumstances
+    firstGeneration: 'First-Generation Student',
+    militaryAffiliation: 'Military Affiliation',
+    disabilities: 'Disabilities',
+    additionalContext: 'Additional Context'
   }
 
   return labels[fieldName] || fieldName
