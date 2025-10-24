@@ -28,6 +28,8 @@ import {
   // Story 1.5: Helper functions
   calculateVolunteerHours,
   getFieldOfStudyFromMajor,
+  // Story 1.6: Validation & completeness functions
+  getMissingFields,
 } from '@/modules/profile/lib/profile-validation'
 import type {
   ExtracurricularActivity,
@@ -445,4 +447,154 @@ export const profileRouter = router({
 
       return updatedProfile
     }),
+
+  // ============================================================================
+  // Story 1.6: Validation & Completeness Endpoints
+  // ============================================================================
+
+  /**
+   * Validate current profile and return errors/warnings
+   * Runs all validation rules on the profile
+   */
+  validate: protectedProcedure.query(async ({ ctx }) => {
+    const student = await prisma.student.findUnique({
+      where: { userId: ctx.userId },
+      include: { profile: true },
+    })
+
+    if (!student?.profile) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Profile not found.',
+      })
+    }
+
+    const profile = student.profile
+    const errors: Array<{ field: string; message: string; severity: 'error' | 'warning' }> = []
+    const warnings: string[] = []
+
+    // Validate GPA against scale
+    if (profile.gpa !== null && profile.gpaScale !== null) {
+      if (profile.gpa > profile.gpaScale) {
+        errors.push({
+          field: 'gpa',
+          message: `GPA cannot exceed ${profile.gpaScale}`,
+          severity: 'error',
+        })
+      }
+    }
+
+    // Validate SAT score range
+    if (profile.satScore !== null) {
+      if (profile.satScore < 400 || profile.satScore > 1600) {
+        errors.push({
+          field: 'satScore',
+          message: 'SAT score must be between 400 and 1600',
+          severity: 'error',
+        })
+      }
+    }
+
+    // Validate ACT score range
+    if (profile.actScore !== null) {
+      if (profile.actScore < 1 || profile.actScore > 36) {
+        errors.push({
+          field: 'actScore',
+          message: 'ACT score must be between 1 and 36',
+          severity: 'error',
+        })
+      }
+    }
+
+    // Validate class rank vs class size
+    if (profile.classRank !== null && profile.classSize !== null) {
+      if (profile.classRank > profile.classSize) {
+        errors.push({
+          field: 'classRank',
+          message: 'Class rank cannot exceed class size',
+          severity: 'error',
+        })
+      }
+    }
+
+    // Warning: Profile missing test scores
+    if (profile.satScore === null && profile.actScore === null) {
+      warnings.push('Profile missing test scores - reduces matching accuracy for merit-based scholarships')
+    }
+
+    // Warning: No extracurriculars
+    const extracurriculars = profile.extracurriculars as any
+    if (!extracurriculars || (Array.isArray(extracurriculars) && extracurriculars.length === 0)) {
+      warnings.push('No extracurricular activities listed - limits scholarship opportunities')
+    }
+
+    // Warning: Low completeness
+    const completeness = calculateProfileCompleteness(profile as any)
+    if (completeness.completionPercentage < 60) {
+      warnings.push(`Profile is only ${completeness.completionPercentage}% complete - complete your profile to unlock more opportunities`)
+    }
+
+    return {
+      isValid: errors.filter((e) => e.severity === 'error').length === 0,
+      errors,
+      warnings,
+    }
+  }),
+
+  /**
+   * Check if profile is ready for scholarship matching
+   * Returns readiness status and missing required fields
+   */
+  checkReadiness: protectedProcedure.query(async ({ ctx }) => {
+    const student = await prisma.student.findUnique({
+      where: { userId: ctx.userId },
+      include: { profile: true },
+    })
+
+    if (!student?.profile) {
+      return {
+        isReady: false,
+        completeness: 0,
+        missingRequired: [
+          'GPA',
+          'Graduation Year',
+          'Current Grade',
+          'Gender',
+          'Ethnicity',
+          'State',
+          'Citizenship Status',
+          'Intended Major',
+          'Field of Study',
+          'Financial Need Level',
+        ],
+      }
+    }
+
+    const completeness = calculateProfileCompleteness(student.profile as any)
+    const isReady = completeness.completionPercentage >= 60 && completeness.missingRequired.length === 0
+
+    return {
+      isReady,
+      completeness: completeness.completionPercentage,
+      missingRequired: completeness.missingRequired,
+    }
+  }),
+
+  /**
+   * Get missing fields with prompts and estimated impact
+   * Returns prioritized list for UI prompts
+   */
+  getMissingFields: protectedProcedure.query(async ({ ctx }) => {
+    const student = await prisma.student.findUnique({
+      where: { userId: ctx.userId },
+      include: { profile: true },
+    })
+
+    if (!student?.profile) {
+      // Return all fields as missing if no profile
+      return getMissingFields({})
+    }
+
+    return getMissingFields(student.profile as any)
+  }),
 })

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { FinancialNeed } from '@prisma/client'
 import majorsData from '../../../data/majors.json'
+import type { MissingField } from '../types'
 
 // ============================================================================
 // Validation Constants
@@ -543,7 +544,7 @@ export interface ProfileCompletenessResult {
 
 /**
  * Calculate profile completeness percentage based on field completion
- * Required fields weighted at 60%, optional fields at 40% (updated for Story 1.5)
+ * Required fields weighted at 70%, optional fields at 30% (Story 1.6)
  * @param profile - Profile data to analyze (extended with experience & special circumstances)
  * @returns ProfileCompletenessResult with percentage and missing field lists
  */
@@ -556,41 +557,41 @@ export function calculateProfileCompleteness(
     workExperience?: any[] | null
     leadershipRoles?: any[] | null
     awardsHonors?: any[] | null
+    volunteerHours?: number | null
     firstGeneration?: boolean
     militaryAffiliation?: string | null
     disabilities?: string | null
     additionalContext?: string | null
   }>
 ): ProfileCompletenessResult {
-  // Required fields (60% weight) - Critical for matching
+  // Required fields (70% weight) - Story 1.6: 10 critical fields for matching
   const requiredFields: (keyof typeof profile)[] = [
-    'graduationYear',
-    'citizenship',
-    'state',
-    'financialNeed',
-    'intendedMajor' // Story 1.5: Major is required (10% weight)
-  ]
-
-  // Optional but recommended fields (40% weight) - Enhance matching
-  const optionalFields: (keyof typeof profile)[] = [
     'gpa',
-    'satScore',
-    'actScore',
-    'classRank',
-    'classSize',
+    'graduationYear',
     'currentGrade',
     'gender',
     'ethnicity',
+    'state',
+    'citizenship',
+    'intendedMajor',
+    'fieldOfStudy',
+    'financialNeed'
+  ]
+
+  // Optional but recommended fields (30% weight) - Story 1.6: 12 fields enhance matching
+  const optionalFields: (keyof typeof profile)[] = [
+    'satScore',
+    'actScore',
+    'classRank',
+    'extracurriculars',
+    'volunteerHours',
+    'workExperience',
+    'leadershipRoles',
+    'awardsHonors',
     'city',
     'zipCode',
     'pellGrantEligible',
-    'efcRange',
-    // Story 1.5: Experience fields (optional but recommended)
-    'extracurriculars', // 5% weight
-    'workExperience',   // 3% weight
-    'leadershipRoles',  // 5% weight
-    'awardsHonors',     // 2% weight
-    'militaryAffiliation' // 2% weight (special circumstances)
+    'efcRange'
   ]
 
   const missingRequired: string[] = []
@@ -601,7 +602,16 @@ export function calculateProfileCompleteness(
   for (const field of requiredFields) {
     const value = profile[field]
     if (value !== null && value !== undefined && value !== '') {
-      requiredComplete++
+      // For arrays (ethnicity), check if array has items
+      if (Array.isArray(value)) {
+        if (value.length > 0) {
+          requiredComplete++
+        } else {
+          missingRequired.push(fieldNameToLabel(field))
+        }
+      } else {
+        requiredComplete++
+      }
     } else {
       missingRequired.push(fieldNameToLabel(field))
     }
@@ -611,8 +621,38 @@ export function calculateProfileCompleteness(
   let optionalComplete = 0
   for (const field of optionalFields) {
     const value = profile[field]
+
+    // Handle special cases
+    if (field === 'satScore' || field === 'actScore') {
+      // Count as complete if either SAT or ACT is provided (not both required)
+      const satScore = profile.satScore
+      const actScore = profile.actScore
+      if ((satScore !== null && satScore !== undefined) || (actScore !== null && actScore !== undefined)) {
+        // Only count once for test scores (combine SAT/ACT into single optional item)
+        if (field === 'satScore') {
+          optionalComplete++
+        }
+        continue
+      } else {
+        if (field === 'satScore') {
+          missingRecommended.push('SAT or ACT Score')
+        }
+        continue
+      }
+    }
+
+    if (field === 'volunteerHours') {
+      // Count as complete if > 0
+      if (value && typeof value === 'number' && value > 0) {
+        optionalComplete++
+      } else {
+        missingRecommended.push(fieldNameToLabel(field))
+      }
+      continue
+    }
+
     if (value !== null && value !== undefined && value !== '') {
-      // For arrays (ethnicity), check if array has items
+      // For arrays, check if array has items
       if (Array.isArray(value)) {
         if (value.length > 0) {
           optionalComplete++
@@ -627,17 +667,17 @@ export function calculateProfileCompleteness(
     }
   }
 
-  // Calculate weighted percentage (60% required, 40% optional - Story 1.5)
-  const requiredPercentage = (requiredComplete / requiredFields.length) * 60
-  const optionalPercentage = (optionalComplete / optionalFields.length) * 40
-  const completionPercentage = Math.round(requiredPercentage + optionalPercentage)
+  // Calculate weighted percentage (70% required, 30% optional - Story 1.6)
+  const requiredPercentage = (requiredComplete / requiredFields.length) * 0.7
+  const optionalPercentage = (optionalComplete / (optionalFields.length - 1)) * 0.3 // -1 because SAT/ACT counted together
+  const completionPercentage = Math.round((requiredPercentage + optionalPercentage) * 100)
 
   return {
     completionPercentage,
     requiredFieldsComplete: requiredComplete,
     requiredFieldsTotal: requiredFields.length,
     optionalFieldsComplete: optionalComplete,
-    optionalFieldsTotal: optionalFields.length,
+    optionalFieldsTotal: optionalFields.length - 1, // -1 because SAT/ACT counted together
     missingRequired,
     missingRecommended
   }
@@ -683,6 +723,181 @@ function fieldNameToLabel(fieldName: string): string {
   }
 
   return labels[fieldName] || fieldName
+}
+
+// ============================================================================
+// Story 1.6: Missing Fields Detection and Prompts
+// ============================================================================
+
+/**
+ * Get missing fields with user-friendly prompts and estimated impact
+ * @param profile - Profile data to analyze
+ * @returns Array of missing fields with metadata
+ */
+export function getMissingFields(
+  profile: Parameters<typeof calculateProfileCompleteness>[0]
+): MissingField[] {
+  const completenessResult = calculateProfileCompleteness(profile)
+  const missingFields: MissingField[] = []
+
+  // Map of field names to categories
+  const fieldCategories: Record<string, string> = {
+    gpa: 'Academic',
+    graduationYear: 'Academic',
+    currentGrade: 'Academic',
+    satScore: 'Academic',
+    actScore: 'Academic',
+    classRank: 'Academic',
+    gender: 'Demographics',
+    ethnicity: 'Demographics',
+    state: 'Demographics',
+    city: 'Demographics',
+    zipCode: 'Demographics',
+    citizenship: 'Demographics',
+    intendedMajor: 'Major & Career',
+    fieldOfStudy: 'Major & Career',
+    careerGoals: 'Major & Career',
+    financialNeed: 'Financial',
+    pellGrantEligible: 'Financial',
+    efcRange: 'Financial',
+    extracurriculars: 'Experience',
+    volunteerHours: 'Experience',
+    workExperience: 'Experience',
+    leadershipRoles: 'Experience',
+    awardsHonors: 'Experience'
+  }
+
+  // Generate prompts for missing required fields
+  for (const fieldLabel of completenessResult.missingRequired) {
+    const fieldName = labelToFieldName(fieldLabel)
+    const prompt = generatePrompt(fieldName, true)
+    const impact = calculateImpactIncrease(profile, fieldName, true)
+
+    missingFields.push({
+      field: fieldName,
+      label: fieldLabel,
+      isRequired: true,
+      category: fieldCategories[fieldName] || 'Other',
+      prompt,
+      estimatedImpact: `+${impact}%`
+    })
+  }
+
+  // Generate prompts for missing optional fields
+  for (const fieldLabel of completenessResult.missingRecommended) {
+    const fieldName = labelToFieldName(fieldLabel)
+    const prompt = generatePrompt(fieldName, false)
+    const impact = calculateImpactIncrease(profile, fieldName, false)
+
+    missingFields.push({
+      field: fieldName,
+      label: fieldLabel,
+      isRequired: false,
+      category: fieldCategories[fieldName] || 'Other',
+      prompt,
+      estimatedImpact: `+${impact}%`
+    })
+  }
+
+  // Sort: required first, then by impact
+  return missingFields.sort((a, b) => {
+    if (a.isRequired && !b.isRequired) return -1
+    if (!a.isRequired && b.isRequired) return 1
+    // Both same required status - sort by impact
+    const impactA = parseInt(a.estimatedImpact.replace('+', '').replace('%', ''))
+    const impactB = parseInt(b.estimatedImpact.replace('+', '').replace('%', ''))
+    return impactB - impactA
+  })
+}
+
+/**
+ * Generate user-friendly prompt for a missing field
+ */
+function generatePrompt(fieldName: string, isRequired: boolean): string {
+  const prompts: Record<string, string> = {
+    gpa: 'Add your GPA to improve matching accuracy',
+    graduationYear: 'Add your expected graduation year to find timely scholarships',
+    currentGrade: 'Add your current grade level to match age-appropriate opportunities',
+    satScore: 'Add test scores (SAT or ACT) to unlock merit-based scholarships',
+    actScore: 'Add test scores (SAT or ACT) to unlock merit-based scholarships',
+    classRank: 'Add your class rank to qualify for top-performer scholarships',
+    gender: 'Add your gender to access gender-specific scholarships',
+    ethnicity: 'Add your ethnicity to discover diversity scholarships',
+    state: 'Add your state to find local and regional opportunities',
+    city: 'Add your city for more precise local scholarship matches',
+    zipCode: 'Add your ZIP code for hyper-local scholarship opportunities',
+    citizenship: 'Add your citizenship status to filter eligible scholarships',
+    intendedMajor: 'Add your intended major to find field-specific scholarships',
+    fieldOfStudy: 'Add your field of study to unlock career-focused funding',
+    careerGoals: 'Add your career goals to personalize scholarship recommendations',
+    financialNeed: 'Add your financial need level to prioritize need-based aid',
+    pellGrantEligible: 'Add Pell Grant eligibility to access low-income scholarships',
+    efcRange: 'Add your EFC range to refine financial need matching',
+    extracurriculars: 'Add extracurricular activities to showcase your involvement',
+    volunteerHours: 'Add volunteer hours to qualify for community service awards',
+    workExperience: 'Add work experience to demonstrate responsibility',
+    leadershipRoles: 'Add leadership roles to qualify for leadership scholarships',
+    awardsHonors: 'Add awards and honors to highlight your achievements'
+  }
+
+  return prompts[fieldName] || `Add ${fieldNameToLabel(fieldName)} to complete your profile`
+}
+
+/**
+ * Calculate estimated completion percentage increase if field is added
+ */
+function calculateImpactIncrease(
+  profile: Parameters<typeof calculateProfileCompleteness>[0],
+  fieldName: string,
+  isRequired: boolean
+): number {
+  const currentCompleteness = calculateProfileCompleteness(profile).completionPercentage
+
+  // Simulate adding this field
+  const simulatedProfile = { ...profile, [fieldName]: 'dummy_value' }
+  const newCompleteness = calculateProfileCompleteness(simulatedProfile).completionPercentage
+
+  return Math.max(0, newCompleteness - currentCompleteness)
+}
+
+/**
+ * Convert human-readable label back to field name
+ */
+function labelToFieldName(label: string): string {
+  const labelMap: Record<string, string> = {
+    'GPA': 'gpa',
+    'GPA Scale': 'gpaScale',
+    'SAT Score': 'satScore',
+    'ACT Score': 'actScore',
+    'SAT or ACT Score': 'satScore',
+    'Class Rank': 'classRank',
+    'Class Size': 'classSize',
+    'Graduation Year': 'graduationYear',
+    'Current Grade': 'currentGrade',
+    'Gender': 'gender',
+    'Ethnicity': 'ethnicity',
+    'State': 'state',
+    'City': 'city',
+    'ZIP Code': 'zipCode',
+    'Citizenship Status': 'citizenship',
+    'Financial Need Level': 'financialNeed',
+    'Pell Grant Eligibility': 'pellGrantEligible',
+    'Expected Family Contribution (EFC)': 'efcRange',
+    'Intended Major': 'intendedMajor',
+    'Field of Study': 'fieldOfStudy',
+    'Career Goals': 'careerGoals',
+    'Extracurricular Activities': 'extracurriculars',
+    'Work Experience': 'workExperience',
+    'Leadership Roles': 'leadershipRoles',
+    'Awards & Honors': 'awardsHonors',
+    'Volunteer Hours': 'volunteerHours',
+    'First-Generation Student': 'firstGeneration',
+    'Military Affiliation': 'militaryAffiliation',
+    'Disabilities': 'disabilities',
+    'Additional Context': 'additionalContext'
+  }
+
+  return labelMap[label] || label.toLowerCase().replace(/ /g, '')
 }
 
 // ============================================================================
