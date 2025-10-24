@@ -29,6 +29,12 @@ import {
   calculateVolunteerHours,
   getFieldOfStudyFromMajor,
 } from '@/modules/profile/lib/profile-validation'
+import type {
+  ExtracurricularActivity,
+  WorkExperience,
+  LeadershipRole,
+  AwardHonor,
+} from '@/modules/profile/types'
 
 // ============================================================================
 // Input Schemas for Profile Operations
@@ -190,13 +196,14 @@ export const profileRouter = router({
       // Story 1.5: Auto-calculate volunteer hours from extracurriculars
       let volunteerHours = student.profile.volunteerHours
       if (input.extracurriculars !== undefined) {
-        volunteerHours = calculateVolunteerHours(input.extracurriculars as any)
+        volunteerHours = calculateVolunteerHours(input.extracurriculars as unknown as ExtracurricularActivity[])
       }
 
       // Story 1.5: Auto-populate field of study from major
       let fieldOfStudy = input.fieldOfStudy
       if (input.intendedMajor !== undefined && !input.fieldOfStudy) {
-        fieldOfStudy = getFieldOfStudyFromMajor(input.intendedMajor) as any
+        const calculatedField = getFieldOfStudyFromMajor(input.intendedMajor)
+        fieldOfStudy = calculatedField as typeof fieldOfStudy
       }
 
       // Merge existing profile with updates for completeness calculation
@@ -309,21 +316,26 @@ export const profileRouter = router({
       }
 
       // Get existing extracurriculars array
-      const existingActivities = (student.profile.extracurriculars as any[]) || []
-      const updatedActivities = [...existingActivities, input]
+      const existingActivities = (student.profile.extracurriculars as unknown as ExtracurricularActivity[]) || []
+      const updatedActivities: ExtracurricularActivity[] = [...existingActivities, input]
 
       // Auto-calculate volunteer hours
       const volunteerHours = calculateVolunteerHours(updatedActivities)
 
       // If leadership role, also add to leadershipRoles array
-      let leadershipRoles = (student.profile.leadershipRoles as any[]) || []
+      let leadershipRoles = (student.profile.leadershipRoles as unknown as LeadershipRole[]) || []
       if (input.isLeadership && input.leadershipTitle) {
+        // Calculate start date: assume activity started (yearsInvolved) years ago
+        const yearsAgo = input.yearsInvolved || 0
+        const startDate = new Date()
+        startDate.setFullYear(startDate.getFullYear() - yearsAgo)
+
         leadershipRoles = [
           ...leadershipRoles,
           {
             title: input.leadershipTitle,
             organization: input.name,
-            startDate: new Date().toISOString(),
+            startDate: startDate.toISOString(),
             description: input.description,
           },
         ]
@@ -332,8 +344,8 @@ export const profileRouter = router({
       const updatedProfile = await prisma.profile.update({
         where: { id: student.profile.id },
         data: {
-          extracurriculars: updatedActivities,
-          leadershipRoles,
+          extracurriculars: updatedActivities as any,
+          leadershipRoles: leadershipRoles as any,
           volunteerHours,
         },
       })
@@ -359,13 +371,13 @@ export const profileRouter = router({
         })
       }
 
-      const existingWork = (student.profile.workExperience as any[]) || []
-      const updatedWork = [...existingWork, input]
+      const existingWork = (student.profile.workExperience as unknown as WorkExperience[]) || []
+      const updatedWork: WorkExperience[] = [...existingWork, input]
 
       const updatedProfile = await prisma.profile.update({
         where: { id: student.profile.id },
         data: {
-          workExperience: updatedWork,
+          workExperience: updatedWork as any,
         },
       })
 
@@ -390,13 +402,13 @@ export const profileRouter = router({
         })
       }
 
-      const existingRoles = (student.profile.leadershipRoles as any[]) || []
-      const updatedRoles = [...existingRoles, input]
+      const existingRoles = (student.profile.leadershipRoles as unknown as LeadershipRole[]) || []
+      const updatedRoles: LeadershipRole[] = [...existingRoles, input]
 
       const updatedProfile = await prisma.profile.update({
         where: { id: student.profile.id },
         data: {
-          leadershipRoles: updatedRoles,
+          leadershipRoles: updatedRoles as any,
         },
       })
 
@@ -421,13 +433,13 @@ export const profileRouter = router({
         })
       }
 
-      const existingAwards = (student.profile.awardsHonors as any[]) || []
-      const updatedAwards = [...existingAwards, input]
+      const existingAwards = (student.profile.awardsHonors as unknown as AwardHonor[]) || []
+      const updatedAwards: AwardHonor[] = [...existingAwards, input]
 
       const updatedProfile = await prisma.profile.update({
         where: { id: student.profile.id },
         data: {
-          awardsHonors: updatedAwards,
+          awardsHonors: updatedAwards as any,
         },
       })
 
