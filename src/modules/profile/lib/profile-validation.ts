@@ -770,8 +770,8 @@ export function getMissingFields(
   // Generate prompts for missing required fields
   for (const fieldLabel of completenessResult.missingRequired) {
     const fieldName = labelToFieldName(fieldLabel)
-    const prompt = generatePrompt(fieldName, true)
-    const impact = calculateImpactIncrease(profile, fieldName, true)
+    const prompt = generatePrompt(fieldName)
+    const impact = calculateImpactIncrease(profile, fieldName)
 
     missingFields.push({
       field: fieldName,
@@ -786,8 +786,8 @@ export function getMissingFields(
   // Generate prompts for missing optional fields
   for (const fieldLabel of completenessResult.missingRecommended) {
     const fieldName = labelToFieldName(fieldLabel)
-    const prompt = generatePrompt(fieldName, false)
-    const impact = calculateImpactIncrease(profile, fieldName, false)
+    const prompt = generatePrompt(fieldName)
+    const impact = calculateImpactIncrease(profile, fieldName)
 
     missingFields.push({
       field: fieldName,
@@ -813,7 +813,7 @@ export function getMissingFields(
 /**
  * Generate user-friendly prompt for a missing field
  */
-function generatePrompt(fieldName: string, isRequired: boolean): string {
+function generatePrompt(fieldName: string): string {
   const prompts: Record<string, string> = {
     gpa: 'Add your GPA to improve matching accuracy',
     graduationYear: 'Add your expected graduation year to find timely scholarships',
@@ -848,8 +848,7 @@ function generatePrompt(fieldName: string, isRequired: boolean): string {
  */
 function calculateImpactIncrease(
   profile: Parameters<typeof calculateProfileCompleteness>[0],
-  fieldName: string,
-  isRequired: boolean
+  fieldName: string
 ): number {
   const currentCompleteness = calculateProfileCompleteness(profile).completionPercentage
 

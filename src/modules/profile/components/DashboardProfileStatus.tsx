@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { CheckCircle2, AlertCircle, TrendingUp } from 'lucide-react'
-import { api } from '@/lib/trpc/client'
+import { trpc } from '@/shared/lib/trpc'
 import { useRouter } from 'next/navigation'
 
 interface DashboardProfileStatusProps {
@@ -21,9 +21,9 @@ interface DashboardProfileStatusProps {
  */
 export function DashboardProfileStatus({ onActionClick }: DashboardProfileStatusProps) {
   const router = useRouter()
-  const { data: completeness, isLoading } = api.profile.getCompleteness.useQuery()
-  const { data: readiness } = api.profile.checkReadiness.useQuery()
-  const { data: missingFields } = api.profile.getMissingFields.useQuery()
+  const { data: completeness, isLoading } = trpc.profile.getCompleteness.useQuery()
+  const { data: readiness } = trpc.profile.checkReadiness.useQuery()
+  const { data: missingFields } = trpc.profile.getMissingFields.useQuery()
 
   if (isLoading) {
     return (
@@ -56,7 +56,7 @@ export function DashboardProfileStatus({ onActionClick }: DashboardProfileStatus
   }
 
   // Get top 3 missing critical fields
-  const topMissing = missingFields?.filter((f) => f.isRequired).slice(0, 3) || []
+  const topMissing = missingFields?.filter((f: any) => f.isRequired).slice(0, 3) || []
 
   const handleActionClick = () => {
     if (onActionClick) {
@@ -128,7 +128,7 @@ export function DashboardProfileStatus({ onActionClick }: DashboardProfileStatus
               <span className="text-sm font-medium">Quick Wins</span>
             </div>
             <div className="space-y-1">
-              {topMissing.map((field) => (
+              {topMissing.map((field: any) => (
                 <div
                   key={field.field}
                   className="text-xs text-muted-foreground flex items-start gap-2"

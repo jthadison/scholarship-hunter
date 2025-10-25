@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle2, Circle, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { api } from '@/lib/trpc/client'
+import { trpc } from '@/shared/lib/trpc'
 
 interface ProfileCompletenessCardProps {
   /**
@@ -20,8 +20,8 @@ interface ProfileCompletenessCardProps {
  * Shows completion percentage, progress bar, and categorized missing fields
  */
 export function ProfileCompletenessCard({ onCompleteProfile }: ProfileCompletenessCardProps) {
-  const { data: completeness, isLoading } = api.profile.getCompleteness.useQuery()
-  const { data: missingFields } = api.profile.getMissingFields.useQuery()
+  const { data: completeness, isLoading } = trpc.profile.getCompleteness.useQuery()
+  const { data: missingFields } = trpc.profile.getMissingFields.useQuery()
 
   if (isLoading) {
     return (
@@ -71,11 +71,11 @@ export function ProfileCompletenessCard({ onCompleteProfile }: ProfileCompletene
   const estimatedMinutes = Math.ceil(missingCount * 0.5) // Assume 30 seconds per field
 
   // Group missing fields by category
-  const categorizedMissing = missingFields?.reduce((acc, field) => {
+  const categorizedMissing = missingFields?.reduce((acc: Record<string, typeof missingFields>, field) => {
     if (!acc[field.category]) {
       acc[field.category] = []
     }
-    acc[field.category].push(field)
+    acc[field.category]?.push(field)
     return acc
   }, {} as Record<string, typeof missingFields>) || {}
 
@@ -161,11 +161,11 @@ export function ProfileCompletenessCard({ onCompleteProfile }: ProfileCompletene
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">{category}</Badge>
                   <span className="text-xs text-muted-foreground">
-                    {fields.length} field{fields.length !== 1 ? 's' : ''}
+                    {(fields as any[]).length} field{(fields as any[]).length !== 1 ? 's' : ''}
                   </span>
                 </div>
                 <div className="space-y-1 pl-4">
-                  {fields.slice(0, 3).map((field) => (
+                  {(fields as any[]).slice(0, 3).map((field: any) => (
                     <div key={field.field} className="flex items-start gap-2 text-sm">
                       <Circle className="h-4 w-4 mt-0.5 text-muted-foreground" />
                       <div className="flex-1">
@@ -183,9 +183,9 @@ export function ProfileCompletenessCard({ onCompleteProfile }: ProfileCompletene
                       </div>
                     </div>
                   ))}
-                  {fields.length > 3 && (
+                  {(fields as any[]).length > 3 && (
                     <div className="text-xs text-muted-foreground pl-6">
-                      +{fields.length - 3} more
+                      +{(fields as any[]).length - 3} more
                     </div>
                   )}
                 </div>

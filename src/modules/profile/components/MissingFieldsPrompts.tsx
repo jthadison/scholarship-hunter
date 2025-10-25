@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { X, ChevronRight, Plus } from 'lucide-react'
-import { api } from '@/lib/trpc/client'
+import { trpc } from '@/shared/lib/trpc'
 import type { MissingField } from '../types'
 
 interface MissingFieldsPromptsProps {
@@ -28,8 +28,8 @@ interface MissingFieldsPromptsProps {
  * Displays prioritized list of missing fields with prompts
  */
 export function MissingFieldsPrompts({ limit = 5, onAddField, contextual }: MissingFieldsPromptsProps) {
-  const { data: missingFields, isLoading } = api.profile.getMissingFields.useQuery()
-  const { data: completeness } = api.profile.getCompleteness.useQuery()
+  const { data: missingFields, isLoading } = trpc.profile.getMissingFields.useQuery()
+  const { data: completeness } = trpc.profile.getCompleteness.useQuery()
   const [dismissedFields, setDismissedFields] = useState<Set<string>>(new Set())
 
   // Don't show if contextual mode and completion >= 80%
@@ -43,7 +43,7 @@ export function MissingFieldsPrompts({ limit = 5, onAddField, contextual }: Miss
 
   // Filter out dismissed fields and limit display
   const visibleFields = missingFields
-    .filter((field) => !dismissedFields.has(field.field))
+    .filter((field: MissingField) => !dismissedFields.has(field.field))
     .slice(0, limit)
 
   if (visibleFields.length === 0) {
@@ -55,8 +55,8 @@ export function MissingFieldsPrompts({ limit = 5, onAddField, contextual }: Miss
     // TODO: Store in user preferences/localStorage
   }
 
-  const requiredFields = visibleFields.filter((f) => f.isRequired)
-  const recommendedFields = visibleFields.filter((f) => !f.isRequired)
+  const requiredFields = visibleFields.filter((f: MissingField) => f.isRequired)
+  const recommendedFields = visibleFields.filter((f: MissingField) => !f.isRequired)
 
   return (
     <Card>
@@ -77,7 +77,7 @@ export function MissingFieldsPrompts({ limit = 5, onAddField, contextual }: Miss
               </span>
             </div>
             <div className="space-y-2">
-              {requiredFields.map((field) => (
+              {requiredFields.map((field: MissingField) => (
                 <MissingFieldPromptItem
                   key={field.field}
                   field={field}
@@ -100,7 +100,7 @@ export function MissingFieldsPrompts({ limit = 5, onAddField, contextual }: Miss
               </span>
             </div>
             <div className="space-y-2">
-              {recommendedFields.map((field) => (
+              {recommendedFields.map((field: MissingField) => (
                 <MissingFieldPromptItem
                   key={field.field}
                   field={field}
@@ -166,7 +166,7 @@ function MissingFieldPromptItem({
           size="icon"
           variant="ghost"
           className="h-8 w-8"
-          onClick={(e) => {
+          onClick={(e: React.MouseEvent) => {
             e.stopPropagation()
             onAdd(field.field)
           }}
@@ -181,7 +181,7 @@ function MissingFieldPromptItem({
           size="icon"
           variant="ghost"
           className="h-8 w-8"
-          onClick={(e) => {
+          onClick={(e: React.MouseEvent) => {
             e.stopPropagation()
             onDismiss(field.field)
           }}
