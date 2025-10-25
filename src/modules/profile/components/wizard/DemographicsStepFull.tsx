@@ -38,11 +38,11 @@ export function DemographicsStepFull({ formData, onUpdate }: DemographicsStepPro
           <DemographicsStepContent
             defaultValues={{
               gender: formData.gender ?? undefined,
-              ethnicity: formData.ethnicity ?? undefined,
+              ethnicity: (formData.ethnicity ?? undefined) as any,
               city: formData.city ?? undefined,
-              state: formData.state ?? undefined,
+              state: (formData.state ?? undefined) as any,
               zipCode: formData.zipCode ?? undefined,
-              citizenship: formData.citizenship ?? undefined,
+              citizenship: (formData.citizenship ?? undefined) as any,
             }}
             onChange={(data) => onUpdate(data)}
           />

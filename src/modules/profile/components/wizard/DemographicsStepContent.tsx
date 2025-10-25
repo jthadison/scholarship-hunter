@@ -13,7 +13,6 @@ import {
   US_STATES,
   ETHNICITY_OPTIONS,
   CITIZENSHIP_OPTIONS,
-  GENDER_OPTIONS,
 } from '@/modules/profile/lib/profile-validation'
 import {
   Form,
@@ -63,20 +62,16 @@ export function DemographicsStepContent({ defaultValues, onChange }: Demographic
           render={({ field }) => (
             <FormItem>
               <FormLabel>Gender (optional)</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your gender" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {GENDER_OPTIONS.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <Input
+                  placeholder="e.g., Female, Male, Non-binary, or other"
+                  {...field}
+                  value={field.value ?? ''}
+                />
+              </FormControl>
+              <FormDescription>
+                Enter your gender identity. This is optional and helps match you with relevant scholarships.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

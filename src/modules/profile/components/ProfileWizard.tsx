@@ -27,10 +27,10 @@ const AcademicStep = dynamic(() => import('./wizard/AcademicStep').then(mod => (
 const DemographicsStepFull = dynamic(() => import('./wizard/DemographicsStepFull').then(mod => ({ default: mod.DemographicsStepFull })), {
   loading: () => <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
 })
-const MajorExperienceStepSimple = dynamic(() => import('./wizard/MajorExperienceStepSimple').then(mod => ({ default: mod.MajorExperienceStepSimple })), {
+const MajorExperienceStepFull = dynamic(() => import('./wizard/MajorExperienceStepFull').then(mod => ({ default: mod.MajorExperienceStepFull })), {
   loading: () => <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
 })
-const SpecialCircumstancesStepSimple = dynamic(() => import('./wizard/SpecialCircumstancesStepSimple').then(mod => ({ default: mod.SpecialCircumstancesStepSimple })), {
+const SpecialCircumstancesStepFull = dynamic(() => import('./wizard/SpecialCircumstancesStepFull').then(mod => ({ default: mod.SpecialCircumstancesStepFull })), {
   loading: () => <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
 })
 const ReviewStep = dynamic(() => import('./wizard/ReviewStep').then(mod => ({ default: mod.ReviewStep })), {
@@ -364,14 +364,14 @@ export function ProfileWizard({ isEditMode = false }: ProfileWizardProps) {
         )}
 
         {currentStep === 3 && (
-          <MajorExperienceStepSimple
+          <MajorExperienceStepFull
             formData={formData}
             onUpdate={updateFormData}
           />
         )}
 
         {currentStep === 4 && (
-          <SpecialCircumstancesStepSimple
+          <SpecialCircumstancesStepFull
             formData={formData}
             onUpdate={updateFormData}
           />
