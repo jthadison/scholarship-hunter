@@ -140,7 +140,8 @@ describe('DashboardWelcome Component', () => {
       />
     )
 
-    expect(screen.getByText(/Complete/i)).toBeInTheDocument()
+    const badges = screen.getAllByText('Complete')
+    expect(badges.length).toBeGreaterThan(0)
   })
 
   it('shows "Strong" badge when strength >= 80', () => {
@@ -152,7 +153,8 @@ describe('DashboardWelcome Component', () => {
       />
     )
 
-    expect(screen.getByText(/Strong/i)).toBeInTheDocument()
+    const badges = screen.getAllByText('Strong')
+    expect(badges.length).toBeGreaterThan(0)
   })
 
   it('shows "Good" badge when strength 60-79', () => {
@@ -164,7 +166,8 @@ describe('DashboardWelcome Component', () => {
       />
     )
 
-    expect(screen.getByText(/Good/i)).toBeInTheDocument()
+    const badges = screen.getAllByText('Good')
+    expect(badges.length).toBeGreaterThan(0)
   })
 
   it('shows placeholder data for scholarships and applications', () => {
