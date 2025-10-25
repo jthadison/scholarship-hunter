@@ -114,6 +114,9 @@ model Profile {
   // Story 1.7: Strength history tracking
   strengthHistory ProfileHistory[]
 
+  // Story 1.10: Full profile version tracking
+  versions ProfileVersion[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -139,6 +142,28 @@ model ProfileHistory {
 
   @@index([profileId, recordedAt])
   @@index([recordedAt])
+}
+
+// Story 1.10: Profile version history tracking (full snapshots)
+model ProfileVersion {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  // Full profile snapshot as JSON
+  snapshotData Json
+
+  // Changed fields tracking
+  changedFields String[] // Array of field names that changed
+
+  // Optional change reason
+  changeReason String? @db.Text
+
+  // Metadata
+  createdAt DateTime @default(now())
+
+  @@index([profileId, createdAt])
+  @@index([createdAt])
 }
 
 enum FinancialNeed {

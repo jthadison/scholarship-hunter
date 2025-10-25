@@ -78,7 +78,7 @@ export function DashboardClient({ firstName }: DashboardClientProps) {
       {!profileIncomplete && (
         <div className="flex justify-center">
           <Button variant="outline" asChild>
-            <Link href="/profile/wizard">Edit Profile</Link>
+            <Link href="/profile/edit">Edit Profile</Link>
           </Button>
         </div>
       )}

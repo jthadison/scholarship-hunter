@@ -1,10 +1,11 @@
 'use client'
 
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle2, Circle, AlertCircle } from 'lucide-react'
+import { CheckCircle2, Circle, AlertCircle, Edit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { trpc } from '@/shared/lib/trpc'
 
@@ -194,12 +195,20 @@ export function ProfileCompletenessCard({ onCompleteProfile }: ProfileCompletene
           </div>
         )}
 
-        {/* Complete Profile Button */}
-        {percentage < 100 && onCompleteProfile && (
-          <Button onClick={onCompleteProfile} className="w-full">
-            Complete Profile
+        {/* Edit/Complete Profile Button */}
+        <div className="flex gap-2">
+          {percentage < 100 && onCompleteProfile && (
+            <Button onClick={onCompleteProfile} className="flex-1">
+              Complete Profile
+            </Button>
+          )}
+          <Button variant={percentage === 100 ? 'default' : 'outline'} className="flex-1" asChild>
+            <Link href="/profile/edit">
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Profile
+            </Link>
           </Button>
-        )}
+        </div>
       </CardContent>
     </Card>
   )
