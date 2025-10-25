@@ -124,7 +124,7 @@ describe('Application Validation Schemas', () => {
         const result = applicationCreateSchema.safeParse(application)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('documentsUploaded')
+          expect(result.error.issues[0]?.path).toContain('documentsUploaded')
         }
       })
 
@@ -195,7 +195,7 @@ describe('Application Validation Schemas', () => {
         const result = applicationCreateSchema.safeParse(application)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('recsReceived')
+          expect(result.error.issues[0]?.path).toContain('recsReceived')
         }
       })
     })
@@ -233,7 +233,7 @@ describe('Application Validation Schemas', () => {
         const result = applicationCreateSchema.safeParse(application)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('status')
+          expect(result.error.issues[0]?.path).toContain('status')
         }
       })
     })

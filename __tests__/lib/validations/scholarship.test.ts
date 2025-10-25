@@ -113,7 +113,7 @@ describe('Scholarship Validation Schemas', () => {
         const result = scholarshipCreateSchema.safeParse(scholarship)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('awardAmountMax')
+          expect(result.error.issues[0]?.path).toContain('awardAmountMax')
         }
       })
     })

@@ -442,7 +442,7 @@ describe('Missing Fields Detection (Story 1.6)', () => {
     const profile = { gpa: 3.8 }
     const missingFields = getMissingFields(profile)
 
-    expect(missingFields[0].estimatedImpact).toMatch(/\+\d+%/)
+    expect(missingFields[0]?.estimatedImpact).toMatch(/\+\d+%/)
   })
 
   it('AC2: should categorize missing fields', () => {

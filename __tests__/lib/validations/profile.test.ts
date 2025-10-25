@@ -93,7 +93,7 @@ describe('Profile Validation Schemas', () => {
         const result = profileCreateSchema.safeParse(profile)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('gpa')
+          expect(result.error.issues[0]?.path).toContain('gpa')
         }
       })
 
@@ -105,7 +105,7 @@ describe('Profile Validation Schemas', () => {
         const result = profileCreateSchema.safeParse(profile)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('gpa')
+          expect(result.error.issues[0]?.path).toContain('gpa')
         }
       })
     })
@@ -146,7 +146,7 @@ describe('Profile Validation Schemas', () => {
         const result = profileCreateSchema.safeParse(profile)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('satScore')
+          expect(result.error.issues[0]?.path).toContain('satScore')
         }
       })
 
@@ -158,7 +158,7 @@ describe('Profile Validation Schemas', () => {
         const result = profileCreateSchema.safeParse(profile)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('satScore')
+          expect(result.error.issues[0]?.path).toContain('satScore')
         }
       })
 
@@ -208,7 +208,7 @@ describe('Profile Validation Schemas', () => {
         const result = profileCreateSchema.safeParse(profile)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('actScore')
+          expect(result.error.issues[0]?.path).toContain('actScore')
         }
       })
 
@@ -220,7 +220,7 @@ describe('Profile Validation Schemas', () => {
         const result = profileCreateSchema.safeParse(profile)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('actScore')
+          expect(result.error.issues[0]?.path).toContain('actScore')
         }
       })
     })
@@ -261,7 +261,7 @@ describe('Profile Validation Schemas', () => {
         const result = profileCreateSchema.safeParse(profile)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('graduationYear')
+          expect(result.error.issues[0]?.path).toContain('graduationYear')
         }
       })
 
@@ -273,7 +273,7 @@ describe('Profile Validation Schemas', () => {
         const result = profileCreateSchema.safeParse(profile)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('graduationYear')
+          expect(result.error.issues[0]?.path).toContain('graduationYear')
         }
       })
     })
@@ -305,7 +305,7 @@ describe('Profile Validation Schemas', () => {
         const result = profileCreateSchema.safeParse(profile)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('volunteerHours')
+          expect(result.error.issues[0]?.path).toContain('volunteerHours')
         }
       })
     })
@@ -332,7 +332,7 @@ describe('Profile Validation Schemas', () => {
         const result = profileCreateSchema.safeParse(profile)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('financialNeed')
+          expect(result.error.issues[0]?.path).toContain('financialNeed')
         }
       })
     })
@@ -364,7 +364,7 @@ describe('Profile Validation Schemas', () => {
         const result = profileCreateSchema.safeParse(profile)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('zipCode')
+          expect(result.error.issues[0]?.path).toContain('zipCode')
         }
       })
     })

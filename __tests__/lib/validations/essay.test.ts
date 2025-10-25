@@ -130,7 +130,7 @@ describe('Essay Validation Schemas', () => {
         const result = essayCreateSchema.safeParse(essay)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('wordCount')
+          expect(result.error.issues[0]?.path).toContain('wordCount')
         }
       })
 
@@ -170,7 +170,7 @@ describe('Essay Validation Schemas', () => {
         const result = essayCreateSchema.safeParse(essay)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('aiModel')
+          expect(result.error.issues[0]?.path).toContain('aiModel')
         }
       })
 

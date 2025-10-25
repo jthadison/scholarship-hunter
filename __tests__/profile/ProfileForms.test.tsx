@@ -4,7 +4,6 @@ import { AcademicProfileForm } from '@/modules/profile/components/AcademicProfil
 import { DemographicProfileForm } from '@/modules/profile/components/DemographicProfileForm'
 import { FinancialNeedForm } from '@/modules/profile/components/FinancialNeedForm'
 import { ProfileProgressIndicator } from '@/modules/profile/components/ProfileProgressIndicator'
-import { FinancialNeed } from '@prisma/client'
 
 describe('Academic Profile Form', () => {
   it('should render academic form fields', () => {
@@ -42,7 +41,7 @@ describe('Academic Profile Form', () => {
 describe('Demographic Profile Form', () => {
   it('should render demographic form sections', () => {
     const mockSubmit = vi.fn()
-    const { container } = render(<DemographicProfileForm onSubmit={mockSubmit} />)
+    render(<DemographicProfileForm onSubmit={mockSubmit} />)
 
     // Use getAllByText for headings that might appear multiple times
     expect(screen.getAllByText(/Personal Information/i).length).toBeGreaterThan(0)

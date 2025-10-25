@@ -87,7 +87,7 @@ describe('Document Validation Schemas', () => {
         const result = documentCreateSchema.safeParse(document)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('fileSize')
+          expect(result.error.issues[0]?.path).toContain('fileSize')
         }
       })
 
@@ -227,7 +227,7 @@ describe('Document Validation Schemas', () => {
         const result = documentCreateSchema.safeParse(document)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('mimeType')
+          expect(result.error.issues[0]?.path).toContain('mimeType')
         }
       })
     })
@@ -280,7 +280,7 @@ describe('Document Validation Schemas', () => {
         const result = documentCreateSchema.safeParse(document)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].path).toContain('validationErrors')
+          expect(result.error.issues[0]?.path).toContain('validationErrors')
         }
       })
     })
