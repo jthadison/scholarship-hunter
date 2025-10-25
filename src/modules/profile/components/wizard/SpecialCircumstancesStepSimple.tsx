@@ -13,7 +13,7 @@ interface SpecialCircumstancesStepProps {
   onUpdate: (data: Partial<WizardFormData>) => void
 }
 
-export function SpecialCircumstancesStepSimple({ formData, onUpdate }: SpecialCircumstancesStepProps) {
+export function SpecialCircumstancesStepSimple({ }: SpecialCircumstancesStepProps) {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="text-center space-y-2">

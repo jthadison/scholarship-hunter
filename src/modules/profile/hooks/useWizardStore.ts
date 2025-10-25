@@ -21,16 +21,16 @@ export interface WizardFormData {
 
   // Demographics
   gender?: string | null
-  ethnicity?: string | null
+  ethnicity?: string[] | null
   city?: string | null
   state?: string | null
   zipCode?: string | null
-  citizenshipStatus?: string | null
+  citizenship?: string | null
 
   // Financial need
-  financialNeedLevel?: string | null
+  financialNeed?: string | null
   pellGrantEligible?: boolean | null
-  efc?: number | null
+  efcRange?: string | null
 
   // Major & field of study
   intendedMajor?: string | null

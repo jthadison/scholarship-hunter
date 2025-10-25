@@ -5,7 +5,7 @@
 
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
@@ -164,8 +164,8 @@ export function ReviewStep({
           {formData.ethnicity && <div><strong>Ethnicity:</strong> {formData.ethnicity}</div>}
           {formData.state && <div><strong>State:</strong> {formData.state}</div>}
           {formData.city && <div><strong>City:</strong> {formData.city}</div>}
-          {formData.citizenshipStatus && <div><strong>Citizenship:</strong> {formData.citizenshipStatus}</div>}
-          {formData.financialNeedLevel && <div><strong>Financial Need:</strong> {formData.financialNeedLevel}</div>}
+          {formData.citizenship && <div><strong>Citizenship:</strong> {formData.citizenship}</div>}
+          {formData.financialNeed && <div><strong>Financial Need:</strong> {formData.financialNeed}</div>}
           {!formData.gender && !formData.state && (
             <p className="text-muted-foreground italic">No demographic information provided yet</p>
           )}

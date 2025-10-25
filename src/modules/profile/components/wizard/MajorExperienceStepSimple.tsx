@@ -13,7 +13,7 @@ interface MajorExperienceStepProps {
   onUpdate: (data: Partial<WizardFormData>) => void
 }
 
-export function MajorExperienceStepSimple({ formData, onUpdate }: MajorExperienceStepProps) {
+export function MajorExperienceStepSimple({ }: MajorExperienceStepProps) {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="text-center space-y-2">

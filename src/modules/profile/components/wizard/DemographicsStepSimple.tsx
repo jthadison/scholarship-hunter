@@ -13,7 +13,7 @@ interface DemographicsStepProps {
   onUpdate: (data: Partial<WizardFormData>) => void
 }
 
-export function DemographicsStepSimple({ formData, onUpdate }: DemographicsStepProps) {
+export function DemographicsStepSimple({ }: DemographicsStepProps) {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="text-center space-y-2">

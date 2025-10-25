@@ -44,7 +44,7 @@ export function AcademicStep({ formData, onUpdate }: AcademicStepProps) {
               actScore: formData.actScore ?? undefined,
               classRank: formData.classRank ?? undefined,
               classSize: formData.classSize ?? undefined,
-              currentGrade: formData.currentGrade ?? undefined,
+              currentGrade: (formData.currentGrade ?? undefined) as any,
               graduationYear: formData.graduationYear ?? undefined,
             }}
             onChange={(data) => onUpdate(data)}

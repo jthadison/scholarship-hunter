@@ -37,7 +37,7 @@ test.describe('Profile Wizard', () => {
     // Navigate to Special Circumstances step (step 4)
     await page.getByRole('button', { name: /Next/i }).click()
     await expect(page.getByRole('heading', { name: /Special Circumstances/i })).toBeVisible()
-    await expect(page.getByText(/Step 4 of 5/i }).toBeVisible()
+    await expect(page.getByText(/Step 4 of 5/i)).toBeVisible()
 
     // Navigate to Review step (step 5)
     await page.getByRole('button', { name: /Next/i }).click()
@@ -104,7 +104,7 @@ test.describe('Profile Wizard', () => {
     await expect(page.getByText(/Demographics.*Background/i)).toBeVisible()
   })
 
-  test('AC5: mobile responsive layout', async ({ page, viewport }) => {
+  test('AC5: mobile responsive layout', async ({ page }) => {
     // Test on mobile viewport (iPhone SE)
     await page.setViewportSize({ width: 375, height: 667 })
 
@@ -164,7 +164,7 @@ test.describe('Profile Wizard', () => {
     await expect(page.getByText(/Academic Information/i)).toBeVisible()
   })
 
-  test('AC8: wizard can be re-entered for updates', async ({ page }) => {
+  test.skip('AC8: wizard can be re-entered for updates', async () => {
     // This test would require:
     // 1. Complete wizard once
     // 2. Navigate away
@@ -173,7 +173,6 @@ test.describe('Profile Wizard', () => {
     // 5. Verify submit button says "Update Profile"
 
     // Placeholder - implementation depends on dashboard integration
-    test.skip()
   })
 
   test('complete wizard flow from start to finish', async ({ page }) => {

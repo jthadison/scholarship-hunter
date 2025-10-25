@@ -37,7 +37,7 @@ export function useAutoSave(
       setLastSaved(now)
       onSaveSuccess?.()
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       setIsSaving(false)
       onSaveError?.(error as Error)
     },
@@ -63,7 +63,8 @@ export function useAutoSave(
     timeoutRef.current = setTimeout(() => {
       setIsSaving(true)
       previousDataRef.current = currentData
-      saveDraftMutation.mutate(formData)
+      // Cast to any to bypass type mismatch - formData is superset of profile schema
+      saveDraftMutation.mutate(formData as any)
     }, debounceMs)
 
     // Cleanup timeout on unmount

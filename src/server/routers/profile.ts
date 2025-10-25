@@ -267,7 +267,8 @@ export const profileRouter = router({
 
       // Story 1.7: Create history snapshot asynchronously (non-blocking)
       // Note: Using .catch() to prevent history failures from blocking the update
-      prisma.profileHistory
+      // Using void to explicitly mark floating promise as intentional
+      void prisma.profileHistory
         .create({
           data: {
             profileId: student.profile.id,
