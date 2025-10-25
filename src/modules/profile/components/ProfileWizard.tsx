@@ -15,12 +15,27 @@ import type { WizardStep } from '../hooks/useWizardStore'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { ArrowLeft, ArrowRight, Save, Loader2 } from 'lucide-react'
-import { WelcomeStep } from './wizard/WelcomeStep'
-import { AcademicStep } from './wizard/AcademicStep'
-import { DemographicsStepSimple } from './wizard/DemographicsStepSimple'
-import { MajorExperienceStepSimple } from './wizard/MajorExperienceStepSimple'
-import { SpecialCircumstancesStepSimple } from './wizard/SpecialCircumstancesStepSimple'
-import { ReviewStep } from './wizard/ReviewStep'
+import dynamic from 'next/dynamic'
+
+// Code splitting: Lazy load wizard steps to reduce initial bundle size
+const WelcomeStep = dynamic(() => import('./wizard/WelcomeStep').then(mod => ({ default: mod.WelcomeStep })), {
+  loading: () => <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+})
+const AcademicStep = dynamic(() => import('./wizard/AcademicStep').then(mod => ({ default: mod.AcademicStep })), {
+  loading: () => <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+})
+const DemographicsStepFull = dynamic(() => import('./wizard/DemographicsStepFull').then(mod => ({ default: mod.DemographicsStepFull })), {
+  loading: () => <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+})
+const MajorExperienceStepSimple = dynamic(() => import('./wizard/MajorExperienceStepSimple').then(mod => ({ default: mod.MajorExperienceStepSimple })), {
+  loading: () => <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+})
+const SpecialCircumstancesStepSimple = dynamic(() => import('./wizard/SpecialCircumstancesStepSimple').then(mod => ({ default: mod.SpecialCircumstancesStepSimple })), {
+  loading: () => <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+})
+const ReviewStep = dynamic(() => import('./wizard/ReviewStep').then(mod => ({ default: mod.ReviewStep })), {
+  loading: () => <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+})
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from '@/hooks/use-toast'
 
@@ -53,6 +68,28 @@ export function ProfileWizard({ isEditMode = false }: ProfileWizardProps) {
     setLastSaved,
     resetWizard
   } = useWizardStore()
+
+  // Keyboard navigation: Enter = Next, Escape = Save & Exit
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if not in an input/textarea
+      const target = e.target as HTMLElement
+      const isFormElement = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT'
+
+      if (isFormElement) return
+
+      if (e.key === 'Enter' && currentStep > 0 && currentStep < 5) {
+        e.preventDefault()
+        handleNext()
+      } else if (e.key === 'Escape' && currentStep > 0 && currentStep < 5) {
+        e.preventDefault()
+        handleSaveAndExit()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [currentStep, formData]) // Re-attach when step or data changes
 
   // Fetch existing profile if in edit mode
   const { data: existingProfile, isLoading: isLoadingProfile } = trpc.profile.get.useQuery(undefined, {
@@ -320,7 +357,7 @@ export function ProfileWizard({ isEditMode = false }: ProfileWizardProps) {
         )}
 
         {currentStep === 2 && (
-          <DemographicsStepSimple
+          <DemographicsStepFull
             formData={formData}
             onUpdate={updateFormData}
           />

@@ -27,19 +27,33 @@ export function useAutoSave(
 
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const previousDataRef = useRef<string>('')
+  const maxRetries = 3
 
   const saveDraftMutation = trpc.profile.saveDraft.useMutation({
     onSuccess: () => {
       setIsSaving(false)
+      setRetryCount(0) // Reset retry count on success
       const now = new Date()
       setLastSaved(now)
       onSaveSuccess?.()
     },
     onError: (error: unknown) => {
-      setIsSaving(false)
-      onSaveError?.(error as Error)
+      // Retry logic
+      if (retryCount < maxRetries) {
+        console.log(`Auto-save failed, retrying... (${retryCount + 1}/${maxRetries})`)
+        setRetryCount(prev => prev + 1)
+        // Retry after 1 second
+        setTimeout(() => {
+          saveDraftMutation.mutate(formData as any)
+        }, 1000)
+      } else {
+        setIsSaving(false)
+        setRetryCount(0)
+        onSaveError?.(error as Error)
+      }
     },
   })
 

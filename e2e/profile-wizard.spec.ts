@@ -181,20 +181,21 @@ test.describe('Profile Wizard', () => {
     await page.getByRole('button', { name: /Get Started/i }).click()
 
     // Step 1: Academic
+    await expect(page.getByText(/Step 1 of 5/i)).toBeVisible()
     await page.getByLabel(/GPA/i).fill('3.8')
     await page.getByLabel(/GPA Scale/i).fill('4.0')
     await page.getByRole('button', { name: /Next/i }).click()
 
     // Step 2: Demographics
-    await page.waitForTimeout(200)
+    await expect(page.getByText(/Step 2 of 5/i)).toBeVisible()
     await page.getByRole('button', { name: /Next/i }).click()
 
     // Step 3: Major & Experience
-    await page.waitForTimeout(200)
+    await expect(page.getByText(/Step 3 of 5/i)).toBeVisible()
     await page.getByRole('button', { name: /Next/i }).click()
 
     // Step 4: Special Circumstances
-    await page.waitForTimeout(200)
+    await expect(page.getByText(/Step 4 of 5/i)).toBeVisible()
     await page.getByRole('button', { name: /Next/i }).click()
 
     // Step 5: Review & Submit
@@ -218,8 +219,7 @@ test.describe('Profile Wizard', () => {
     // Click Save & Continue Later
     await page.getByRole('button', { name: /Save.*Continue Later/i }).click()
 
-    // Should redirect to dashboard (or show confirmation)
-    // Implementation depends on dashboard route setup
-    await page.waitForTimeout(500)
+    // Should redirect to dashboard (wait for URL change instead of arbitrary timeout)
+    await page.waitForURL('**/dashboard', { timeout: 5000 })
   })
 })
