@@ -47,7 +47,11 @@
       "Bash(gh run view:*)",
       "Bash(pnpm run test:*)",
       "Bash(pnpm run typecheck:*)",
-      "Bash(pnpm run lint)"
+      "Bash(pnpm run lint)",
+      "Bash(git pull:*)",
+      "Bash(git rm:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh run:*)"
     ],
     "deny": [],
     "ask": []
