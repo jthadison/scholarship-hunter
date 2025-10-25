@@ -18,6 +18,13 @@ vi.mock('@/server/db', () => ({
       findMany: vi.fn().mockResolvedValue([]),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
+    profileVersion: {
+      create: vi.fn().mockResolvedValue({}),
+      findMany: vi.fn().mockResolvedValue([]),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+      count: vi.fn().mockResolvedValue(0),
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
   },
 }))
 
@@ -216,8 +223,8 @@ describe('Profile Router - Integration Tests', () => {
       const caller = profileRouter.createCaller(mockCtx as any)
       const result = await caller.update(updateInput)
 
-      expect(result.gpa).toBe(3.9)
-      expect(result.satScore).toBe(1500)
+      expect(result.profile.gpa).toBe(3.9)
+      expect(result.profile.satScore).toBe(1500)
       expect(prisma.profile.update).toHaveBeenCalledWith({
         where: { id: 'profile-123' },
         data: expect.objectContaining({

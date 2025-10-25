@@ -1,14 +1,16 @@
 'use client'
 
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { ChevronDown, TrendingUp, Award, Users, BookOpen, Briefcase } from 'lucide-react'
+import { ChevronDown, TrendingUp, Award, Users, BookOpen, Briefcase, Edit, History } from 'lucide-react'
 import { trpc } from '@/shared/lib/trpc'
 import { useState } from 'react'
 
@@ -192,6 +194,22 @@ export function ProfileStrengthCard() {
             </div>
           </CollapsibleContent>
         </Collapsible>
+
+        {/* Action Buttons */}
+        <div className="pt-4 space-y-2">
+          <Button variant="outline" className="w-full" asChild>
+            <Link href="/profile/edit">
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Profile to Improve Score
+            </Link>
+          </Button>
+          <Button variant="ghost" className="w-full" asChild>
+            <Link href="/profile/history">
+              <History className="h-4 w-4 mr-2" />
+              View Profile History
+            </Link>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )

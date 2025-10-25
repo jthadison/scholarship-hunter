@@ -33,7 +33,7 @@ describe('OnboardingChecklist Component', () => {
       />
     )
 
-    expect(screen.getByText(/Complete your profile/i)).toBeInTheDocument()
+    expect(screen.getByText('Complete your profile')).toBeInTheDocument()
     expect(screen.getByText(/Review your strength score/i)).toBeInTheDocument()
     expect(screen.getByText(/Find scholarships/i)).toBeInTheDocument()
     expect(screen.getByText(/Submit applications/i)).toBeInTheDocument()
@@ -47,7 +47,7 @@ describe('OnboardingChecklist Component', () => {
       />
     )
 
-    const profileItem = screen.getByText(/Complete your profile/i)
+    const profileItem = screen.getByText('Complete your profile')
     expect(profileItem).toHaveClass(/line-through/)
   })
 
@@ -106,9 +106,13 @@ describe('OnboardingChecklist Component', () => {
       />
     )
 
-    const button = screen.getByRole('link', { name: /Complete Your Profile/i })
-    expect(button).toBeInTheDocument()
-    expect(button).toHaveAttribute('href', '/profile/wizard')
+    const buttons = screen.getAllByRole('link', { name: /Complete Your Profile/i })
+    // Should have at least the main button (may also have checklist item link)
+    expect(buttons.length).toBeGreaterThan(0)
+    // The button should have the primary button classes
+    const primaryButton = buttons.find(btn => btn.classList.contains('bg-primary'))
+    expect(primaryButton).toBeInTheDocument()
+    expect(primaryButton).toHaveAttribute('href', '/profile/wizard')
   })
 
   it('does not show button when profile is complete', () => {

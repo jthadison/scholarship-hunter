@@ -33,6 +33,8 @@ import {
 } from '@/modules/profile/lib/profile-validation'
 // Story 1.7: Strength scoring functions
 import { calculateStrengthBreakdown } from '@/modules/profile/lib/strength-scoring'
+// Story 1.10: Change detection functions
+import { detectChanges } from '@/modules/profile/lib/change-detection'
 import type {
   ExtracurricularActivity,
   WorkExperience,
@@ -251,6 +253,12 @@ export const profileRouter = router({
         Object.entries(input).map(([key, value]) => [key, value === null ? undefined : value])
       )
 
+      // Story 1.10: Detect changes before updating
+      const changeDetection = detectChanges(
+        student.profile as any,
+        mergedProfile as any
+      )
+
       // Update profile with new data and recalculated metadata
       const updatedProfile = await prisma.profile.update({
         where: {
@@ -300,7 +308,48 @@ export const profileRouter = router({
           console.error('Failed to create profile history snapshot:', error)
         })
 
-      return updatedProfile
+      // Story 1.10: Create version snapshot asynchronously (non-blocking)
+      // Only create snapshot if there are actual changes
+      if (changeDetection.hasChanges) {
+        void prisma.profileVersion
+          .create({
+            data: {
+              profileId: student.profile.id,
+              snapshotData: updatedProfile as any,
+              changedFields: changeDetection.changedFields,
+            },
+          })
+          .then(async () => {
+            // Retention policy: Keep only last 100 versions per profile
+            if (!student.profile) return
+
+            const allVersions = await prisma.profileVersion.findMany({
+              where: { profileId: student.profile.id },
+              orderBy: { createdAt: 'desc' },
+              select: { id: true },
+            })
+
+            if (allVersions.length > 100) {
+              const idsToDelete = allVersions.slice(100).map((v) => v.id)
+              await prisma.profileVersion.deleteMany({
+                where: { id: { in: idsToDelete } },
+              })
+            }
+          })
+          .catch((error) => {
+            console.error('Failed to create profile version snapshot:', error)
+          })
+      }
+
+      return {
+        profile: updatedProfile,
+        completeness: completenessResult.completionPercentage,
+        strengthScore: strengthBreakdown.overallScore,
+        delta: {
+          completeness: completenessResult.completionPercentage - (student.profile.completionPercentage || 0),
+          strength: strengthBreakdown.overallScore - (student.profile.strengthScore || 0),
+        },
+      }
     }),
 
   /**
@@ -802,5 +851,88 @@ export const profileRouter = router({
 
         return updatedProfile
       }
+    }),
+
+  // ============================================================================
+  // Story 1.10: Profile Version History Endpoints
+  // ============================================================================
+
+  /**
+   * Get profile version history
+   * Returns paginated list of profile versions with metadata
+   */
+  getVersionHistory: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(20),
+        offset: z.number().min(0).default(0),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const student = await prisma.student.findUnique({
+        where: { userId: ctx.userId },
+        include: { profile: true },
+      })
+
+      if (!student?.profile) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Profile not found.',
+        })
+      }
+
+      const [versions, total] = await Promise.all([
+        prisma.profileVersion.findMany({
+          where: { profileId: student.profile.id },
+          orderBy: { createdAt: 'desc' },
+          take: input.limit,
+          skip: input.offset,
+        }),
+        prisma.profileVersion.count({
+          where: { profileId: student.profile.id },
+        }),
+      ])
+
+      return {
+        versions,
+        total,
+        hasMore: input.offset + versions.length < total,
+      }
+    }),
+
+  /**
+   * Get single profile version by ID
+   * Returns full snapshot with change details
+   */
+  getVersion: protectedProcedure
+    .input(z.object({ versionId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const student = await prisma.student.findUnique({
+        where: { userId: ctx.userId },
+        include: { profile: true },
+      })
+
+      if (!student?.profile) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Profile not found.',
+        })
+      }
+
+      const version = await prisma.profileVersion.findFirst({
+        where: {
+          id: input.versionId,
+          profileId: student.profile.id, // Ensure student owns this version
+        },
+      })
+
+      if (!version) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Version not found.',
+        })
+      }
+
+      return version
     }),
 })
