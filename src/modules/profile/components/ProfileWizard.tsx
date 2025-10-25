@@ -125,9 +125,62 @@ export function ProfileWizard({ isEditMode = false }: ProfileWizardProps) {
   const createMutation = trpc.profile.create.useMutation()
   const updateMutation = trpc.profile.update.useMutation()
 
+  // Validation for each step
+  const validateStep = (step: WizardStep): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = []
+
+    switch (step) {
+      case 1: // Academic
+        // Required: graduationYear
+        if (!formData.graduationYear) {
+          errors.push('Graduation year is required')
+        }
+        break
+      case 2: // Demographics
+        // Required: citizenship, state
+        if (!formData.citizenship) {
+          errors.push('Citizenship status is required')
+        }
+        if (!formData.state) {
+          errors.push('State is required')
+        }
+        break
+      case 3: // Major & Experience
+        // Required: intendedMajor
+        if (!formData.intendedMajor) {
+          errors.push('Intended major is required')
+        }
+        break
+      case 4: // Special Circumstances
+        // All optional - no validation needed
+        break
+      default:
+        break
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    }
+  }
+
   const handleNext = () => {
-    // Validate current step if needed
+    // Validate current step before advancing (steps 1-4)
     if (currentStep > 0 && currentStep < 5) {
+      const validation = validateStep(currentStep as WizardStep)
+
+      if (!validation.isValid) {
+        // Show validation errors
+        validation.errors.forEach(error => {
+          toast({
+            title: 'Validation Error',
+            description: error,
+            variant: 'destructive',
+          })
+        })
+        return // Don't advance if validation fails
+      }
+
       markStepCompleted(currentStep as any)
     }
     nextStep()
