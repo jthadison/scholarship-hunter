@@ -11,6 +11,7 @@ import {
   ethnicitySchema,
   financialNeedSchema,
   calculateProfileCompleteness,
+  getMissingFields,
   academicProfileSchema,
   demographicProfileSchema,
   financialProfileSchema,
@@ -219,42 +220,61 @@ describe('Profile Validation - Financial Fields', () => {
   })
 })
 
-describe('Profile Completeness Calculation', () => {
-  it('should return 0% for empty profile', () => {
+// ============================================================================
+// Story 1.6: Profile Completeness Calculation Tests
+// ============================================================================
+
+describe('Profile Completeness Calculation (Story 1.6)', () => {
+  it('AC1: should return 0% for empty profile', () => {
     const result = calculateProfileCompleteness({})
     expect(result.completionPercentage).toBe(0)
     expect(result.requiredFieldsComplete).toBe(0)
-    expect(result.requiredFieldsTotal).toBe(4)
+    expect(result.requiredFieldsTotal).toBe(10) // Story 1.6: 10 required fields
+    expect(result.missingRequired.length).toBe(10)
   })
 
-  it('should calculate 70% when all required fields complete, no optional fields', () => {
+  it('AC1: should calculate 70% when all 10 required fields complete, no optional fields', () => {
     const profile = {
+      // Story 1.6: All 10 required fields
+      gpa: 3.8,
       graduationYear: 2025,
-      citizenship: 'US Citizen' as const,
+      currentGrade: '12th Grade' as const,
+      gender: 'Female',
+      ethnicity: ['Asian' as const],
       state: 'CA' as const,
+      citizenship: 'US Citizen' as const,
+      intendedMajor: 'Computer Science',
+      fieldOfStudy: 'STEM' as const,
       financialNeed: FinancialNeed.MODERATE,
     }
     const result = calculateProfileCompleteness(profile)
     expect(result.completionPercentage).toBe(70)
-    expect(result.requiredFieldsComplete).toBe(4)
+    expect(result.requiredFieldsComplete).toBe(10)
+    expect(result.missingRequired.length).toBe(0)
   })
 
-  it('should calculate 100% when all required and optional fields complete', () => {
+  it('AC1: should calculate 100% when all required and optional fields complete', () => {
     const profile = {
-      // Required
-      graduationYear: 2025,
-      citizenship: 'US Citizen' as const,
-      state: 'CA' as const,
-      financialNeed: FinancialNeed.MODERATE,
-      // Optional
+      // Required (70% weight)
       gpa: 3.8,
-      satScore: 1450,
-      actScore: 32,
-      classRank: 15,
-      classSize: 300,
+      graduationYear: 2025,
       currentGrade: '12th Grade' as const,
       gender: 'Female',
       ethnicity: ['Asian' as const],
+      state: 'CA' as const,
+      citizenship: 'US Citizen' as const,
+      intendedMajor: 'Computer Science',
+      fieldOfStudy: 'STEM' as const,
+      financialNeed: FinancialNeed.MODERATE,
+      // Optional (30% weight) - Story 1.6: 11 optional fields (SAT/ACT counted together)
+      satScore: 1450,
+      actScore: null, // SAT/ACT counted as one optional field
+      classRank: 15,
+      extracurriculars: [{ name: 'Debate', category: 'Academic Clubs', hoursPerWeek: 5, yearsInvolved: 2 }],
+      volunteerHours: 100,
+      workExperience: [{ jobTitle: 'Tutor', employer: 'School', startDate: '2023-01-01', hoursPerWeek: 10 }],
+      leadershipRoles: [{ title: 'President', organization: 'Debate Club', startDate: '2024-01-01' }],
+      awardsHonors: [{ name: 'Honor Roll', issuer: 'School', date: '2024-05-01', level: 'School' as const }],
       city: 'Los Angeles',
       zipCode: '90210',
       pellGrantEligible: true,
@@ -262,54 +282,177 @@ describe('Profile Completeness Calculation', () => {
     }
     const result = calculateProfileCompleteness(profile)
     expect(result.completionPercentage).toBe(100)
-    expect(result.requiredFieldsComplete).toBe(4)
-    expect(result.optionalFieldsComplete).toBe(12)
+    expect(result.requiredFieldsComplete).toBe(10)
+    expect(result.optionalFieldsComplete).toBe(11) // All 11 optional fields
   })
 
-  it('should list missing required fields', () => {
+  it('AC1: should calculate ~56% when missing 2 required fields but all optional complete', () => {
     const profile = {
+      // Required: 8/10 complete (80% of required = 0.8 * 0.7 = 56%)
+      gpa: 3.8,
       graduationYear: 2025,
-      // Missing citizenship, state, financialNeed
+      currentGrade: '12th Grade' as const,
+      gender: 'Female',
+      ethnicity: ['Asian' as const],
+      state: 'CA' as const,
+      citizenship: 'US Citizen' as const,
+      intendedMajor: 'Computer Science',
+      // Missing fieldOfStudy and financialNeed
+      // Optional: all complete (100% of optional = 1.0 * 0.3 = 30%)
+      satScore: 1450,
+      classRank: 15,
+      extracurriculars: [{ name: 'Debate', category: 'Academic Clubs', hoursPerWeek: 5, yearsInvolved: 2 }],
+      volunteerHours: 100,
+      workExperience: [{ jobTitle: 'Tutor', employer: 'School', startDate: '2023-01-01', hoursPerWeek: 10 }],
+      leadershipRoles: [{ title: 'President', organization: 'Debate Club', startDate: '2024-01-01' }],
+      awardsHonors: [{ name: 'Honor Roll', issuer: 'School', date: '2024-05-01', level: 'School' as const }],
+      city: 'Los Angeles',
+      zipCode: '90210',
+      pellGrantEligible: true,
+      efcRange: '$0-$5,000' as const,
     }
     const result = calculateProfileCompleteness(profile)
-    expect(result.missingRequired).toContain('Citizenship Status')
+    // 8/10 required * 70% + 11/11 optional * 30% = 56% + 30% = 86%
+    expect(result.completionPercentage).toBeGreaterThanOrEqual(85)
+    expect(result.completionPercentage).toBeLessThanOrEqual(87)
+  })
+
+  it('AC2: should list missing required fields with correct labels', () => {
+    const profile = {
+      gpa: 3.8,
+      graduationYear: 2025,
+      // Missing: currentGrade, gender, ethnicity, state, citizenship, intendedMajor, fieldOfStudy, financialNeed
+    }
+    const result = calculateProfileCompleteness(profile)
+    expect(result.missingRequired).toContain('Current Grade')
+    expect(result.missingRequired).toContain('Gender')
+    expect(result.missingRequired).toContain('Ethnicity')
     expect(result.missingRequired).toContain('State')
+    expect(result.missingRequired).toContain('Citizenship Status')
+    expect(result.missingRequired).toContain('Intended Major')
+    expect(result.missingRequired).toContain('Field of Study')
     expect(result.missingRequired).toContain('Financial Need Level')
   })
 
-  it('should list missing recommended fields', () => {
+  it('AC2: should list missing optional/recommended fields', () => {
     const profile = {
+      gpa: 3.8,
       graduationYear: 2025,
-      citizenship: 'US Citizen' as const,
+      currentGrade: '12th Grade' as const,
+      gender: 'Female',
+      ethnicity: ['Asian' as const],
       state: 'CA' as const,
+      citizenship: 'US Citizen' as const,
+      intendedMajor: 'Computer Science',
+      fieldOfStudy: 'STEM' as const,
       financialNeed: FinancialNeed.MODERATE,
       // Missing all optional fields
     }
     const result = calculateProfileCompleteness(profile)
-    expect(result.missingRecommended).toContain('GPA')
-    expect(result.missingRecommended).toContain('SAT Score')
+    expect(result.missingRecommended).toContain('SAT or ACT Score')
+    expect(result.missingRecommended).toContain('Class Rank')
+    expect(result.missingRecommended).toContain('Extracurricular Activities')
   })
 
-  it('should handle arrays (ethnicity) correctly', () => {
-    const profileWithEthnicity = {
+  it('should handle arrays (ethnicity, extracurriculars) correctly', () => {
+    const profileWithArrays = {
+      gpa: 3.8,
       graduationYear: 2025,
-      citizenship: 'US Citizen' as const,
-      state: 'CA' as const,
-      financialNeed: FinancialNeed.MODERATE,
+      currentGrade: '12th Grade' as const,
+      gender: 'Female',
       ethnicity: ['Asian' as const, 'White/Caucasian' as const],
-    }
-    const resultWith = calculateProfileCompleteness(profileWithEthnicity)
-    expect(resultWith.optionalFieldsComplete).toBe(1)
-
-    const profileWithoutEthnicity = {
-      graduationYear: 2025,
-      citizenship: 'US Citizen' as const,
       state: 'CA' as const,
+      citizenship: 'US Citizen' as const,
+      intendedMajor: 'Computer Science',
+      fieldOfStudy: 'STEM' as const,
       financialNeed: FinancialNeed.MODERATE,
-      ethnicity: [],
+      extracurriculars: [{ name: 'Debate', category: 'Academic Clubs', hoursPerWeek: 5, yearsInvolved: 2 }],
     }
-    const resultWithout = calculateProfileCompleteness(profileWithoutEthnicity)
-    expect(resultWithout.missingRecommended).toContain('Ethnicity')
+    const resultWith = calculateProfileCompleteness(profileWithArrays)
+    expect(resultWith.requiredFieldsComplete).toBe(10)
+    expect(resultWith.optionalFieldsComplete).toBeGreaterThan(0)
+
+    const profileEmptyArrays = {
+      gpa: 3.8,
+      graduationYear: 2025,
+      currentGrade: '12th Grade' as const,
+      gender: 'Female',
+      ethnicity: [], // Empty array should count as missing
+      state: 'CA' as const,
+      citizenship: 'US Citizen' as const,
+      intendedMajor: 'Computer Science',
+      fieldOfStudy: 'STEM' as const,
+      financialNeed: FinancialNeed.MODERATE,
+      extracurriculars: [],
+    }
+    const resultEmpty = calculateProfileCompleteness(profileEmptyArrays)
+    expect(resultEmpty.missingRequired).toContain('Ethnicity')
+    expect(resultEmpty.missingRecommended).toContain('Extracurricular Activities')
+  })
+})
+
+// ============================================================================
+// Story 1.6: Missing Fields Detection Tests
+// ============================================================================
+
+describe('Missing Fields Detection (Story 1.6)', () => {
+  it('AC2: should return prioritized missing fields with prompts', () => {
+    const profile = {
+      gpa: 3.8,
+      graduationYear: 2025,
+      // Missing most fields
+    }
+    const missingFields = getMissingFields(profile)
+
+    expect(missingFields.length).toBeGreaterThan(0)
+    expect(missingFields[0]).toHaveProperty('field')
+    expect(missingFields[0]).toHaveProperty('label')
+    expect(missingFields[0]).toHaveProperty('isRequired')
+    expect(missingFields[0]).toHaveProperty('category')
+    expect(missingFields[0]).toHaveProperty('prompt')
+    expect(missingFields[0]).toHaveProperty('estimatedImpact')
+  })
+
+  it('AC2: should generate user-friendly prompts', () => {
+    const profile = { gpa: 3.8 }
+    const missingFields = getMissingFields(profile)
+
+    const majorField = missingFields.find((f) => f.field === 'intendedMajor')
+    expect(majorField).toBeDefined()
+    expect(majorField?.prompt).toContain('major')
+  })
+
+  it('AC3: should distinguish required from optional fields', () => {
+    const profile = { gpa: 3.8, graduationYear: 2025 }
+    const missingFields = getMissingFields(profile)
+
+    const requiredFields = missingFields.filter((f) => f.isRequired)
+    const optionalFields = missingFields.filter((f) => !f.isRequired)
+
+    expect(requiredFields.length).toBeGreaterThan(0)
+    expect(optionalFields.length).toBeGreaterThan(0)
+
+    // Required should come first in the sorted list
+    const firstRequiredIndex = missingFields.findIndex((f) => f.isRequired)
+    const firstOptionalIndex = missingFields.findIndex((f) => !f.isRequired)
+    expect(firstRequiredIndex).toBeLessThan(firstOptionalIndex)
+  })
+
+  it('AC2: should provide estimated impact for each field', () => {
+    const profile = { gpa: 3.8 }
+    const missingFields = getMissingFields(profile)
+
+    expect(missingFields[0].estimatedImpact).toMatch(/\+\d+%/)
+  })
+
+  it('AC2: should categorize missing fields', () => {
+    const profile = {}
+    const missingFields = getMissingFields(profile)
+
+    const categories = new Set(missingFields.map((f) => f.category))
+    expect(categories).toContain('Academic')
+    expect(categories).toContain('Demographics')
+    expect(categories).toContain('Financial')
   })
 })
 

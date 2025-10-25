@@ -123,3 +123,46 @@ export type WorkExperienceFormData = Omit<WorkExperience, 'endDate'> & {
   currentlyEmployed: boolean
   endDate: string
 }
+
+// ============================================================================
+// Story 1.6: Validation & Completeness Types
+// ============================================================================
+
+/**
+ * Missing field metadata for prompts and UI
+ */
+export interface MissingField {
+  field: string
+  label: string
+  isRequired: boolean
+  category: string
+  prompt: string
+  estimatedImpact: string
+}
+
+/**
+ * Validation error with severity level
+ */
+export interface ValidationError {
+  field: string
+  message: string
+  severity: 'error' | 'warning'
+}
+
+/**
+ * Profile validation result
+ */
+export interface ProfileValidationResult {
+  isValid: boolean
+  errors: ValidationError[]
+  warnings: string[]
+}
+
+/**
+ * Profile readiness check result
+ */
+export interface ProfileReadinessResult {
+  isReady: boolean
+  completeness: number
+  missingRequired: string[]
+}

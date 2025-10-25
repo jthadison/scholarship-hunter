@@ -30,7 +30,15 @@
       "Bash(git checkout:*)",
       "Bash(mkdir:*)",
       "Read(//e/**)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(npm test:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(cat:*)",
+      "Bash(npx tsc:*)",
+      "Bash(find:*)",
+      "Bash(xargs cat:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []
