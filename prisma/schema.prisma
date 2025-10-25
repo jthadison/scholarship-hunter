@@ -111,12 +111,34 @@ model Profile {
   completionPercentage Float @default(0)
   strengthScore        Float @default(0)
 
+  // Story 1.7: Strength history tracking
+  strengthHistory ProfileHistory[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([studentId])
   @@index([graduationYear])
   @@index([intendedMajor])
+}
+
+// Story 1.7: Profile strength score history tracking
+model ProfileHistory {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  // Score snapshot
+  overallScore      Float
+  academicScore     Float
+  experienceScore   Float
+  leadershipScore   Float
+  demographicsScore Float
+
+  recordedAt DateTime @default(now())
+
+  @@index([profileId, recordedAt])
+  @@index([recordedAt])
 }
 
 enum FinancialNeed {

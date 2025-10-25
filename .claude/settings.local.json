@@ -38,7 +38,16 @@
       "Bash(npx tsc:*)",
       "Bash(find:*)",
       "Bash(xargs cat:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(pnpm prisma generate:*)",
+      "Bash(node:*)",
+      "Bash(git restore:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh run view:*)",
+      "Bash(pnpm run test:*)",
+      "Bash(pnpm run typecheck:*)",
+      "Bash(pnpm run lint)"
     ],
     "deny": [],
     "ask": []

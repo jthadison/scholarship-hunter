@@ -1,6 +1,9 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { DashboardStrengthSection } from '@/modules/profile/components/DashboardStrengthSection'
+import { Suspense } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default async function DashboardPage() {
   const { userId } = await auth()
@@ -21,6 +24,14 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      {/* Story 1.7: Profile Strength Section */}
+      <div className="mb-8">
+        <Suspense fallback={<StrengthSectionSkeleton />}>
+          <DashboardStrengthSection />
+        </Suspense>
+      </div>
+
+      {/* Quick Links */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-lg border bg-card p-6">
           <h2 className="text-xl font-semibold mb-2">Profile</h2>
@@ -61,6 +72,24 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
+    </div>
+  )
+}
+
+function StrengthSectionSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile Strength Score</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse space-y-4">
+            <div className="h-16 bg-muted rounded" />
+            <div className="h-4 bg-muted rounded w-3/4" />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

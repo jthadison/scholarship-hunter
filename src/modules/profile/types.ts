@@ -166,3 +166,44 @@ export interface ProfileReadinessResult {
   completeness: number
   missingRequired: string[]
 }
+
+// ============================================================================
+// Story 1.7: Profile Strength Scoring Types
+// ============================================================================
+
+/**
+ * Improvement recommendation with priority and impact
+ */
+export interface Recommendation {
+  category: 'Academic' | 'Experience' | 'Leadership' | 'Demographics'
+  message: string
+  impact: number // Estimated point gain
+  priority: 1 | 2 | 3 // 1=High (>20pts), 2=Medium (10-20pts), 3=Low (<10pts)
+  actionLink?: string // Optional link to profile section
+}
+
+/**
+ * Strength score breakdown across all dimensions
+ */
+export interface StrengthBreakdown {
+  overallScore: number // 0-100 (weighted average × completeness)
+  academic: number // 0-100
+  experience: number // 0-100
+  leadership: number // 0-100
+  demographics: number // 0-100
+  recommendations: Recommendation[]
+}
+
+/**
+ * Historical strength score snapshot
+ */
+export interface ProfileHistorySnapshot {
+  id: string
+  profileId: string
+  overallScore: number
+  academicScore: number
+  experienceScore: number
+  leadershipScore: number
+  demographicsScore: number
+  recordedAt: Date
+}
