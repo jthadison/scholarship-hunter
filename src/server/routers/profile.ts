@@ -267,7 +267,8 @@ export const profileRouter = router({
 
       // Story 1.7: Create history snapshot asynchronously (non-blocking)
       // Note: Using .catch() to prevent history failures from blocking the update
-      prisma.profileHistory
+      // Using void to explicitly mark floating promise as intentional
+      void prisma.profileHistory
         .create({
           data: {
             profileId: student.profile.id,
@@ -709,4 +710,97 @@ export const profileRouter = router({
 
     return history
   }),
+
+  // ============================================================================
+  // Story 1.8: Profile Wizard - Draft Management
+  // ============================================================================
+
+  /**
+   * Save wizard draft (auto-save during profile creation)
+   * Stores partial profile data as JSON for later completion
+   * Creates or updates profile with draft data
+   */
+  saveDraft: protectedProcedure
+    .input(updateProfileInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const student = await prisma.student.findUnique({
+        where: { userId: ctx.userId },
+        include: { profile: true },
+      })
+
+      if (!student) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Student record not found.',
+        })
+      }
+
+      // Calculate volunteer hours if extracurriculars provided
+      let volunteerHours = student.profile?.volunteerHours
+      if (input.extracurriculars !== undefined) {
+        volunteerHours = calculateVolunteerHours(input.extracurriculars as unknown as ExtracurricularActivity[])
+      }
+
+      // Auto-populate field of study from major
+      let fieldOfStudy = input.fieldOfStudy
+      if (input.intendedMajor !== undefined && !input.fieldOfStudy) {
+        const calculatedField = getFieldOfStudyFromMajor(input.intendedMajor)
+        fieldOfStudy = calculatedField as typeof fieldOfStudy
+      }
+
+      // Clean up null values
+      const cleanInput = Object.fromEntries(
+        Object.entries(input).map(([key, value]) => [key, value === null ? undefined : value])
+      )
+
+      // Create or update profile
+      if (!student.profile) {
+        // Create new profile as draft
+        const completenessResult = calculateProfileCompleteness(input as any)
+        const strengthBreakdown = calculateStrengthBreakdown({
+          ...input,
+          completionPercentage: completenessResult.completionPercentage,
+        } as any)
+
+        const profile = await prisma.profile.create({
+          data: {
+            studentId: student.id,
+            ...cleanInput,
+            volunteerHours,
+            fieldOfStudy,
+            completionPercentage: completenessResult.completionPercentage,
+            strengthScore: strengthBreakdown.overallScore,
+          },
+        })
+
+        return profile
+      } else {
+        // Update existing profile
+        const mergedProfile = {
+          ...student.profile,
+          ...input,
+          volunteerHours,
+          fieldOfStudy,
+        }
+
+        const completenessResult = calculateProfileCompleteness(mergedProfile as any)
+        const strengthBreakdown = calculateStrengthBreakdown({
+          ...mergedProfile,
+          completionPercentage: completenessResult.completionPercentage,
+        } as any)
+
+        const updatedProfile = await prisma.profile.update({
+          where: { id: student.profile.id },
+          data: {
+            ...cleanInput,
+            volunteerHours,
+            fieldOfStudy,
+            completionPercentage: completenessResult.completionPercentage,
+            strengthScore: strengthBreakdown.overallScore,
+          },
+        })
+
+        return updatedProfile
+      }
+    }),
 })

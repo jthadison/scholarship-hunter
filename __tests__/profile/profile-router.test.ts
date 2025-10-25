@@ -14,8 +14,9 @@ vi.mock('@/server/db', () => ({
       update: vi.fn(),
     },
     profileHistory: {
-      create: vi.fn(),
-      findMany: vi.fn(),
+      create: vi.fn().mockResolvedValue({}),
+      findMany: vi.fn().mockResolvedValue([]),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
   },
 }))

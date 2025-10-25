@@ -38,7 +38,7 @@ test.describe('Profile Creation Flow', () => {
   test('should show validation errors for invalid GPA', async ({ page }) => {
     // Enter invalid GPA
     await page.fill('input[name="gpa"]', '5.0')
-    await page.blur('input[name="gpa"]')
+    await page.locator('input[name="gpa"]').press('Tab')
 
     // Check for validation error
     await expect(
@@ -49,7 +49,7 @@ test.describe('Profile Creation Flow', () => {
   test('should show validation error for invalid ZIP code', async ({ page }) => {
     // Enter invalid ZIP code
     await page.fill('input[name="zipCode"]', '123')
-    await page.blur('input[name="zipCode"]')
+    await page.locator('input[name="zipCode"]').press('Tab')
 
     // Check for validation error
     await expect(
