@@ -23,7 +23,7 @@ import { useState } from 'react'
  * Visualizes profile strength progression over time with dimensional trends
  */
 export function StrengthHistoryChart() {
-  const { data: history, isLoading } = trpc.profile.getStrengthHistory.useQuery()
+  const { data: history, isLoading, error } = trpc.profile.getStrengthHistory.useQuery()
   const [showDimensions, setShowDimensions] = useState(false)
 
   if (isLoading) {
@@ -32,6 +32,17 @@ export function StrengthHistoryChart() {
         <CardHeader>
           <CardTitle>Strength Progress</CardTitle>
           <CardDescription>Loading...</CardDescription>
+        </CardHeader>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Strength Progress</CardTitle>
+          <CardDescription>Unable to load history. Please try again.</CardDescription>
         </CardHeader>
       </Card>
     )

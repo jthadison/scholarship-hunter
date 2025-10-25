@@ -17,7 +17,7 @@ import { useState } from 'react'
  * Shows overall strength score with dimensional breakdown and methodology explanation
  */
 export function ProfileStrengthCard() {
-  const { data: breakdown, isLoading } = trpc.profile.getStrengthBreakdown.useQuery()
+  const { data: breakdown, isLoading, error } = trpc.profile.getStrengthBreakdown.useQuery()
   const { data: profile } = trpc.profile.get.useQuery()
   const [isMethodologyOpen, setIsMethodologyOpen] = useState(false)
 
@@ -27,6 +27,17 @@ export function ProfileStrengthCard() {
         <CardHeader>
           <CardTitle>Profile Strength</CardTitle>
           <CardDescription>Loading...</CardDescription>
+        </CardHeader>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile Strength</CardTitle>
+          <CardDescription>Unable to load strength score. Please try again.</CardDescription>
         </CardHeader>
       </Card>
     )
@@ -59,7 +70,7 @@ export function ProfileStrengthCard() {
   }
 
   // Calculate potential score at 100% completion
-  const potentialScore = completeness < 100
+  const potentialScore = completeness > 0 && completeness < 100
     ? Math.round((overallScore / completeness) * 100)
     : overallScore
 

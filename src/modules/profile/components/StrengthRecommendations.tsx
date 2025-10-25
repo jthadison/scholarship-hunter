@@ -28,7 +28,7 @@ import Link from 'next/link'
  * Shows prioritized recommendations with impact estimates and quick action links
  */
 export function StrengthRecommendations() {
-  const { data: breakdown, isLoading } = trpc.profile.getStrengthBreakdown.useQuery()
+  const { data: breakdown, isLoading, error } = trpc.profile.getStrengthBreakdown.useQuery()
 
   if (isLoading) {
     return (
@@ -36,6 +36,17 @@ export function StrengthRecommendations() {
         <CardHeader>
           <CardTitle>Improvement Recommendations</CardTitle>
           <CardDescription>Loading...</CardDescription>
+        </CardHeader>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Improvement Recommendations</CardTitle>
+          <CardDescription>Unable to load recommendations. Please try again.</CardDescription>
         </CardHeader>
       </Card>
     )

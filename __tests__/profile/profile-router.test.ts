@@ -13,6 +13,10 @@ vi.mock('@/server/db', () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    profileHistory: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+    },
   },
 }))
 

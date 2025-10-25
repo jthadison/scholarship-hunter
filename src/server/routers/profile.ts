@@ -278,6 +278,21 @@ export const profileRouter = router({
             demographicsScore: strengthBreakdown.demographics,
           },
         })
+        .then(async () => {
+          // Cleanup: Keep only last 50 snapshots per profile
+          const allSnapshots = await prisma.profileHistory.findMany({
+            where: { profileId: student.profile.id },
+            orderBy: { recordedAt: 'desc' },
+            select: { id: true },
+          })
+
+          if (allSnapshots.length > 50) {
+            const idsToDelete = allSnapshots.slice(50).map((s) => s.id)
+            await prisma.profileHistory.deleteMany({
+              where: { id: { in: idsToDelete } },
+            })
+          }
+        })
         .catch((error) => {
           console.error('Failed to create profile history snapshot:', error)
         })
