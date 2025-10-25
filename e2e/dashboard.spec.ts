@@ -183,7 +183,7 @@ test.describe('Dashboard - Story 1.9', () => {
     await page.keyboard.press('Tab')
 
     // Check that focused element is a navigation link
-    const focused Element = await page.evaluate(() => document.activeElement?.tagName)
+    const focusedElement = await page.evaluate(() => document.activeElement?.tagName)
     expect(focusedElement).toMatch(/(BUTTON|A)/)
 
     // Press Enter should navigate
