@@ -31,6 +31,8 @@ import {
   // Story 1.6: Validation & completeness functions
   getMissingFields,
 } from '@/modules/profile/lib/profile-validation'
+// Story 1.7: Strength scoring functions
+import { calculateStrengthBreakdown } from '@/modules/profile/lib/strength-scoring'
 import type {
   ExtracurricularActivity,
   WorkExperience,
@@ -147,6 +149,12 @@ export const profileRouter = router({
       // Calculate completeness percentage (with type assertion)
       const completenessResult = calculateProfileCompleteness(input as any)
 
+      // Story 1.7: Calculate initial strength score
+      const strengthBreakdown = calculateStrengthBreakdown({
+        ...input,
+        completionPercentage: completenessResult.completionPercentage,
+      } as any)
+
       // Clean up null values for Prisma (convert null to undefined)
       const cleanInput = Object.fromEntries(
         Object.entries(input).map(([key, value]) => [key, value === null ? undefined : value])
@@ -158,6 +166,19 @@ export const profileRouter = router({
           studentId: student.id,
           ...cleanInput,
           completionPercentage: completenessResult.completionPercentage,
+          strengthScore: strengthBreakdown.overallScore,
+        },
+      })
+
+      // Story 1.7: Create initial history snapshot
+      await prisma.profileHistory.create({
+        data: {
+          profileId: profile.id,
+          overallScore: strengthBreakdown.overallScore,
+          academicScore: strengthBreakdown.academic,
+          experienceScore: strengthBreakdown.experience,
+          leadershipScore: strengthBreakdown.leadership,
+          demographicsScore: strengthBreakdown.demographics,
         },
       })
 
@@ -219,6 +240,12 @@ export const profileRouter = router({
       // Recalculate completeness percentage (with type assertion for Prisma fields)
       const completenessResult = calculateProfileCompleteness(mergedProfile as any)
 
+      // Story 1.7: Calculate strength score breakdown
+      const strengthBreakdown = calculateStrengthBreakdown({
+        ...mergedProfile,
+        completionPercentage: completenessResult.completionPercentage,
+      } as any)
+
       // Clean up null values for Prisma
       const cleanInput = Object.fromEntries(
         Object.entries(input).map(([key, value]) => [key, value === null ? undefined : value])
@@ -234,8 +261,26 @@ export const profileRouter = router({
           volunteerHours,
           fieldOfStudy,
           completionPercentage: completenessResult.completionPercentage,
+          strengthScore: strengthBreakdown.overallScore,
         },
       })
+
+      // Story 1.7: Create history snapshot asynchronously (non-blocking)
+      // Note: Using .catch() to prevent history failures from blocking the update
+      prisma.profileHistory
+        .create({
+          data: {
+            profileId: student.profile.id,
+            overallScore: strengthBreakdown.overallScore,
+            academicScore: strengthBreakdown.academic,
+            experienceScore: strengthBreakdown.experience,
+            leadershipScore: strengthBreakdown.leadership,
+            demographicsScore: strengthBreakdown.demographics,
+          },
+        })
+        .catch((error) => {
+          console.error('Failed to create profile history snapshot:', error)
+        })
 
       return updatedProfile
     }),
@@ -596,5 +641,55 @@ export const profileRouter = router({
     }
 
     return getMissingFields(student.profile as any)
+  }),
+
+  // ============================================================================
+  // Story 1.7: Profile Strength Scoring Endpoints
+  // ============================================================================
+
+  /**
+   * Get profile strength breakdown with dimensional scores and recommendations
+   * Calculates real-time strength score based on current profile data
+   */
+  getStrengthBreakdown: protectedProcedure.query(async ({ ctx }) => {
+    const student = await prisma.student.findUnique({
+      where: { userId: ctx.userId },
+      include: { profile: true },
+    })
+
+    if (!student?.profile) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Profile not found.',
+      })
+    }
+
+    return calculateStrengthBreakdown(student.profile)
+  }),
+
+  /**
+   * Get historical strength score snapshots
+   * Returns last 50 snapshots ordered by date (most recent first)
+   */
+  getStrengthHistory: protectedProcedure.query(async ({ ctx }) => {
+    const student = await prisma.student.findUnique({
+      where: { userId: ctx.userId },
+      include: { profile: true },
+    })
+
+    if (!student?.profile) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Profile not found.',
+      })
+    }
+
+    const history = await prisma.profileHistory.findMany({
+      where: { profileId: student.profile.id },
+      orderBy: { recordedAt: 'desc' },
+      take: 50,
+    })
+
+    return history
   }),
 })
