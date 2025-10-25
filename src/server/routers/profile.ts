@@ -280,6 +280,8 @@ export const profileRouter = router({
         })
         .then(async () => {
           // Cleanup: Keep only last 50 snapshots per profile
+          if (!student.profile) return
+
           const allSnapshots = await prisma.profileHistory.findMany({
             where: { profileId: student.profile.id },
             orderBy: { recordedAt: 'desc' },
