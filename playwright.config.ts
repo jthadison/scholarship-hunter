@@ -39,7 +39,7 @@ export default defineConfig({
     ['html', { outputFolder: 'test-results/html', open: 'never' }],
     ['junit', { outputFile: 'test-results/junit.xml' }], // For CI integration
     ['list'], // Console output
-    ...(process.env.CI ? [['github' as const]] : []), // GitHub Actions annotations
+    ...(process.env.CI ? [['github' as const] as const] : []), // GitHub Actions annotations
   ],
 
   // Shared settings for all projects

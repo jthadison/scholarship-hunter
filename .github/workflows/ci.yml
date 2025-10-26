@@ -126,6 +126,9 @@ jobs:
 
       - name: Run Vitest tests
         run: pnpm run test
+        env:
+          DATABASE_URL: "postgresql://user:password@localhost:5432/test"
+          DIRECT_URL: "postgresql://user:password@localhost:5432/test"
 
   build:
     name: Build

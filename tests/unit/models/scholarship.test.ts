@@ -13,8 +13,8 @@
  * @module tests/unit/models/scholarship
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { PrismaClient } from '@prisma/client'
+import { describe, it, expect, afterAll } from 'vitest'
+import { PrismaClient, Prisma } from '@prisma/client'
 import type { EligibilityCriteria } from '../../../src/types/scholarship'
 import { createScholarship, validateScholarshipData } from '../../../prisma/seed-utils/scholarship-factory'
 
@@ -71,7 +71,7 @@ describe('Scholarship Model - Schema Validation', () => {
           description: 'Testing all six eligibility dimensions',
           awardAmount: 5000,
           deadline: new Date('2026-06-01'),
-          eligibilityCriteria,
+          eligibilityCriteria: eligibilityCriteria as Prisma.InputJsonValue,
           tags: [],
           requiredDocuments: [],
         },

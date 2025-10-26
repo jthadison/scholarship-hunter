@@ -10,6 +10,9 @@
 import type { Prisma } from '@prisma/client'
 import type { EligibilityCriteria } from '../../src/types/scholarship'
 
+// Type helper to convert EligibilityCriteria to Prisma JSON
+type JsonValue = Prisma.InputJsonValue
+
 /**
  * Default eligibility criteria patterns for common scholarship types
  */
@@ -158,7 +161,7 @@ export function createScholarship(
     renewalYears: data.renewalYears,
     deadline: data.deadline ?? futureDeadline,
     announcementDate: data.announcementDate,
-    eligibilityCriteria: data.eligibilityCriteria ?? {},
+    eligibilityCriteria: (data.eligibilityCriteria ?? {}) as JsonValue,
     essayPrompts: data.essayPrompts,
     requiredDocuments: data.requiredDocuments ?? [],
     recommendationCount: data.recommendationCount ?? 0,
@@ -272,7 +275,7 @@ export const ScholarshipTemplates = {
       eligibilityCriteria: buildEligibilityCriteria(
         EligibilityPatterns.academicMerit(),
         EligibilityPatterns.leadership()
-      ),
+      ) as JsonValue,
       essayPrompts: [
         {
           prompt: 'Describe your greatest academic achievement and its impact on your goals.',
@@ -301,7 +304,7 @@ export const ScholarshipTemplates = {
       awardAmount: 2500,
       numberOfAwards: 100,
       deadline: new Date('2025-11-30'),
-      eligibilityCriteria: EligibilityPatterns.needBased(),
+      eligibilityCriteria: EligibilityPatterns.needBased() as JsonValue,
       requiredDocuments: ['FAFSA', 'Financial Statement'],
       recommendationCount: 1,
       tags: ['Need-based', 'Financial Aid'],
@@ -323,7 +326,7 @@ export const ScholarshipTemplates = {
       renewable: true,
       renewalYears: 4,
       deadline: new Date('2026-01-15'),
-      eligibilityCriteria: EligibilityPatterns.stemFocus(),
+      eligibilityCriteria: EligibilityPatterns.stemFocus() as JsonValue,
       essayPrompts: [
         {
           prompt: 'Describe a technical problem you solved and what you learned from the experience.',

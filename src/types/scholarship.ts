@@ -61,6 +61,8 @@ export interface AcademicCriteria {
    * @example 0.7
    */
   gpaWeight?: number
+
+  [key: string]: unknown
 }
 
 /**
@@ -108,6 +110,8 @@ export interface DemographicCriteria {
    * Residency requirement type
    */
   residencyRequired?: 'In-State' | 'Out-of-State' | 'Any'
+
+  [key: string]: unknown
 }
 
 /**
@@ -138,6 +142,8 @@ export interface MajorFieldCriteria {
    * @example ['healthcare', 'medical research', 'nursing']
    */
   careerGoalsKeywords?: string[]
+
+  [key: string]: unknown
 }
 
 /**
@@ -172,6 +178,8 @@ export interface ExperienceCriteria {
    * Whether awards or honors are required
    */
   awardsHonorsRequired?: boolean
+
+  [key: string]: unknown
 }
 
 /**
@@ -199,6 +207,8 @@ export interface FinancialCriteria {
    * Required financial need level
    */
   financialNeedLevel?: 'LOW' | 'MODERATE' | 'HIGH' | 'VERY_HIGH'
+
+  [key: string]: unknown
 }
 
 /**
@@ -231,6 +241,8 @@ export interface SpecialCriteria {
    * @example ['Must be pursuing teaching career', 'Must attend HBCU']
    */
   otherRequirements?: string[]
+
+  [key: string]: unknown
 }
 
 /**
@@ -286,6 +298,8 @@ export interface EligibilityCriteria {
    * Special circumstances requirements
    */
   special?: SpecialCriteria
+
+  [key: string]: unknown
 }
 
 /**
@@ -306,6 +320,8 @@ export interface EssayPrompt {
    * Whether this essay is required (vs optional)
    */
   required: boolean
+
+  [key: string]: unknown
 }
 
 /**

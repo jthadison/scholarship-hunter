@@ -1,4 +1,4 @@
-import { PrismaClient, ApplicationStatus, EssayPhase, DocumentType, FinancialNeed } from "@prisma/client";
+import { PrismaClient, ApplicationStatus, EssayPhase, DocumentType, FinancialNeed, Prisma } from "@prisma/client";
 import { ScholarshipTemplates, EligibilityPatterns, createScholarship, validateScholarshipData } from "./seed-utils/scholarship-factory";
 
 const prisma = new PrismaClient();
@@ -340,7 +340,7 @@ async function createScholarships() {
     renewable: true,
     renewalYears: 4,
     deadline: new Date("2025-12-15"),
-    eligibilityCriteria: EligibilityPatterns.womenInStem(),
+    eligibilityCriteria: EligibilityPatterns.womenInStem() as Prisma.InputJsonValue,
     essayPrompts: [
       {
         prompt: "Describe a challenge you overcame in pursuing STEM education",
@@ -365,7 +365,7 @@ async function createScholarships() {
     awardAmount: 3000,
     numberOfAwards: 50,
     deadline: new Date("2026-02-28"),
-    eligibilityCriteria: EligibilityPatterns.firstGeneration(),
+    eligibilityCriteria: EligibilityPatterns.firstGeneration() as Prisma.InputJsonValue,
     requiredDocuments: ["FAFSA", "Personal Statement"],
     recommendationCount: 1,
     tags: ["First Generation", "Need-based"],
@@ -383,7 +383,7 @@ async function createScholarships() {
     awardAmount: 2000,
     numberOfAwards: 30,
     deadline: new Date("2026-01-31"),
-    eligibilityCriteria: EligibilityPatterns.communityService(),
+    eligibilityCriteria: EligibilityPatterns.communityService() as Prisma.InputJsonValue,
     essayPrompts: [
       {
         prompt: "Describe your most meaningful community service experience and its impact",
@@ -409,7 +409,7 @@ async function createScholarships() {
     renewable: true,
     renewalYears: 2,
     deadline: new Date("2025-11-15"),
-    eligibilityCriteria: EligibilityPatterns.leadership(),
+    eligibilityCriteria: EligibilityPatterns.leadership() as Prisma.InputJsonValue,
     essayPrompts: [
       {
         prompt: "Describe a leadership role and how it shaped your perspective",
@@ -434,7 +434,7 @@ async function createScholarships() {
     awardAmount: 3500,
     numberOfAwards: 100,
     deadline: new Date("2025-12-31"),
-    eligibilityCriteria: EligibilityPatterns.geographic(["CA"]),
+    eligibilityCriteria: EligibilityPatterns.geographic(["CA"]) as Prisma.InputJsonValue,
     requiredDocuments: ["Proof of Residency"],
     tags: ["California", "Regional"],
     category: "Merit-based",
@@ -451,7 +451,7 @@ async function createScholarships() {
     awardAmount: 2500,
     numberOfAwards: 40,
     deadline: new Date("2026-03-15"),
-    eligibilityCriteria: EligibilityPatterns.underrepresented(["Hispanic/Latinx", "African American", "Native American"]),
+    eligibilityCriteria: EligibilityPatterns.underrepresented(["Hispanic/Latinx", "African American", "Native American"]) as Prisma.InputJsonValue,
     tags: ["Diversity", "Inclusion", "Identity-based"],
     category: "Identity-based",
     verified: true,
@@ -469,7 +469,7 @@ async function createScholarships() {
     renewable: true,
     renewalYears: 4,
     deadline: new Date("2025-10-31"),
-    eligibilityCriteria: EligibilityPatterns.military(),
+    eligibilityCriteria: EligibilityPatterns.military() as Prisma.InputJsonValue,
     requiredDocuments: ["Military Dependent ID"],
     tags: ["Military", "Veterans", "Identity-based"],
     category: "Identity-based",
