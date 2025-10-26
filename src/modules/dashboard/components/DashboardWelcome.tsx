@@ -46,13 +46,13 @@ export function DashboardWelcome({
   const motivationalMessage = getMotivationalMessage(profileCompleteness)
 
   return (
-    <div className="space-y-4">
+    <div data-testid="dashboard-welcome" className="space-y-4">
       {/* Welcome Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 data-testid="welcome-greeting" className="text-3xl font-bold tracking-tight">
           {greeting}, {firstName}!
         </h1>
-        <p className="text-muted-foreground mt-2">{motivationalMessage}</p>
+        <p data-testid="motivational-message" className="text-muted-foreground mt-2">{motivationalMessage}</p>
       </div>
 
       {/* Quick Stats Summary */}
@@ -64,7 +64,7 @@ export function DashboardWelcome({
                 Profile Completeness
               </span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold">{profileCompleteness}%</span>
+                <span data-testid="profile-completeness-value" className="text-2xl font-bold">{profileCompleteness}%</span>
                 {profileCompleteness === 100 ? (
                   <Badge variant="default" className="bg-green-500">
                     Complete
@@ -84,7 +84,7 @@ export function DashboardWelcome({
                 Profile Strength
               </span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold">{profileStrength}</span>
+                <span data-testid="profile-strength-value" className="text-2xl font-bold">{profileStrength}</span>
                 {profileStrength >= 80 ? (
                   <Badge variant="default" className="bg-green-500">
                     Strong
@@ -108,7 +108,7 @@ export function DashboardWelcome({
                 Scholarships Matched
               </span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold">{scholarshipsMatched}</span>
+                <span data-testid="scholarships-matched-count" className="text-2xl font-bold">{scholarshipsMatched}</span>
                 <Badge variant="outline">Coming Soon</Badge>
               </div>
             </div>
@@ -122,7 +122,7 @@ export function DashboardWelcome({
                 Applications
               </span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold">{applicationsInProgress}</span>
+                <span data-testid="applications-in-progress-count" className="text-2xl font-bold">{applicationsInProgress}</span>
                 <Badge variant="outline">Coming Soon</Badge>
               </div>
             </div>

@@ -26,7 +26,7 @@ export function DashboardClient({ firstName }: DashboardClientProps) {
   const profileIncomplete = completenessPercentage < 100
 
   return (
-    <div className="flex min-h-screen flex-col p-4 md:p-6 lg:p-8 space-y-8">
+    <div data-testid="dashboard-container" className="flex min-h-screen flex-col p-4 md:p-6 lg:p-8 space-y-8">
       {/* Welcome Section */}
       <DashboardWelcome
         firstName={firstName}
@@ -38,7 +38,7 @@ export function DashboardClient({ firstName }: DashboardClientProps) {
 
       {/* Complete Your Profile CTA (shown only if incomplete) */}
       {profileIncomplete && (
-        <Card className="border-primary bg-primary/5">
+        <Card data-testid="profile-incomplete-cta" className="border-primary bg-primary/5">
           <CardContent className="flex flex-col md:flex-row items-center justify-between p-6 gap-4">
             <div className="flex-1">
               <h3 className="text-lg font-semibold mb-1">Complete Your Profile</h3>
@@ -50,7 +50,7 @@ export function DashboardClient({ firstName }: DashboardClientProps) {
                   : 'Finish your profile to find the best scholarships for you'}
               </p>
             </div>
-            <Button asChild size="lg">
+            <Button data-testid="complete-profile-button" asChild size="lg">
               <Link href="/profile/wizard">
                 Complete Profile
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -77,7 +77,7 @@ export function DashboardClient({ firstName }: DashboardClientProps) {
       {/* Edit Profile Link for Completed Profiles */}
       {!profileIncomplete && (
         <div className="flex justify-center">
-          <Button variant="outline" asChild>
+          <Button data-testid="edit-profile-button" variant="outline" asChild>
             <Link href="/profile/edit">Edit Profile</Link>
           </Button>
         </div>
