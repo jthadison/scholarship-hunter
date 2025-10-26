@@ -147,7 +147,7 @@ export class ScholarshipFactory {
   /**
    * Create multiple scholarships at once
    */
-  async createMany(count: number, overrides: ScholarshipFactoryOptions = []) {
+  async createMany(count: number, overrides: ScholarshipFactoryOptions = {} as any) {
     const scholarships = []
     for (let i = 0; i < count; i++) {
       scholarships.push(await this.createScholarship(overrides))

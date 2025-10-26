@@ -56,7 +56,12 @@
       "Bash(npx prisma generate:*)",
       "Bash(pnpm run build:*)",
       "Bash(git branch:*)",
-      "Bash(pnpm run postinstall:*)"
+      "Bash(pnpm run postinstall:*)",
+      "Bash(for file in story-1.4.md story-1.5.md story-1.6.md story-1.7.md)",
+      "Bash(do sed -i 's|\\.\\./story-context-1\\.\\([4-7]\\)\\.xml|story-context-1.\\1.xml|g' \"$file\")",
+      "Bash(done)",
+      "Bash(npx prisma format:*)",
+      "Bash(npx prisma db push:*)"
     ],
     "deny": [],
     "ask": []

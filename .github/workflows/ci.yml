@@ -88,6 +88,22 @@ jobs:
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: scholarship_hunter_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - uses: actions/checkout@v4
 
@@ -121,11 +137,20 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm prisma:generate
         env:
-          DATABASE_URL: "postgresql://user:password@localhost:5432/test"
-          DIRECT_URL: "postgresql://user:password@localhost:5432/test"
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/scholarship_hunter_test"
+          DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/scholarship_hunter_test"
+
+      - name: Run database migrations
+        run: pnpm prisma db push
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/scholarship_hunter_test"
+          DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/scholarship_hunter_test"
 
       - name: Run Vitest tests
         run: pnpm run test
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/scholarship_hunter_test"
+          DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/scholarship_hunter_test"
 
   build:
     name: Build

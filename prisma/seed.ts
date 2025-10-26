@@ -1,4 +1,5 @@
-import { PrismaClient, ApplicationStatus, EssayPhase, DocumentType, FinancialNeed } from "@prisma/client";
+import { PrismaClient, ApplicationStatus, EssayPhase, DocumentType, FinancialNeed, Prisma } from "@prisma/client";
+import { ScholarshipTemplates, EligibilityPatterns, createScholarship, validateScholarshipData } from "./seed-utils/scholarship-factory";
 
 const prisma = new PrismaClient();
 
@@ -309,47 +310,175 @@ async function createProfiles(students: any[]) {
 }
 
 async function createScholarships() {
-  const scholarshipsData = [];
-  const categories = [
-    "Merit-Based",
-    "Need-Based",
-    "STEM",
-    "Humanities",
-    "Athletic",
-    "Community Service",
-    "First Generation",
-    "Minority",
-    "Women in Tech",
-    "Military/Veteran",
-  ];
-
-  // Create 100+ diverse scholarships
-  for (let i = 1; i <= 110; i++) {
-    const category = categories[i % categories.length]!;
-    const awardAmount = [500, 1000, 2500, 5000, 10000, 15000, 25000][Math.floor(Math.random() * 7)]!;
-    const deadline = new Date(2025, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1);
-
-    scholarshipsData.push({
-      name: `${category} Scholarship #${i}`,
-      provider: `Organization ${Math.floor(i / 10) + 1}`,
-      description: `A $${awardAmount} scholarship for ${category.toLowerCase()} students with diverse backgrounds and achievements.`,
-      website: `https://example.com/scholarship-${i}`,
-      awardAmount,
-      deadline,
-      verified: Math.random() > 0.3,
-      tags: [category, `Award-${awardAmount}`],
-      category,
-      numberOfAwards: Math.floor(Math.random() * 10) + 1,
-      renewable: Math.random() > 0.7,
-      recommendationCount: Math.floor(Math.random() * 3),
-    });
-  }
-
   const scholarships = [];
-  for (const data of scholarshipsData) {
-    const scholarship = await prisma.scholarship.create({ data: data as any });
-    scholarships.push(scholarship);
-  }
+
+  // Create featured template scholarships with proper eligibility criteria
+  console.log("  Creating featured scholarships with eligibility criteria...");
+
+  // High Merit Scholarship
+  const highMerit = ScholarshipTemplates.highMerit();
+  validateScholarshipData(highMerit);
+  scholarships.push(await prisma.scholarship.create({ data: highMerit }));
+
+  // Need-Based Scholarship
+  const needBased = ScholarshipTemplates.needBased();
+  validateScholarshipData(needBased);
+  scholarships.push(await prisma.scholarship.create({ data: needBased }));
+
+  // STEM Scholarship
+  const stemScholarship = ScholarshipTemplates.stemScholarship();
+  validateScholarshipData(stemScholarship);
+  scholarships.push(await prisma.scholarship.create({ data: stemScholarship }));
+
+  // Women in STEM
+  const womenInStem = createScholarship({
+    name: "Women in STEM Excellence Award",
+    provider: "National STEM Foundation",
+    description: "Supporting women pursuing STEM degrees with demonstrated academic excellence and commitment to innovation.",
+    awardAmount: 5000,
+    numberOfAwards: 10,
+    renewable: true,
+    renewalYears: 4,
+    deadline: new Date("2025-12-15"),
+    eligibilityCriteria: EligibilityPatterns.womenInStem() as Prisma.InputJsonValue,
+    essayPrompts: [
+      {
+        prompt: "Describe a challenge you overcame in pursuing STEM education",
+        wordLimit: 750,
+        required: true,
+      },
+    ],
+    requiredDocuments: ["Transcript", "Resume"],
+    recommendationCount: 1,
+    tags: ["STEM", "Women", "Merit-based"],
+    category: "Merit-based",
+    verified: true,
+  });
+  validateScholarshipData(womenInStem);
+  scholarships.push(await prisma.scholarship.create({ data: womenInStem }));
+
+  // First Generation Scholarship
+  const firstGen = createScholarship({
+    name: "First Generation Scholars Program",
+    provider: "Educational Opportunity Foundation",
+    description: "Empowering first-generation college students to break barriers and achieve their educational dreams.",
+    awardAmount: 3000,
+    numberOfAwards: 50,
+    deadline: new Date("2026-02-28"),
+    eligibilityCriteria: EligibilityPatterns.firstGeneration() as Prisma.InputJsonValue,
+    requiredDocuments: ["FAFSA", "Personal Statement"],
+    recommendationCount: 1,
+    tags: ["First Generation", "Need-based"],
+    category: "Need-based",
+    verified: true,
+  });
+  validateScholarshipData(firstGen);
+  scholarships.push(await prisma.scholarship.create({ data: firstGen }));
+
+  // Community Service Scholarship
+  const communityService = createScholarship({
+    name: "Community Champions Scholarship",
+    provider: "Civic Engagement Alliance",
+    description: "Recognizing students who demonstrate exceptional commitment to community service and social impact.",
+    awardAmount: 2000,
+    numberOfAwards: 30,
+    deadline: new Date("2026-01-31"),
+    eligibilityCriteria: EligibilityPatterns.communityService() as Prisma.InputJsonValue,
+    essayPrompts: [
+      {
+        prompt: "Describe your most meaningful community service experience and its impact",
+        wordLimit: 500,
+        required: true,
+      },
+    ],
+    requiredDocuments: ["Service Verification Form"],
+    tags: ["Community Service", "Leadership"],
+    category: "Merit-based",
+    verified: true,
+  });
+  validateScholarshipData(communityService);
+  scholarships.push(await prisma.scholarship.create({ data: communityService }));
+
+  // Leadership Scholarship
+  const leadership = createScholarship({
+    name: "Future Leaders Scholarship",
+    provider: "Leadership Development Institute",
+    description: "Investing in student leaders who demonstrate potential to create positive change in their communities.",
+    awardAmount: 4000,
+    numberOfAwards: 20,
+    renewable: true,
+    renewalYears: 2,
+    deadline: new Date("2025-11-15"),
+    eligibilityCriteria: EligibilityPatterns.leadership() as Prisma.InputJsonValue,
+    essayPrompts: [
+      {
+        prompt: "Describe a leadership role and how it shaped your perspective",
+        wordLimit: 600,
+        required: true,
+      },
+    ],
+    requiredDocuments: ["Leadership Portfolio"],
+    recommendationCount: 2,
+    tags: ["Leadership", "Merit-based"],
+    category: "Merit-based",
+    verified: true,
+  });
+  validateScholarshipData(leadership);
+  scholarships.push(await prisma.scholarship.create({ data: leadership }));
+
+  // Geographic-specific scholarships
+  const caResidents = createScholarship({
+    name: "California Futures Scholarship",
+    provider: "California Education Foundation",
+    description: "Supporting California residents in pursuing higher education and contributing to the state's future.",
+    awardAmount: 3500,
+    numberOfAwards: 100,
+    deadline: new Date("2025-12-31"),
+    eligibilityCriteria: EligibilityPatterns.geographic(["CA"]) as Prisma.InputJsonValue,
+    requiredDocuments: ["Proof of Residency"],
+    tags: ["California", "Regional"],
+    category: "Merit-based",
+    verified: true,
+  });
+  validateScholarshipData(caResidents);
+  scholarships.push(await prisma.scholarship.create({ data: caResidents }));
+
+  // Underrepresented minorities
+  const underrepresented = createScholarship({
+    name: "Diversity in Education Scholarship",
+    provider: "Equity and Inclusion Institute",
+    description: "Promoting diversity in higher education by supporting underrepresented students in their academic journey.",
+    awardAmount: 2500,
+    numberOfAwards: 40,
+    deadline: new Date("2026-03-15"),
+    eligibilityCriteria: EligibilityPatterns.underrepresented(["Hispanic/Latinx", "African American", "Native American"]) as Prisma.InputJsonValue,
+    tags: ["Diversity", "Inclusion", "Identity-based"],
+    category: "Identity-based",
+    verified: true,
+  });
+  validateScholarshipData(underrepresented);
+  scholarships.push(await prisma.scholarship.create({ data: underrepresented }));
+
+  // Military Affiliation
+  const military = createScholarship({
+    name: "Military Family Scholarship",
+    provider: "Veterans Education Fund",
+    description: "Honoring the sacrifice of military families by supporting educational opportunities for dependents.",
+    awardAmount: 5000,
+    numberOfAwards: 15,
+    renewable: true,
+    renewalYears: 4,
+    deadline: new Date("2025-10-31"),
+    eligibilityCriteria: EligibilityPatterns.military() as Prisma.InputJsonValue,
+    requiredDocuments: ["Military Dependent ID"],
+    tags: ["Military", "Veterans", "Identity-based"],
+    category: "Identity-based",
+    verified: true,
+  });
+  validateScholarshipData(military);
+  scholarships.push(await prisma.scholarship.create({ data: military }));
+
+  console.log(`  Created ${scholarships.length} scholarships with proper eligibility criteria`);
 
   return scholarships;
 }
