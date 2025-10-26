@@ -73,7 +73,7 @@ export const test = base.extend<TestFixtures>({
 
   // Pre-authenticated page fixture
   // Creates a test user and returns a page with active session
-  authenticatedPage: async ({ page, userFactory, authHelper }, use) => {
+  authenticatedPage: async ({ page, userFactory, authHelper }: any, use: any) => {
     const user = await userFactory.createUser()
     await authHelper.setAuthState(user)
     await use(page)
