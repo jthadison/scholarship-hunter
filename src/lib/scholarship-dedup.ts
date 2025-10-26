@@ -106,9 +106,9 @@ export async function findDuplicates(
       const searchQuery = `${scholarship.name} ${scholarship.provider}`
       const results = fuse.search(searchQuery)
 
-      if (results.length > 0 && results[0].score !== undefined) {
+      if (results.length > 0 && results[0]?.score !== undefined) {
         const match = results[0]
-        const similarity = 1 - match.score // Convert distance to similarity
+        const similarity = 1 - (match.score ?? 0) // Convert distance to similarity
 
         if (similarity >= threshold) {
           duplicates.push({
@@ -128,6 +128,8 @@ export async function findDuplicates(
   if (checkWithinArray) {
     for (let i = 0; i < scholarships.length; i++) {
       const scholarship = scholarships[i]
+      if (!scholarship) continue
+
       const key = `${scholarship.name.toLowerCase()}|${scholarship.provider.toLowerCase()}`
 
       // Skip if already marked as duplicate against existing DB
@@ -257,5 +259,5 @@ export async function checkDuplicate(
     checkWithinArray: false,
   })
 
-  return duplicates.length > 0 ? duplicates[0] : null
+  return duplicates.length > 0 ? (duplicates[0] ?? null) : null
 }

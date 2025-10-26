@@ -45,13 +45,13 @@ interface ImportOptions {
 function parseArgs(): { filePath: string; options: ImportOptions } {
   const args = process.argv.slice(2)
 
-  if (args.length === 0 || args[0].startsWith('--')) {
+  if (args.length === 0 || args[0]?.startsWith('--')) {
     console.error('Error: File path is required')
     console.error('Usage: npm run import:json -- <file-path> [options]')
     process.exit(1)
   }
 
-  const filePath = args[0]
+  const filePath = args[0]!
   const options: ImportOptions = {
     dryRun: args.includes('--dry-run'),
     skipDuplicates: args.includes('--skip-duplicates'),
@@ -62,7 +62,7 @@ function parseArgs(): { filePath: string; options: ImportOptions } {
   // Parse batch size if provided
   const batchSizeIndex = args.indexOf('--batch-size')
   if (batchSizeIndex !== -1 && args[batchSizeIndex + 1]) {
-    const size = parseInt(args[batchSizeIndex + 1], 10)
+    const size = parseInt(args[batchSizeIndex + 1]!, 10)
     if (!isNaN(size) && size > 0) {
       options.batchSize = size
     }
@@ -340,4 +340,5 @@ if (require.main === module) {
   })
 }
 
-export { importScholarships, ImportOptions }
+export { importScholarships }
+export type { ImportOptions }

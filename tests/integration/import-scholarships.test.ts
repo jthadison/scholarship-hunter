@@ -119,8 +119,8 @@ describe('Scholarship Import Integration Tests', () => {
       })
 
       expect(imported.length).toBe(2)
-      expect(imported[0].name).toContain('[TEST-IMPORT]')
-      expect(imported[0].verified).toBe(true)
+      expect(imported[0]?.name).toContain('[TEST-IMPORT]')
+      expect(imported[0]?.verified).toBe(true)
     })
 
     it('should handle validation errors gracefully', async () => {
@@ -166,7 +166,7 @@ describe('Scholarship Import Integration Tests', () => {
       })
 
       expect(imported.length).toBe(1)
-      expect(imported[0].name).toBe('[TEST-IMPORT] Valid Scholarship')
+      expect(imported[0]?.name).toBe('[TEST-IMPORT] Valid Scholarship')
     })
   })
 
@@ -198,7 +198,7 @@ describe('Scholarship Import Integration Tests', () => {
       })
 
       expect(imported.length).toBe(2)
-      expect(imported[0].verified).toBe(true)
+      expect(imported[0]?.verified).toBe(true)
     })
   })
 
@@ -298,8 +298,8 @@ describe('Scholarship Import Integration Tests', () => {
       })
 
       expect(duplicates.length).toBe(1)
-      expect(duplicates[0].isExact).toBe(true)
-      expect(duplicates[0].similarity).toBe(1.0)
+      expect(duplicates[0]?.isExact).toBe(true)
+      expect(duplicates[0]?.similarity).toBe(1.0)
     })
 
     it('should detect fuzzy duplicate scholarships', async () => {
@@ -332,7 +332,7 @@ describe('Scholarship Import Integration Tests', () => {
 
       // Should find duplicate match
       if (duplicates.length > 0) {
-        expect(duplicates[0].similarity).toBeGreaterThan(0.7)
+        expect(duplicates[0]?.similarity).toBeGreaterThan(0.7)
       } else {
         // If fuzzy matching doesn't work perfectly, that's okay for MVP
         // The exact match test covers the critical duplicate detection
@@ -465,7 +465,7 @@ describe('Scholarship Import Integration Tests', () => {
       })
 
       expect(imported.length).toBe(1)
-      expect(imported[0].name).toBe('[TEST-IMPORT] Current Scholarship')
+      expect(imported[0]?.name).toBe('[TEST-IMPORT] Current Scholarship')
     })
   })
 

@@ -129,7 +129,7 @@ function randomCategory(): 'Merit-based' | 'Need-based' | 'Identity-based' | 'Mi
 /**
  * Generate scholarship name
  */
-function generateScholarshipName(category: string, field?: string): string {
+function generateScholarshipName(_category: string, field?: string): string {
   const prefix = faker.helpers.arrayElement(SCHOLARSHIP_PREFIXES)
   const suffix = faker.helpers.arrayElement(SCHOLARSHIP_SUFFIXES)
 
@@ -359,8 +359,8 @@ function generateScholarship(): any { // eslint-disable-line @typescript-eslint/
   const applicantPoolSize = Math.random() > 0.5 ? faker.number.int({ min: 100, max: 5000 }) : undefined
   const acceptanceRate = applicantPoolSize ? faker.number.float({ min: 0.05, max: 0.4, fractionDigits: 2 }) : undefined
 
-  // Tags
-  const tags = [category]
+  // Tags - build as array of strings
+  const tags: string[] = [category]
   if (field) tags.push(field)
   if (renewable) tags.push('Renewable')
   if (eligibilityCriteria.special?.firstGenerationRequired) tags.push('First-Generation')
