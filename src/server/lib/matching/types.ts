@@ -8,6 +8,11 @@
  */
 
 /**
+ * Success tier type (Story 2.5)
+ */
+export type SuccessTier = 'STRONG_MATCH' | 'COMPETITIVE_MATCH' | 'REACH' | 'LONG_SHOT'
+
+/**
  * Match score result containing overall score and dimensional breakdowns
  *
  * All scores range from 0-100:
@@ -36,6 +41,15 @@ export interface MatchScore {
 
   /** Special criteria score (0-100) - first-gen, military, disabilities */
   specialCriteriaScore: number
+
+  /** Story 2.5: Success probability percentage (0-100) */
+  successProbability: number
+
+  /** Story 2.5: Success tier classification */
+  successTier: SuccessTier
+
+  /** Story 2.5: Competition factor (0.0-1.0) */
+  competitionFactor: number
 
   /** Timestamp when match was calculated */
   calculatedAt: Date
