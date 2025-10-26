@@ -7,8 +7,8 @@
  * @see docs/stories/epic-2/story-2.3.md - Story requirements
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
-import type { Student, Profile, Scholarship, FinancialNeed } from '@prisma/client'
+import { describe, it, expect } from 'vitest'
+import type { Profile, Scholarship, FinancialNeed } from '@prisma/client'
 import { applyHardFilters, filterScholarships, FilterDimension } from '@/lib/matching/hard-filter'
 import type { StudentWithProfile } from '@/lib/matching/hard-filter'
 import type { EligibilityCriteria } from '@/types/scholarship'
@@ -97,7 +97,7 @@ function createMockScholarship(
     renewalYears: null,
     deadline: new Date('2025-12-31'),
     announcementDate: new Date('2026-01-15'),
-    eligibilityCriteria: eligibilityCriteria as unknown as Record<string, unknown>,
+    eligibilityCriteria: eligibilityCriteria as any,
     essayPrompts: null,
     requiredDocuments: [],
     recommendationCount: 0,
@@ -141,10 +141,10 @@ describe('Academic Dimension Filter (AC #1, #2, #3)', () => {
 
     expect(result.eligible).toBe(false)
     expect(result.failedCriteria).toHaveLength(1)
-    expect(result.failedCriteria[0].dimension).toBe(FilterDimension.ACADEMIC)
-    expect(result.failedCriteria[0].criterion).toBe('minGPA')
-    expect(result.failedCriteria[0].required).toBe(3.0)
-    expect(result.failedCriteria[0].actual).toBe(2.8)
+    expect(result.failedCriteria[0]!.dimension).toBe(FilterDimension.ACADEMIC)
+    expect(result.failedCriteria[0]!.criterion).toBe('minGPA')
+    expect(result.failedCriteria[0]!.required).toBe(3.0)
+    expect(result.failedCriteria[0]!.actual).toBe(2.8)
   })
 
   it('fails when student has null GPA but minimum is required', () => {
@@ -156,7 +156,7 @@ describe('Academic Dimension Filter (AC #1, #2, #3)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].actual).toBe(null)
+    expect(result.failedCriteria[0]!.actual).toBe(null)
   })
 
   it('handles GPA range (min and max)', () => {
@@ -179,7 +179,7 @@ describe('Academic Dimension Filter (AC #1, #2, #3)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('maxGPA')
+    expect(result.failedCriteria[0]!.criterion).toBe('maxGPA')
   })
 
   it('passes when student SAT score meets minimum', () => {
@@ -202,7 +202,7 @@ describe('Academic Dimension Filter (AC #1, #2, #3)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('minSAT')
+    expect(result.failedCriteria[0]!.criterion).toBe('minSAT')
   })
 
   it('passes when student ACT score meets minimum', () => {
@@ -225,7 +225,7 @@ describe('Academic Dimension Filter (AC #1, #2, #3)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('minACT')
+    expect(result.failedCriteria[0]!.criterion).toBe('minACT')
   })
 
   it('calculates class rank percentile correctly (rank 10/100 = top 10%)', () => {
@@ -248,7 +248,7 @@ describe('Academic Dimension Filter (AC #1, #2, #3)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('classRankPercentile')
+    expect(result.failedCriteria[0]!.criterion).toBe('classRankPercentile')
   })
 })
 
@@ -277,8 +277,8 @@ describe('Demographic Dimension Filter (AC #1, #2, #4, #5)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].dimension).toBe(FilterDimension.DEMOGRAPHIC)
-    expect(result.failedCriteria[0].criterion).toBe('requiredGender')
+    expect(result.failedCriteria[0]!.dimension).toBe(FilterDimension.DEMOGRAPHIC)
+    expect(result.failedCriteria[0]!.criterion).toBe('requiredGender')
   })
 
   it('passes when requiredGender is "Any"', () => {
@@ -312,7 +312,7 @@ describe('Demographic Dimension Filter (AC #1, #2, #4, #5)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('requiredEthnicity')
+    expect(result.failedCriteria[0]!.criterion).toBe('requiredEthnicity')
   })
 
   it('passes when student age is within range', () => {
@@ -339,7 +339,7 @@ describe('Demographic Dimension Filter (AC #1, #2, #4, #5)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('ageMin')
+    expect(result.failedCriteria[0]!.criterion).toBe('ageMin')
   })
 
   it('passes when student state is in required list', () => {
@@ -362,7 +362,7 @@ describe('Demographic Dimension Filter (AC #1, #2, #4, #5)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('requiredState')
+    expect(result.failedCriteria[0]!.criterion).toBe('requiredState')
   })
 })
 
@@ -391,7 +391,7 @@ describe('Major/Field Dimension Filter (AC #1, #2, #5)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('eligibleMajors')
+    expect(result.failedCriteria[0]!.criterion).toBe('eligibleMajors')
   })
 
   it('fails when student major is in excluded list', () => {
@@ -403,7 +403,7 @@ describe('Major/Field Dimension Filter (AC #1, #2, #5)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('excludedMajors')
+    expect(result.failedCriteria[0]!.criterion).toBe('excludedMajors')
   })
 
   it('passes when student field of study matches requirement', () => {
@@ -426,7 +426,7 @@ describe('Major/Field Dimension Filter (AC #1, #2, #5)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('requiredFieldOfStudy')
+    expect(result.failedCriteria[0]!.criterion).toBe('requiredFieldOfStudy')
   })
 })
 
@@ -455,7 +455,7 @@ describe('Experience Dimension Filter (AC #1, #2, #3)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('minVolunteerHours')
+    expect(result.failedCriteria[0]!.criterion).toBe('minVolunteerHours')
   })
 
   it('passes when leadership is required and student has leadership roles', () => {
@@ -482,7 +482,7 @@ describe('Experience Dimension Filter (AC #1, #2, #3)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('leadershipRequired')
+    expect(result.failedCriteria[0]!.criterion).toBe('leadershipRequired')
   })
 })
 
@@ -507,7 +507,7 @@ describe('Financial Dimension Filter (AC #1, #2, #4)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('requiresFinancialNeed')
+    expect(result.failedCriteria[0]!.criterion).toBe('requiresFinancialNeed')
   })
 
   it('passes when Pell Grant is required and student is eligible', () => {
@@ -530,7 +530,7 @@ describe('Financial Dimension Filter (AC #1, #2, #4)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('pellGrantRequired')
+    expect(result.failedCriteria[0]!.criterion).toBe('pellGrantRequired')
   })
 })
 
@@ -555,7 +555,7 @@ describe('Special Criteria Dimension Filter (AC #1, #2, #4)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('firstGenerationRequired')
+    expect(result.failedCriteria[0]!.criterion).toBe('firstGenerationRequired')
   })
 
   it('passes when citizenship matches requirement', () => {
@@ -578,7 +578,7 @@ describe('Special Criteria Dimension Filter (AC #1, #2, #4)', () => {
     const result = applyHardFilters(student, scholarship)
 
     expect(result.eligible).toBe(false)
-    expect(result.failedCriteria[0].criterion).toBe('citizenshipRequired')
+    expect(result.failedCriteria[0]!.criterion).toBe('citizenshipRequired')
   })
 })
 
@@ -619,7 +619,7 @@ describe('Master Hard Filter Function (AC #1, #2, #7)', () => {
 
     expect(result.eligible).toBe(false)
     expect(result.failedCriteria).toHaveLength(1)
-    expect(result.failedCriteria[0].dimension).toBe(FilterDimension.ACADEMIC)
+    expect(result.failedCriteria[0]!.dimension).toBe(FilterDimension.ACADEMIC)
   })
 
   it('captures all failed criteria when student fails multiple dimensions', () => {

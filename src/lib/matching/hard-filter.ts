@@ -240,9 +240,9 @@ export function filterScholarships(
   student: StudentWithProfile,
   scholarships: Scholarship[],
   config?: HardFilterConfig,
-  includeStatistics = true
+  includeStatistics = false
 ): Scholarship[] {
-  const startTime = performance.now()
+  const startTime = includeStatistics ? performance.now() : 0
   const rejectionsByDimension: Record<FilterDimension, number> = {
     [FilterDimension.ACADEMIC]: 0,
     [FilterDimension.DEMOGRAPHIC]: 0,
@@ -268,14 +268,6 @@ export function filterScholarships(
   const duration = performance.now() - startTime
 
   if (includeStatistics) {
-    const statistics: FilterStatistics = {
-      totalScholarships: scholarships.length,
-      eligibleCount: eligible.length,
-      rejectedCount: scholarships.length - eligible.length,
-      executionTimeMs: duration,
-      rejectionsByDimension,
-    }
-
     console.log(`[Hard Filter] Filtered ${scholarships.length} scholarships in ${duration.toFixed(2)}ms`)
     console.log(`[Hard Filter] Eligible: ${eligible.length}, Rejected: ${scholarships.length - eligible.length}`)
     console.log(`[Hard Filter] Rejections by dimension:`, rejectionsByDimension)

@@ -11,7 +11,7 @@
  * @see docs/tech-spec-epic-2.md:222-363 - Complete matching algorithm specification
  */
 
-import type { Student, Profile, Scholarship } from '@prisma/client'
+import type { Scholarship } from '@prisma/client'
 import type { StudentWithProfile } from './hard-filter'
 import { applyHardFilters, filterScholarships, getFilterStatistics } from './hard-filter'
 import type { FilterStatistics } from './hard-filter'

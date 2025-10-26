@@ -62,7 +62,8 @@
       "Bash(done)",
       "Bash(npx prisma format:*)",
       "Bash(npx prisma db push:*)",
-      "Bash(pnpm list:*)"
+      "Bash(pnpm list:*)",
+      "Bash(npm run typecheck:*)"
     ],
     "deny": [],
     "ask": []

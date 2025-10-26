@@ -26,8 +26,8 @@ function parseEFCMax(efcRange: string | null | undefined): number | null {
   // Handle formats like "0-5000", "10000+"
   if (efcRange.includes('-')) {
     const parts = efcRange.split('-')
-    const max = parseInt(parts[1], 10)
-    return isNaN(max) ? null : max
+    const max = parts[1] ? parseInt(parts[1], 10) : null
+    return max !== null && !isNaN(max) ? max : null
   }
 
   if (efcRange.includes('+')) {

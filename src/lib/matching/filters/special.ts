@@ -58,11 +58,8 @@ export function filterSpecial(
         required: criteria.militaryAffiliation,
         actual: null,
       })
-    } else if (
-      criteria.militaryAffiliation !== 'Any' &&
-      profile.militaryAffiliation !== criteria.militaryAffiliation
-    ) {
-      // Allow "Any" to match all, otherwise must match exactly
+    } else if (profile.militaryAffiliation !== criteria.militaryAffiliation) {
+      // Must match exactly (we already checked for 'Any' above)
       failedCriteria.push({
         dimension: FilterDimension.SPECIAL,
         criterion: 'militaryAffiliation',
