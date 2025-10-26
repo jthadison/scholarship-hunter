@@ -1,4 +1,13 @@
-import { test, expect } from '@playwright/test'
+/**
+ * Authentication - Session Management Tests
+ *
+ * Migrated to use production-ready testing patterns:
+ * - Custom fixtures from support/fixtures
+ * - authHelper for session management
+ * - userFactory for authenticated tests
+ */
+
+import { test, expect } from '../../support/fixtures'
 
 test.describe('Session Security', () => {
   test('should use HTTP-only cookies for session storage', async ({ page, context }) => {
@@ -33,10 +42,30 @@ test.describe('Session Security', () => {
 })
 
 test.describe('Session Management', () => {
-  test('should maintain session state across page navigation', async ({ page }) => {
-    // This test requires actual authentication, which we can't fully test without real credentials
-    // But we can verify the session persistence mechanism exists
+  test('should maintain session state for authenticated users', async ({
+    authenticatedPage,
+    userFactory,
+    authHelper
+  }) => {
+    // ✅ NEW: Test session persistence using fixtures
+    const user = await userFactory.createUserWithProfile()
 
+    // Navigate to different pages
+    await authenticatedPage.goto('/dashboard')
+    await expect(authenticatedPage.locator('[data-testid="dashboard-container"]')).toBeVisible()
+
+    await authenticatedPage.goto('/settings')
+    // Should still be authenticated
+
+    await authenticatedPage.goto('/dashboard')
+    // Should still be authenticated
+    await expect(authenticatedPage.locator('[data-testid="dashboard-container"]')).toBeVisible()
+
+    // Verify authentication state is maintained
+    expect(await authHelper.isAuthenticated()).toBe(true)
+  })
+
+  test('should maintain session state across page navigation', async ({ page }) => {
     await page.goto('/')
 
     // Navigate to different pages
@@ -44,18 +73,40 @@ test.describe('Session Management', () => {
     await page.goto('/sign-up')
     await page.goto('/')
 
-    // Verify Clerk is initialized on all pages
-    const clerkInitialized = await page.evaluate(() => {
+    // Verify window is defined
+    const windowDefined = await page.evaluate(() => {
       return window !== undefined
     })
 
-    expect(clerkInitialized).toBe(true)
+    expect(windowDefined).toBe(true)
+  })
+
+  test('should clear session on logout', async ({
+    authenticatedPage,
+    userFactory,
+    authHelper
+  }) => {
+    // ✅ NEW: Test logout functionality
+    const user = await userFactory.createUserWithProfile()
+
+    // Verify initially authenticated
+    expect(await authHelper.isAuthenticated()).toBe(true)
+
+    // Logout
+    await authHelper.logout()
+
+    // Verify session cleared
+    expect(await authHelper.isAuthenticated()).toBe(false)
+
+    // Try to access protected route - should redirect
+    await authenticatedPage.goto('/dashboard')
+    await authenticatedPage.waitForURL('**/sign-in**')
+    expect(authenticatedPage.url()).toContain('/sign-in')
   })
 })
 
 test.describe('Security Headers', () => {
-  test('should serve pages over HTTPS in production', async ({ page }) => {
-    // In development, we use HTTP, but verify the setup supports HTTPS
+  test('should serve pages with Next.js framework', async ({ page }) => {
     await page.goto('/')
 
     // Check that Next.js is running
