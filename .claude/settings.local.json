@@ -53,7 +53,10 @@
       "Bash(gh pr list:*)",
       "Bash(gh run:*)",
       "Bash(npx prisma migrate dev:*)",
-      "Bash(npx prisma generate:*)"
+      "Bash(npx prisma generate:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(git branch:*)",
+      "Bash(pnpm run postinstall:*)"
     ],
     "deny": [],
     "ask": []
