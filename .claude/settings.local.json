@@ -61,7 +61,8 @@
       "Bash(do sed -i 's|\\.\\./story-context-1\\.\\([4-7]\\)\\.xml|story-context-1.\\1.xml|g' \"$file\")",
       "Bash(done)",
       "Bash(npx prisma format:*)",
-      "Bash(npx prisma db push:*)"
+      "Bash(npx prisma db push:*)",
+      "Bash(pnpm list:*)"
     ],
     "deny": [],
     "ask": []
