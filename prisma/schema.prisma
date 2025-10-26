@@ -192,13 +192,14 @@ model Scholarship {
   awardAmountMax Int? // Maximum if range
   numberOfAwards Int     @default(1)
   renewable      Boolean @default(false)
+  renewalYears   Int? // Number of years renewable
 
   // Deadlines
   deadline         DateTime
   announcementDate DateTime?
 
   // Eligibility Criteria (JSON for flexibility)
-  eligibilityCriteria Json?
+  eligibilityCriteria Json
 
   // Application Requirements
   essayPrompts        Json? // Array of essay prompts
@@ -211,8 +212,8 @@ model Scholarship {
 
   // Source Verification
   sourceUrl    String?
-  lastVerified DateTime?
-  verified     Boolean   @default(false)
+  lastVerified DateTime @default(now())
+  verified     Boolean  @default(false)
 
   // Search/Discovery
   tags     String[]
