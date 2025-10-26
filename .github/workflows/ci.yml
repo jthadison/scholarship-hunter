@@ -140,6 +140,12 @@ jobs:
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/scholarship_hunter_test"
           DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/scholarship_hunter_test"
 
+      - name: Run database migrations
+        run: pnpm prisma db push
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/scholarship_hunter_test"
+          DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/scholarship_hunter_test"
+
       - name: Run Vitest tests
         run: pnpm run test
         env:
