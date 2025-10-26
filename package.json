@@ -14,7 +14,10 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:push": "prisma db push"
+    "prisma:push": "prisma db push",
+    "import:csv": "tsx scripts/import-scholarships-csv.ts",
+    "import:json": "tsx scripts/import-scholarships-json.ts",
+    "seed:mvp": "tsx scripts/seed-mvp.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -41,6 +44,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "date-fns": "^4.1.0",
+    "fuse.js": "^7.1.0",
     "lucide-react": "^0.451.0",
     "next": "^14.2.0",
     "react": "^18.3.0",
@@ -60,6 +64,7 @@
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
     "@types/node": "^22.0.0",
+    "@types/papaparse": "^5.3.16",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",
@@ -67,6 +72,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.0",
     "jsdom": "^25.0.0",
+    "papaparse": "^5.5.3",
     "postcss": "^8.4.0",
     "prisma": "^5.22.0",
     "tailwindcss": "^3.4.0",

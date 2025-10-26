@@ -1,0 +1,125 @@
+[
+  {
+    "name": "Women in STEM Award",
+    "provider": "National STEM Foundation",
+    "description": "Scholarship supporting women pursuing STEM degrees at accredited universities. Awarded annually to outstanding female students demonstrating excellence in science, technology, engineering, or mathematics fields.",
+    "website": "https://example.org/stem-women",
+    "contactEmail": "scholarships@stemorga.example",
+    "awardAmount": 5000,
+    "awardAmountMax": 10000,
+    "numberOfAwards": 10,
+    "renewable": true,
+    "renewalYears": 4,
+    "deadline": "2025-12-15T23:59:59.000Z",
+    "announcementDate": "2026-02-01T00:00:00.000Z",
+    "eligibilityCriteria": {
+      "academic": {
+        "minGPA": 3.5,
+        "minSAT": 1200,
+        "minACT": 26
+      },
+      "demographic": {
+        "requiredGender": "Female",
+        "ageMin": 18,
+        "ageMax": 25
+      },
+      "majorField": {
+        "eligibleMajors": ["Biology", "Chemistry", "Physics", "Engineering", "Computer Science", "Mathematics"],
+        "requiredFieldOfStudy": ["STEM"]
+      },
+      "experience": {
+        "minVolunteerHours": 50,
+        "leadershipRequired": true
+      },
+      "special": {
+        "citizenshipRequired": "US Citizen"
+      }
+    },
+    "essayPrompts": [
+      {
+        "prompt": "Describe how you plan to use your STEM education to make a positive impact in your community.",
+        "wordLimit": 500,
+        "required": true
+      },
+      {
+        "prompt": "Discuss a challenge you faced in pursuing STEM education and how you overcame it.",
+        "wordLimit": 300,
+        "required": false
+      }
+    ],
+    "requiredDocuments": ["Transcript", "Letter of Recommendation", "Resume"],
+    "recommendationCount": 2,
+    "applicantPoolSize": 500,
+    "acceptanceRate": 0.2,
+    "sourceUrl": "https://example.org/stem-women",
+    "tags": ["STEM", "Women", "Merit-based", "Renewable"],
+    "category": "Merit-based",
+    "verified": true
+  },
+  {
+    "name": "Academic Excellence Scholarship",
+    "provider": "State Education Board",
+    "description": "Merit-based scholarship for high-achieving students with excellent academic records and standardized test scores. Recognizes outstanding academic performance.",
+    "website": "https://example.org/academic-excellence",
+    "awardAmount": 10000,
+    "numberOfAwards": 5,
+    "renewable": true,
+    "renewalYears": 4,
+    "deadline": "2025-11-30T23:59:59.000Z",
+    "eligibilityCriteria": {
+      "academic": {
+        "minGPA": 3.8,
+        "minSAT": 1400,
+        "minACT": 32
+      }
+    },
+    "requiredDocuments": ["Transcript", "SAT/ACT Scores"],
+    "recommendationCount": 1,
+    "applicantPoolSize": 1000,
+    "acceptanceRate": 0.05,
+    "sourceUrl": "https://example.org/academic-excellence",
+    "tags": ["Merit-based", "Academic", "High-achieving"],
+    "category": "Merit-based",
+    "verified": true
+  },
+  {
+    "name": "First Generation College Fund",
+    "provider": "Community Foundation",
+    "description": "Need-based scholarship for first-generation college students from low-income families. Supports students who are the first in their family to attend college.",
+    "website": "https://example.org/first-gen",
+    "awardAmount": 3000,
+    "numberOfAwards": 20,
+    "renewable": false,
+    "deadline": "2026-03-15T23:59:59.000Z",
+    "eligibilityCriteria": {
+      "academic": {
+        "minGPA": 2.5
+      },
+      "financial": {
+        "requiresFinancialNeed": true,
+        "maxEFC": 5000,
+        "pellGrantRequired": true,
+        "financialNeedLevel": "HIGH"
+      },
+      "special": {
+        "firstGenerationRequired": true,
+        "citizenshipRequired": "US Citizen"
+      }
+    },
+    "essayPrompts": [
+      {
+        "prompt": "Describe the challenges you've faced as a first-generation college student and how you plan to overcome them.",
+        "wordLimit": 750,
+        "required": true
+      }
+    ],
+    "requiredDocuments": ["Transcript", "FAFSA SAR", "Personal Statement"],
+    "recommendationCount": 1,
+    "applicantPoolSize": 800,
+    "acceptanceRate": 0.25,
+    "sourceUrl": "https://example.org/first-gen",
+    "tags": ["First-Generation", "Need-based", "Low-income"],
+    "category": "Need-based",
+    "verified": true
+  }
+]
