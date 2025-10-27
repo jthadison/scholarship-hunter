@@ -56,6 +56,7 @@ model Student {
   analyticsSnapshots AnalyticsSnapshot[]
   notifications      Notification[]
   notificationPreferences NotificationPreferences?
+  alerts             Alert[] // Story 3.4
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -378,6 +379,7 @@ model Application {
   essays          Essay[]
   documents       Document[]
   recommendations Recommendation[]
+  alerts          Alert[] // Story 3.4
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -426,6 +428,44 @@ enum ApplicationStatus {
   AWARDED
   DENIED
   WITHDRAWN
+}
+
+// Story 3.4: Deadline Alert System
+model Alert {
+  id            String      @id @default(cuid())
+  applicationId String
+  studentId     String
+  alertType     AlertType
+  status        AlertStatus @default(PENDING)
+  sentAt        DateTime?
+  snoozeUntil   DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  student     Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId])
+  @@index([studentId, status])
+  @@index([sentAt])
+  @@index([snoozeUntil])
+}
+
+enum AlertType {
+  DEADLINE_30D
+  DEADLINE_14D
+  DEADLINE_7D
+  DEADLINE_3D
+  DEADLINE_1D
+  DEADLINE_TODAY
+}
+
+enum AlertStatus {
+  PENDING
+  SENT
+  SNOOZED
+  DISMISSED
 }
 
 // ============================================================================

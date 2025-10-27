@@ -11,6 +11,7 @@ import { serve } from 'inngest/next'
 import { inngest } from '@/inngest/client'
 import { meilisearchSync, meilisearchSyncManual } from '@/inngest/functions/meilisearch-sync'
 import { dailyScholarshipMatching } from '@/inngest/functions/daily-matching'
+import { deadlineAlertsJob } from '@/inngest/functions/deadline-alerts'
 
 /**
  * Inngest handler
@@ -24,6 +25,7 @@ const handler = serve({
     meilisearchSync, // Hourly cron sync
     meilisearchSyncManual, // Manual sync trigger
     dailyScholarshipMatching, // Daily scholarship matching at 6 AM
+    deadlineAlertsJob, // Story 3.4: Daily deadline alerts at 8 AM
   ],
 })
 
