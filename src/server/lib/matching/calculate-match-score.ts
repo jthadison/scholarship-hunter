@@ -39,6 +39,9 @@ import { estimateEffortLevel } from './estimate-effort-level'
 import { calculateStrategicValue } from './calculate-strategic-value'
 import { classifyStrategicValue } from './classify-strategic-value'
 
+// Story 2.7: Priority tier assignment
+import { assignPriorityTier } from './assign-priority-tier'
+
 /**
  * Calculate comprehensive match score for student-scholarship pair
  *
@@ -123,6 +126,14 @@ export async function calculateMatchScore(
   // Story 2.6: Classify strategic value tier
   const strategicValueClassification = classifyStrategicValue(strategicValueResult.strategicValue)
 
+  // Story 2.7: Assign priority tier based on match score, success probability, strategic value, and award amount
+  const priorityTier = assignPriorityTier(
+    overallMatchScore,
+    successProbability,
+    strategicValueResult.strategicValue,
+    scholarship.awardAmount
+  )
+
   // Return structured match score
   return {
     overallMatchScore,
@@ -141,6 +152,8 @@ export async function calculateMatchScore(
     applicationEffort: effortEstimation.level,
     effortBreakdown: effortEstimation.breakdown,
     strategicValueTier: strategicValueClassification.tier,
+    // Story 2.7: Include priority tier
+    priorityTier,
     calculatedAt: new Date(),
   }
 }

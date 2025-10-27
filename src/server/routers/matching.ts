@@ -14,6 +14,7 @@ import { router, protectedProcedure } from '../trpc'
 import { TRPCError } from '@trpc/server'
 import { calculateMatchScore, calculateMatchScoresBatch } from '../lib/matching/calculate-match-score'
 import { prisma } from '../db'
+import { PriorityTier } from '@prisma/client'
 
 /**
  * Matching router with procedures for match score operations
@@ -428,6 +429,154 @@ export const matchingRouter = router({
         averageScore: Math.round(averageScore),
         tierDistribution,
         topMatches,
+      }
+    }),
+
+  /**
+   * Get tier counts for a student (Story 2.7)
+   *
+   * Returns the count of matches in each priority tier for dashboard display.
+   *
+   * @input studentId - Student to get tier counts for
+   *
+   * @returns Object with counts for each tier
+   */
+  getTierCounts: protectedProcedure
+    .input(z.object({ studentId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const { studentId } = input
+
+      // Verify student belongs to authenticated user
+      const student = await prisma.student.findUnique({
+        where: { id: studentId },
+        select: { userId: true },
+      })
+
+      if (!student) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: `Student ${studentId} not found`,
+        })
+      }
+
+      if (student.userId !== ctx.userId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You can only view your own tier counts',
+        })
+      }
+
+      // Get counts for each tier using groupBy
+      const tierCounts = await prisma.match.groupBy({
+        by: ['priorityTier'],
+        where: { studentId },
+        _count: {
+          priorityTier: true,
+        },
+      })
+
+      // Transform to object format: { MUST_APPLY: 5, SHOULD_APPLY: 12, ... }
+      const result = {
+        MUST_APPLY: 0,
+        SHOULD_APPLY: 0,
+        IF_TIME_PERMITS: 0,
+        HIGH_VALUE_REACH: 0,
+      }
+
+      tierCounts.forEach((tier) => {
+        result[tier.priorityTier] = tier._count.priorityTier
+      })
+
+      return result
+    }),
+
+  /**
+   * Get matches by specific tier (Story 2.7)
+   *
+   * Convenience endpoint for fetching all matches of a single tier.
+   *
+   * @input studentId - Student to fetch matches for
+   * @input tier - Priority tier to filter by
+   * @input limit - Max number of results (default: 50)
+   * @input offset - Pagination offset (default: 0)
+   *
+   * @returns Array of Match records for the specified tier
+   */
+  getMatchesByTier: protectedProcedure
+    .input(
+      z.object({
+        studentId: z.string(),
+        tier: z.nativeEnum(PriorityTier),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const { studentId, tier, limit, offset } = input
+
+      // Verify student belongs to authenticated user
+      const student = await prisma.student.findUnique({
+        where: { id: studentId },
+        select: { userId: true },
+      })
+
+      if (!student) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: `Student ${studentId} not found`,
+        })
+      }
+
+      if (student.userId !== ctx.userId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You can only view your own matches',
+        })
+      }
+
+      // Fetch matches for the specified tier
+      const matches = await prisma.match.findMany({
+        where: {
+          studentId,
+          priorityTier: tier,
+        },
+        include: {
+          scholarship: {
+            select: {
+              id: true,
+              name: true,
+              provider: true,
+              awardAmount: true,
+              awardAmountMax: true,
+              deadline: true,
+              description: true,
+              website: true,
+            },
+          },
+        },
+        orderBy: {
+          overallMatchScore: 'desc',
+        },
+        take: limit,
+        skip: offset,
+      })
+
+      // Get total count for pagination
+      const totalCount = await prisma.match.count({
+        where: {
+          studentId,
+          priorityTier: tier,
+        },
+      })
+
+      return {
+        matches,
+        pagination: {
+          total: totalCount,
+          limit,
+          offset,
+          hasMore: offset + limit < totalCount,
+        },
       }
     }),
 })

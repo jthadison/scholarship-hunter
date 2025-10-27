@@ -23,6 +23,11 @@ export type EffortLevel = 'LOW' | 'MEDIUM' | 'HIGH'
 export type StrategicValueTier = 'BEST_BET' | 'HIGH_VALUE' | 'MEDIUM_VALUE' | 'LOW_VALUE'
 
 /**
+ * Priority tier type (Story 2.7)
+ */
+export type PriorityTier = 'MUST_APPLY' | 'SHOULD_APPLY' | 'IF_TIME_PERMITS' | 'HIGH_VALUE_REACH'
+
+/**
  * Effort breakdown (Story 2.6)
  * Index signature added for Prisma JsonValue compatibility
  */
@@ -83,6 +88,9 @@ export interface MatchScore {
 
   /** Story 2.6: Strategic value tier classification */
   strategicValueTier: StrategicValueTier
+
+  /** Story 2.7: Priority tier for application guidance */
+  priorityTier: PriorityTier
 
   /** Timestamp when match was calculated */
   calculatedAt: Date
