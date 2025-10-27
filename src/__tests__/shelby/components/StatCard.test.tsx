@@ -25,17 +25,17 @@ describe('StatCard Component', () => {
   })
 
   it('should render with icon when provided', () => {
-    const { container } = render(<StatCard label="Test" value={100} icon={<Trophy data-testid="trophy-icon" />} />)
+    render(<StatCard label="Test" value={100} icon={<Trophy data-testid="trophy-icon" />} />)
 
     expect(screen.getByTestId('trophy-icon')).toBeInTheDocument()
   })
 
   it('should render without icon when not provided', () => {
-    const { container } = render(<StatCard label="Test" value={100} />)
+    render(<StatCard label="Test" value={100} />)
 
     // Should not have an icon element
-    const icon = container.querySelector('[data-testid="trophy-icon"]')
-    expect(icon).toBeNull()
+    const icon = screen.queryByTestId('trophy-icon')
+    expect(icon).not.toBeInTheDocument()
   })
 
   it('should apply custom className', () => {

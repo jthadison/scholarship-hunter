@@ -21,7 +21,7 @@ export function ShelbyHeader({ firstName, totalMatches }: ShelbyHeaderProps) {
       <div className="flex items-start gap-4">
         {/* Shelby Avatar */}
         <Avatar className="h-16 w-16 border-2 border-orange-300">
-          <AvatarImage src="/agents/shelby.png" alt="Shelby - Your Opportunity Scout" />
+          <AvatarImage src="/agents/shelby.svg" alt="Shelby - Your Opportunity Scout" />
           <AvatarFallback className="bg-orange-500 text-white text-2xl font-bold">
             S
           </AvatarFallback>

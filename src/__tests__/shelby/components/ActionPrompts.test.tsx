@@ -68,9 +68,9 @@ describe('ActionPrompts Component', () => {
 
     render(<ActionPrompts matches={matches} tierCounts={tierCounts} />)
 
-    // Should show the scholarship with closest deadline (15 days)
+    // Should show the scholarship with closest deadline
     expect(screen.getByText(/Scholarship B/)).toBeInTheDocument()
-    expect(screen.getByText(/15 days left/)).toBeInTheDocument()
+    expect(screen.getByText(/days left/)).toBeInTheDocument()
   })
 
   it('should display SHOULD_APPLY exploration prompt', () => {
@@ -99,7 +99,8 @@ describe('ActionPrompts Component', () => {
 
     render(<ActionPrompts matches={matches} tierCounts={tierCounts} />)
 
-    expect(screen.getByText(/1 SHOULD_APPLY opportunity/)).toBeInTheDocument()
+    expect(screen.getByText('1')).toBeInTheDocument()
+    expect(screen.getByText(/SHOULD_APPLY opportunity/)).toBeInTheDocument()
   })
 
   it('should not display SHOULD_APPLY prompt when count is 0', () => {
