@@ -34,6 +34,11 @@ import { calculateSuccessProbability } from './calculate-success-probability'
 import { calculateCompetitionFactor } from './calculate-competition-factor'
 import { classifySuccessTier } from './classify-success-tier'
 
+// Story 2.6: Strategic value calculation
+import { estimateEffortLevel } from './estimate-effort-level'
+import { calculateStrategicValue } from './calculate-strategic-value'
+import { classifyStrategicValue } from './classify-strategic-value'
+
 /**
  * Calculate comprehensive match score for student-scholarship pair
  *
@@ -104,6 +109,20 @@ export async function calculateMatchScore(
   // Story 2.5: Get competition factor for storage
   const competitionFactor = calculateCompetitionFactor(scholarship)
 
+  // Story 2.6: Calculate application effort
+  const effortEstimation = estimateEffortLevel(scholarship)
+
+  // Story 2.6: Calculate strategic value ROI
+  const strategicValueResult = calculateStrategicValue({
+    matchScore: overallMatchScore,
+    successProbability,
+    awardAmount: scholarship.awardAmount,
+    effortLevel: effortEstimation.level,
+  })
+
+  // Story 2.6: Classify strategic value tier
+  const strategicValueClassification = classifyStrategicValue(strategicValueResult.strategicValue)
+
   // Return structured match score
   return {
     overallMatchScore,
@@ -117,6 +136,11 @@ export async function calculateMatchScore(
     successProbability,
     successTier: tierResult.tier,
     competitionFactor,
+    // Story 2.6: Include strategic value fields
+    strategicValue: strategicValueResult.strategicValue,
+    applicationEffort: effortEstimation.level,
+    effortBreakdown: effortEstimation.breakdown,
+    strategicValueTier: strategicValueClassification.tier,
     calculatedAt: new Date(),
   }
 }

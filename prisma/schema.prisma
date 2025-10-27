@@ -250,12 +250,14 @@ model Match {
   specialCriteriaScore Float @default(0)
 
   // Strategic Metrics
-  successProbability Float        @default(0) // 0.0 to 1.0 (Story 2.5: updated to percentage 0-100)
-  successTier        SuccessTier? // Story 2.5: STRONG_MATCH, COMPETITIVE_MATCH, REACH, LONG_SHOT
-  competitionFactor  Float?       // Story 2.5: Competition level factor (0.0-1.0)
-  priorityTier       PriorityTier @default(IF_TIME_PERMITS)
-  strategicValue     Float        @default(0) // ROI calculation
-  applicationEffort  EffortLevel  @default(MEDIUM)
+  successProbability   Float                 @default(0) // 0.0 to 1.0 (Story 2.5: updated to percentage 0-100)
+  successTier          SuccessTier? // Story 2.5: STRONG_MATCH, COMPETITIVE_MATCH, REACH, LONG_SHOT
+  competitionFactor    Float? // Story 2.5: Competition level factor (0.0-1.0)
+  priorityTier         PriorityTier          @default(IF_TIME_PERMITS)
+  strategicValue       Float                 @default(0) // ROI calculation (Story 2.6)
+  applicationEffort    EffortLevel           @default(MEDIUM) // Story 2.6: LOW, MEDIUM, HIGH
+  effortBreakdown      Json? // Story 2.6: { essays: 2, documents: 3, recommendations: 1 }
+  strategicValueTier   StrategicValueTier? // Story 2.6: BEST_BET, HIGH_VALUE, MEDIUM_VALUE, LOW_VALUE
 
   // Gap Analysis
   missingCriteria   Json?
@@ -292,6 +294,13 @@ enum SuccessTier {
   COMPETITIVE_MATCH  // 40-69% success probability
   REACH              // 10-39% success probability
   LONG_SHOT          // <10% success probability
+}
+
+enum StrategicValueTier {
+  BEST_BET       // ROI ≥ 5.0 (apply immediately)
+  HIGH_VALUE     // ROI 3.0-4.9 (strong candidates)
+  MEDIUM_VALUE   // ROI 1.5-2.9 (if time permits)
+  LOW_VALUE      // ROI < 1.5 (probably skip)
 }
 
 // ============================================================================
