@@ -8,14 +8,23 @@
 
 import { Resend } from 'resend'
 
-if (!process.env.RESEND_API_KEY) {
-  throw new Error('RESEND_API_KEY environment variable is required')
-}
+// Allow missing API key during build time, but validate at runtime
+const apiKey = process.env.RESEND_API_KEY || 'build-time-placeholder'
 
 /**
  * Resend client instance for sending transactional emails
+ * Note: Will throw at runtime if RESEND_API_KEY is not set
  */
-export const resend = new Resend(process.env.RESEND_API_KEY)
+export const resend = new Resend(apiKey)
+
+/**
+ * Validate that Resend is properly configured before sending emails
+ */
+export function validateResendConfig() {
+  if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'build-time-placeholder') {
+    throw new Error('RESEND_API_KEY environment variable is required to send emails')
+  }
+}
 
 /**
  * Default sender email address

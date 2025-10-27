@@ -9,7 +9,7 @@
  * Story 2.7: Priority Tiering System
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { PriorityTier } from '@prisma/client'
 
 /**

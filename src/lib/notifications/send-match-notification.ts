@@ -7,7 +7,7 @@
  */
 
 import { type Student, type Scholarship, type PriorityTier, type User } from '@prisma/client'
-import { resend, FROM_EMAIL } from '../email/resend-client'
+import { resend, FROM_EMAIL, validateResendConfig } from '../email/resend-client'
 import { NewScholarshipAlert } from '@/emails/new-scholarship-alert'
 import { prisma } from '@/server/db'
 import { differenceInDays } from 'date-fns'
@@ -80,6 +80,7 @@ export async function sendMatchNotification(data: NotificationData): Promise<voi
     const scholarshipUrl = `${baseUrl}/scholarships/${scholarship.id}`
 
     try {
+      validateResendConfig() // Ensure API key is set before sending
       await resend.emails.send({
         from: FROM_EMAIL,
         to: student.user.email,
