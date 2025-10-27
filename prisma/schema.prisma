@@ -356,7 +356,7 @@ model Application {
 
   // Progress Tracking
   essayCount         Int     @default(0)
-  essayComplete      Boolean @default(false)
+  essayComplete      Int     @default(0)
   documentsRequired  Int     @default(0)
   documentsUploaded  Int     @default(0)
   recsRequired       Int     @default(0)
@@ -368,6 +368,7 @@ model Application {
   targetSubmitDate DateTime?
   actualSubmitDate DateTime?
   outcomeDate      DateTime?
+  awardAmount      Float?
 
   // Notes
   notes String? @db.Text
@@ -383,6 +384,8 @@ model Application {
 
   @@unique([studentId, scholarshipId])
   @@index([studentId, status])
+  @@index([studentId])
+  @@index([scholarshipId])
   @@index([status])
   @@index([targetSubmitDate])
 }

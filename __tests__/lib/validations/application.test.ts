@@ -15,13 +15,14 @@ describe('Application Validation Schemas', () => {
         status: 'IN_PROGRESS',
         priorityTier: 'MUST_APPLY',
         essayCount: 2,
-        essayComplete: true,
+        essayComplete: 2,
         documentsRequired: 3,
         documentsUploaded: 2,
         recsRequired: 2,
         recsReceived: 1,
         progressPercentage: 75,
         targetSubmitDate: new Date('2025-12-31'),
+        awardAmount: 5000,
         notes: 'Working on essays',
       }
 
@@ -133,6 +134,95 @@ describe('Application Validation Schemas', () => {
           studentId: 'clabcdef1234567890',
           scholarshipId: 'clxyz1234567890abc',
           documentsRequired: -1,
+        }
+        const result = applicationCreateSchema.safeParse(application)
+        expect(result.success).toBe(false)
+      })
+    })
+
+    describe('Essay tracking validation', () => {
+      it('should accept when complete equals count', () => {
+        const application = {
+          studentId: 'clabcdef1234567890',
+          scholarshipId: 'clxyz1234567890abc',
+          essayCount: 3,
+          essayComplete: 3,
+        }
+        const result = applicationCreateSchema.safeParse(application)
+        expect(result.success).toBe(true)
+      })
+
+      it('should accept when complete less than count', () => {
+        const application = {
+          studentId: 'clabcdef1234567890',
+          scholarshipId: 'clxyz1234567890abc',
+          essayCount: 3,
+          essayComplete: 2,
+        }
+        const result = applicationCreateSchema.safeParse(application)
+        expect(result.success).toBe(true)
+      })
+
+      it('should reject when complete exceeds count', () => {
+        const application = {
+          studentId: 'clabcdef1234567890',
+          scholarshipId: 'clxyz1234567890abc',
+          essayCount: 2,
+          essayComplete: 3,
+        }
+        const result = applicationCreateSchema.safeParse(application)
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.issues[0]?.path).toContain('essayComplete')
+        }
+      })
+
+      it('should reject negative essayComplete', () => {
+        const application = {
+          studentId: 'clabcdef1234567890',
+          scholarshipId: 'clxyz1234567890abc',
+          essayComplete: -1,
+        }
+        const result = applicationCreateSchema.safeParse(application)
+        expect(result.success).toBe(false)
+      })
+    })
+
+    describe('Award amount validation', () => {
+      it('should accept valid positive award amount', () => {
+        const application = {
+          studentId: 'clabcdef1234567890',
+          scholarshipId: 'clxyz1234567890abc',
+          awardAmount: 5000,
+        }
+        const result = applicationCreateSchema.safeParse(application)
+        expect(result.success).toBe(true)
+      })
+
+      it('should accept optional award amount (undefined)', () => {
+        const application = {
+          studentId: 'clabcdef1234567890',
+          scholarshipId: 'clxyz1234567890abc',
+        }
+        const result = applicationCreateSchema.safeParse(application)
+        expect(result.success).toBe(true)
+      })
+
+      it('should reject negative award amount', () => {
+        const application = {
+          studentId: 'clabcdef1234567890',
+          scholarshipId: 'clxyz1234567890abc',
+          awardAmount: -1000,
+        }
+        const result = applicationCreateSchema.safeParse(application)
+        expect(result.success).toBe(false)
+      })
+
+      it('should reject zero award amount', () => {
+        const application = {
+          studentId: 'clabcdef1234567890',
+          scholarshipId: 'clxyz1234567890abc',
+          awardAmount: 0,
         }
         const result = applicationCreateSchema.safeParse(application)
         expect(result.success).toBe(false)

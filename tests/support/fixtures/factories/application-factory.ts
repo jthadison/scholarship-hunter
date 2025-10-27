@@ -28,7 +28,7 @@ export interface ApplicationFactoryOptions {
   status?: ApplicationStatus
   priorityTier?: PriorityTier
   progressPercentage?: number
-  essayComplete?: boolean
+  essayComplete?: number
   documentsUploaded?: number
   recsReceived?: number
   targetSubmitDate?: Date
@@ -71,7 +71,7 @@ export class ApplicationFactory {
 
         // Progress tracking
         essayCount,
-        essayComplete: options.essayComplete ?? false,
+        essayComplete: options.essayComplete ?? 0,
         documentsRequired: docsRequired,
         documentsUploaded: options.documentsUploaded ?? 0,
         recsRequired,
@@ -103,7 +103,7 @@ export class ApplicationFactory {
       scholarshipId,
       status: ApplicationStatus.NOT_STARTED,
       progressPercentage: 0,
-      essayComplete: false,
+      essayComplete: 0,
       documentsUploaded: 0,
       recsReceived: 0,
     })
@@ -118,7 +118,7 @@ export class ApplicationFactory {
       scholarshipId,
       status: ApplicationStatus.IN_PROGRESS,
       progressPercentage: faker.number.int({ min: 25, max: 75 }),
-      essayComplete: faker.datatype.boolean(),
+      essayComplete: faker.number.int({ min: 0, max: 2 }),
       documentsUploaded: faker.number.int({ min: 1, max: 3 }),
       recsReceived: faker.number.int({ min: 0, max: 2 }),
     })
@@ -134,7 +134,7 @@ export class ApplicationFactory {
       scholarshipId,
       status: ApplicationStatus.SUBMITTED,
       progressPercentage: 100,
-      essayComplete: true,
+      essayComplete: 3,
       documentsUploaded: 3,
       recsReceived: 2,
       actualSubmitDate: submitDate,
