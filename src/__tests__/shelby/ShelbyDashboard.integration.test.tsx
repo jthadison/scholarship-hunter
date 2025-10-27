@@ -211,8 +211,9 @@ describe('ShelbyDashboard Integration Tests', () => {
     render(<ShelbyDashboard firstName="Sarah" />)
 
     await waitFor(() => {
-      // Total matches
-      expect(screen.getByText('47')).toBeInTheDocument()
+      // Use getAllByText since "47" appears in both header and stats card
+      const totalMatchElements = screen.getAllByText('47')
+      expect(totalMatchElements.length).toBeGreaterThan(0)
 
       // Total potential funding (10000 + 5000 = 15000)
       expect(screen.getByText('$15,000')).toBeInTheDocument()
@@ -222,8 +223,8 @@ describe('ShelbyDashboard Integration Tests', () => {
     })
   })
 
-  it('should display loading skeletons while fetching data', () => {
-    const { trpc } = vi.mocked(require('@/shared/lib/trpc'))
+  it('should display loading skeletons while fetching data', async () => {
+    const { trpc } = await import('@/shared/lib/trpc')
 
     vi.mocked(trpc.auth.getSession.useQuery).mockReturnValue({
       data: null,
