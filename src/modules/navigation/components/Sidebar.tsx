@@ -10,6 +10,7 @@ import {
   FileText,
   Settings,
   HelpCircle,
+  Search,
 } from 'lucide-react'
 import { Separator } from '@/shared/components/ui/separator'
 import { Badge } from '@/shared/components/ui/badge'
@@ -26,6 +27,13 @@ const navigationItems = [
     href: '/profile/wizard',
     icon: User,
     active: true,
+  },
+  {
+    label: 'Shelby - Opportunity Scout',
+    href: '/shelby',
+    icon: Search,
+    active: true,
+    badge: 'New',
   },
   {
     label: 'Scholarships',
@@ -103,6 +111,11 @@ export function Sidebar() {
               {item.comingSoon && (
                 <Badge variant="outline" className="text-xs">
                   Soon
+                </Badge>
+              )}
+              {item.badge && (
+                <Badge variant="default" className="text-xs bg-orange-500">
+                  {item.badge}
                 </Badge>
               )}
             </Link>
