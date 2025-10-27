@@ -153,6 +153,7 @@ describe('Quinn Router - Story 3.6 Tests', () => {
       const submittedApp = {
         ...mockApplication1,
         status: 'SUBMITTED' as const,
+        timeline: null, // Submitted apps have no timeline milestones to process
       }
 
       vi.mocked(prisma.application.findMany).mockResolvedValue([submittedApp] as any)
@@ -160,6 +161,7 @@ describe('Quinn Router - Story 3.6 Tests', () => {
       const caller = quinnRouter.createCaller(mockCtx)
       const result = await caller.getWeeklyTasks()
 
+      // Query filters out SUBMITTED status, so findMany should not even return it
       expect(result).toHaveLength(0)
     })
 
@@ -363,21 +365,24 @@ describe('Quinn Router - Story 3.6 Tests', () => {
         .mockResolvedValueOnce([
           {
             ...mockApplication1,
-            id: 'app-1',
-            priorityTier: 'IF_TIME_PERMITS',
-            scholarship: { name: 'Lower Priority', deadline: addDays(today, 60) },
+            id: 'app-2',
+            priorityTier: 'MUST_APPLY',
+            scholarship: { name: 'High Priority', awardAmount: 10000, deadline: addDays(today, 45) },
+            timeline: mockTimeline1,
           },
           {
             ...mockApplication1,
-            id: 'app-2',
-            priorityTier: 'MUST_APPLY',
-            scholarship: { name: 'High Priority', deadline: addDays(today, 45) },
+            id: 'app-1',
+            priorityTier: 'IF_TIME_PERMITS',
+            scholarship: { name: 'Lower Priority', awardAmount: 5000, deadline: addDays(today, 60) },
+            timeline: mockTimeline1,
           },
         ] as any)
 
       const caller = quinnRouter.createCaller(mockCtx)
       const result = await caller.getCapacitySuggestion()
 
+      // Prisma orderBy priorityTier 'asc' means MUST_APPLY comes first (it's first in enum order)
       expect(result.suggestedApplication?.scholarshipName).toBe('High Priority')
     })
   })
