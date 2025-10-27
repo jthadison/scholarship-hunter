@@ -170,7 +170,6 @@ describe('Application Model Integration Tests', () => {
 
   describe('AC3: Metadata fields', () => {
     it('should store all metadata fields correctly', async () => {
-      const now = new Date()
       const targetDate = new Date('2025-12-15')
       const submitDate = new Date('2025-12-14')
       const outcomeDate = new Date('2026-01-15')
