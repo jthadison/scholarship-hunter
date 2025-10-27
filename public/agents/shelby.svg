@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="#FF9500" opacity="0.1"/>
+
+  <!-- Head -->
+  <circle cx="100" cy="85" r="45" fill="#FF9500"/>
+
+  <!-- Eyes -->
+  <circle cx="85" cy="80" r="8" fill="white"/>
+  <circle cx="115" cy="80" r="8" fill="white"/>
+  <circle cx="87" cy="82" r="4" fill="#333"/>
+  <circle cx="117" cy="82" r="4" fill="#333"/>
+
+  <!-- Binoculars (scout theme) -->
+  <rect x="75" y="70" width="15" height="15" rx="3" fill="#FFB800" opacity="0.8"/>
+  <rect x="110" y="70" width="15" height="15" rx="3" fill="#FFB800" opacity="0.8"/>
+  <line x1="90" y1="77" x2="110" y2="77" stroke="#FFB800" stroke-width="2"/>
+
+  <!-- Smile -->
+  <path d="M 85 95 Q 100 105 115 95" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- Scout hat -->
+  <ellipse cx="100" cy="55" rx="35" ry="10" fill="#FFB800"/>
+  <rect x="75" y="45" width="50" height="15" fill="#FFB800"/>
+
+  <!-- Body (simple) -->
+  <rect x="70" y="125" width="60" height="50" rx="10" fill="#FF9500" opacity="0.9"/>
+
+  <!-- Arms with thumbs up -->
+  <ellipse cx="60" cy="140" rx="8" ry="20" fill="#FF9500" opacity="0.9"/>
+  <ellipse cx="140" cy="140" rx="8" ry="20" fill="#FF9500" opacity="0.9"/>
+  <rect x="55" y="130" width="6" height="15" fill="#FF9500" opacity="0.9" transform="rotate(-20 58 137)"/>
+
+  <!-- Sparkles (enthusiasm) -->
+  <circle cx="145" cy="70" r="3" fill="#FFB800"/>
+  <circle cx="155" cy="85" r="2" fill="#FFB800"/>
+  <circle cx="50" cy="75" r="2.5" fill="#FFB800"/>
+</svg>

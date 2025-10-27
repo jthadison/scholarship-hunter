@@ -65,7 +65,9 @@
       "Bash(pnpm list:*)",
       "Bash(npm run typecheck:*)",
       "Bash(pnpm prisma migrate:*)",
-      "Bash(q)"
+      "Bash(q)",
+      "Bash(git cherry-pick:*)",
+      "Bash(gh pr edit:*)"
     ],
     "deny": [],
     "ask": []
