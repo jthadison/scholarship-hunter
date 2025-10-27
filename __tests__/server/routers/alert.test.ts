@@ -8,7 +8,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { prisma } from '@/server/db'
-import type { Alert, Application, Student, Scholarship } from '@prisma/client'
 
 // Mock Prisma
 vi.mock('@/server/db', () => ({

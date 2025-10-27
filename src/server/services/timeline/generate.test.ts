@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { subDays, differenceInDays, addDays } from 'date-fns'
+import { subDays, addDays } from 'date-fns'
 import {
   calculateComplexity,
   calculateEstimatedHours,

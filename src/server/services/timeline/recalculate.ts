@@ -13,7 +13,7 @@
  * @see docs/stories/epic-3/story-3.5.md
  */
 
-import { differenceInDays, addDays, subDays, isBefore, isAfter } from 'date-fns';
+import { differenceInDays, subDays, isAfter } from 'date-fns';
 import type { Timeline, Application, Scholarship } from '@prisma/client';
 import { generateOptimizedTimeline, type GeneratedTimeline } from './generate';
 
@@ -224,7 +224,7 @@ function generateWarnings(
 export function recalculateTimeline(
   input: RecalculationInput
 ): RecalculatedTimeline {
-  const { currentTimeline, application, scholarship, trigger } = input;
+  const { application, scholarship, trigger } = input;
   const today = new Date();
 
   // Get completion status

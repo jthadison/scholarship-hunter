@@ -13,7 +13,7 @@
  */
 
 import { startOfWeek, getISOWeek, getYear, isSameWeek } from 'date-fns';
-import type { Application, Timeline, Scholarship } from '@prisma/client';
+import type { Timeline, Scholarship } from '@prisma/client';
 
 /**
  * Weekly workload conflict threshold (hours)

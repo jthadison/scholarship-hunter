@@ -22,13 +22,11 @@ import {
 } from '../services/timeline/generate'
 import {
   detectTimelineConflicts,
-  getConflictsForApplication,
   generateConflictWarning,
 } from '../services/timeline/conflicts'
 import {
   recalculateTimeline,
   shouldRecalculate,
-  RecalculationTrigger,
 } from '../services/timeline/recalculate'
 
 /**
