@@ -10,6 +10,7 @@
 import { serve } from 'inngest/next'
 import { inngest } from '@/inngest/client'
 import { meilisearchSync, meilisearchSyncManual } from '@/inngest/functions/meilisearch-sync'
+import { dailyScholarshipMatching } from '@/inngest/functions/daily-matching'
 
 /**
  * Inngest handler
@@ -17,10 +18,13 @@ import { meilisearchSync, meilisearchSyncManual } from '@/inngest/functions/meil
  * Registers all Inngest functions and serves them via Next.js API route.
  * Inngest will call this endpoint to execute scheduled and event-driven functions.
  */
-export default serve({
+const handler = serve({
   client: inngest,
   functions: [
     meilisearchSync, // Hourly cron sync
     meilisearchSyncManual, // Manual sync trigger
+    dailyScholarshipMatching, // Daily scholarship matching at 6 AM
   ],
 })
+
+export { handler as GET, handler as POST, handler as PUT }

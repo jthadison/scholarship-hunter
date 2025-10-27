@@ -4,6 +4,8 @@ import { profileRouter } from './profile'
 import { dashboardRouter } from './dashboard'
 import { matchingRouter } from './matching'
 import { scholarshipRouter } from './scholarship'
+import { applicationRouter } from './application'
+import { notificationRouter } from './notification'
 
 export const appRouter = router({
   auth: authRouter,
@@ -11,6 +13,8 @@ export const appRouter = router({
   dashboard: dashboardRouter,
   matching: matchingRouter,
   scholarship: scholarshipRouter,
+  application: applicationRouter,
+  notification: notificationRouter,
 })
 
 export type AppRouter = typeof appRouter

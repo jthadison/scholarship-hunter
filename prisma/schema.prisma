@@ -54,6 +54,8 @@ model Student {
   matches            Match[]
   outcomes           Outcome[]
   analyticsSnapshots AnalyticsSnapshot[]
+  notifications      Notification[]
+  notificationPreferences NotificationPreferences?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -177,6 +179,38 @@ enum FinancialNeed {
 // Epic 2: Matching Module
 // ============================================================================
 
+model Notification {
+  id            String   @id @default(cuid())
+  studentId     String
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  scholarshipId String
+  scholarship   Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+  matchScore    Float
+  priorityTier  PriorityTier
+  read          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([studentId, read])
+  @@index([studentId, createdAt])
+}
+
+model NotificationPreferences {
+  id                String    @id @default(cuid())
+  studentId         String    @unique
+  student           Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  frequency         Frequency @default(DAILY)
+  minMatchThreshold Float     @default(75.0)
+  emailEnabled      Boolean   @default(true)
+  inAppEnabled      Boolean   @default(true)
+  updatedAt         DateTime  @updatedAt
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  NEVER
+}
+
 model Scholarship {
   id String @id @default(cuid())
 
@@ -219,8 +253,9 @@ model Scholarship {
   tags     String[]
   category String?
 
-  applications Application[]
-  matches      Match[]
+  applications  Application[]
+  matches       Match[]
+  notifications Notification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

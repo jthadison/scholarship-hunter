@@ -935,4 +935,80 @@ export const profileRouter = router({
 
       return version
     }),
+
+  /**
+   * Update notification preferences
+   * Allows students to configure notification frequency and match threshold
+   */
+  updateNotificationPreferences: protectedProcedure
+    .input(
+      z.object({
+        frequency: z.enum(['DAILY', 'WEEKLY', 'NEVER']),
+        minMatchThreshold: z.number().min(0).max(100),
+        emailEnabled: z.boolean(),
+        inAppEnabled: z.boolean(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const student = await prisma.student.findUnique({
+        where: { userId: ctx.userId },
+      })
+
+      if (!student) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Student profile not found.',
+        })
+      }
+
+      const preferences = await prisma.notificationPreferences.upsert({
+        where: { studentId: student.id },
+        create: {
+          studentId: student.id,
+          frequency: input.frequency,
+          minMatchThreshold: input.minMatchThreshold,
+          emailEnabled: input.emailEnabled,
+          inAppEnabled: input.inAppEnabled,
+        },
+        update: {
+          frequency: input.frequency,
+          minMatchThreshold: input.minMatchThreshold,
+          emailEnabled: input.emailEnabled,
+          inAppEnabled: input.inAppEnabled,
+        },
+      })
+
+      return preferences
+    }),
+
+  /**
+   * Get notification preferences
+   * Returns current notification settings for the student
+   */
+  getNotificationPreferences: protectedProcedure.query(async ({ ctx }) => {
+    const student = await prisma.student.findUnique({
+      where: { userId: ctx.userId },
+    })
+
+    if (!student) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Student profile not found.',
+      })
+    }
+
+    const preferences = await prisma.notificationPreferences.findUnique({
+      where: { studentId: student.id },
+    })
+
+    // Return defaults if preferences don't exist yet
+    return (
+      preferences ?? {
+        frequency: 'DAILY',
+        minMatchThreshold: 75.0,
+        emailEnabled: true,
+        inAppEnabled: true,
+      }
+    )
+  }),
 })
