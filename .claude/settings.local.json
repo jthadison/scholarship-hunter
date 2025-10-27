@@ -68,7 +68,8 @@
       "Bash(q)",
       "Bash(git cherry-pick:*)",
       "Bash(gh pr edit:*)",
-      "Bash(gh pr comment:*)"
+      "Bash(gh pr comment:*)",
+      "Bash(npx prisma migrate reset --skip-seed)"
     ],
     "deny": [],
     "ask": []

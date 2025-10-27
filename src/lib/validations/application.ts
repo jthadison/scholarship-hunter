@@ -36,7 +36,7 @@ export const applicationCreateSchema = z.object({
 
   // Progress Tracking
   essayCount: z.number().int().min(0).default(0),
-  essayComplete: z.boolean().default(false),
+  essayComplete: z.number().int().min(0).default(0),
   documentsRequired: z.number().int().min(0).default(0),
   documentsUploaded: z.number().int().min(0).default(0),
   recsRequired: z.number().int().min(0).max(5).default(0),
@@ -47,10 +47,20 @@ export const applicationCreateSchema = z.object({
   targetSubmitDate: z.coerce.date().optional(),
   actualSubmitDate: z.coerce.date().optional(),
   outcomeDate: z.coerce.date().optional(),
+  awardAmount: z.number().positive().optional(),
 
   // Notes
   notes: z.string().optional(),
 }).refine(
+  (data) => {
+    // Essays complete cannot exceed essays required
+    return data.essayComplete <= data.essayCount;
+  },
+  {
+    message: "Essays complete cannot exceed essays required",
+    path: ["essayComplete"],
+  }
+).refine(
   (data) => {
     // Documents uploaded cannot exceed documents required
     return data.documentsUploaded <= data.documentsRequired;
@@ -93,7 +103,7 @@ const applicationBaseSchema = z.object({
 
   // Progress Tracking
   essayCount: z.number().int().min(0).default(0),
-  essayComplete: z.boolean().default(false),
+  essayComplete: z.number().int().min(0).default(0),
   documentsRequired: z.number().int().min(0).default(0),
   documentsUploaded: z.number().int().min(0).default(0),
   recsRequired: z.number().int().min(0).max(5).default(0),
@@ -104,6 +114,7 @@ const applicationBaseSchema = z.object({
   targetSubmitDate: z.coerce.date().optional(),
   actualSubmitDate: z.coerce.date().optional(),
   outcomeDate: z.coerce.date().optional(),
+  awardAmount: z.number().positive().optional(),
 
   // Notes
   notes: z.string().optional(),
