@@ -9,7 +9,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { applicationRouter } from '@/server/routers/application'
 import { prisma } from '@/server/db'
-import { TRPCError } from '@trpc/server'
 import { subDays } from 'date-fns'
 
 // Mock prisma
