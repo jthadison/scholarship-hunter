@@ -29,6 +29,7 @@ import { useUser } from '@clerk/nextjs'
 import Link from 'next/link'
 import { useState } from 'react'
 import { compareEligibility } from '@/server/lib/matching/compare-eligibility'
+import { formatDaysUntilDeadline } from '@/lib/utils/timeline'
 
 export default function ScholarshipDetailPage() {
   const params = useParams()
@@ -52,19 +53,34 @@ export default function ScholarshipDetailPage() {
     enabled: !!user,
   })
 
-  // Fetch existing applications to check if already added
-  const { data: existingApplications } = trpc.application.list.useQuery(undefined, {
-    enabled: !!user,
-  })
+  // Check if application exists using checkExists query
+  const { data: applicationExists } = trpc.application.checkExists.useQuery(
+    { scholarshipId },
+    {
+      enabled: !!user && !!scholarshipId,
+    }
+  )
+
+  // Fetch all applications for cache invalidation
+  const utils = trpc.useUtils()
 
   // Create application mutation
   const createApplicationMutation = trpc.application.create.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (!data) return
+
+      // Calculate days until deadline for confirmation message
+      const daysText = formatDaysUntilDeadline(data.scholarship.deadline)
+
       toast({
         title: 'Success!',
-        description: 'Scholarship added to your applications',
+        description: `Added to your applications! Deadline in ${daysText}.`,
       })
-      refetch() // Refetch to update UI
+
+      // Invalidate queries to refresh data
+      utils.application.checkExists.invalidate({ scholarshipId })
+      utils.application.list.invalidate()
+      refetch()
     },
     onError: (error) => {
       toast({
@@ -156,9 +172,7 @@ export default function ScholarshipDetailPage() {
   }
 
   // Check if already added to applications
-  const isAlreadyAdded = existingApplications?.some(
-    (app) => app.scholarshipId === scholarshipId
-  )
+  const isAlreadyAdded = applicationExists?.exists || false
 
   // Get match data
   const match = scholarship.matches?.[0]

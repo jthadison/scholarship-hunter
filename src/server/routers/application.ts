@@ -12,6 +12,7 @@ import { z } from 'zod'
 import { router, protectedProcedure } from '../trpc'
 import { TRPCError } from '@trpc/server'
 import { prisma } from '../db'
+import { generateTimelineStub } from '@/lib/utils/timeline'
 
 /**
  * Application router with CRUD operations
@@ -94,7 +95,7 @@ export const applicationRouter = router({
           ? scholarship.essayPrompts.length
           : 0
 
-      // Create application
+      // Create application with timeline in a transaction
       const application = await prisma.application.create({
         data: {
           studentId,
@@ -107,6 +108,32 @@ export const applicationRouter = router({
           targetSubmitDate: scholarship.deadline,
         },
         include: {
+          scholarship: true,
+        },
+      })
+
+      // Generate timeline using stub algorithm
+      const timelineData = generateTimelineStub(application)
+
+      // Create timeline record
+      await prisma.timeline.create({
+        data: {
+          applicationId: application.id,
+          submitDate: timelineData.submitDate,
+          finalReviewDate: timelineData.finalReviewDate,
+          uploadDocsDate: timelineData.uploadDocsDate,
+          requestRecsDate: timelineData.requestRecsDate,
+          startEssayDate: timelineData.startEssayDate,
+          estimatedHours: timelineData.estimatedHours,
+          hasConflicts: timelineData.hasConflicts,
+          conflictsWith: timelineData.conflictsWith,
+        },
+      })
+
+      // Return application with timeline included
+      return await prisma.application.findUnique({
+        where: { id: application.id },
+        include: {
           scholarship: {
             select: {
               name: true,
@@ -115,10 +142,43 @@ export const applicationRouter = router({
               deadline: true,
             },
           },
+          timeline: true,
+        },
+      })
+    }),
+
+  /**
+   * Check if application exists for scholarship
+   *
+   * @input scholarshipId - ID of scholarship to check
+   * @returns { exists: boolean, applicationId?: string }
+   */
+  checkExists: protectedProcedure
+    .input(
+      z.object({
+        scholarshipId: z.string(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const { scholarshipId } = input
+      const studentId = ctx.userId
+
+      const application = await prisma.application.findUnique({
+        where: {
+          studentId_scholarshipId: {
+            studentId,
+            scholarshipId,
+          },
+        },
+        select: {
+          id: true,
         },
       })
 
-      return application
+      return {
+        exists: !!application,
+        applicationId: application?.id,
+      }
     }),
 
   /**
