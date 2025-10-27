@@ -12,7 +12,10 @@ import { z } from 'zod'
 import { router, protectedProcedure } from '../trpc'
 import { TRPCError } from '@trpc/server'
 import { prisma } from '../db'
-import { generateTimelineStub } from '@/lib/utils/timeline'
+import {
+  generateOptimizedTimeline,
+  extractTimelineInputFromScholarship,
+} from '../services/timeline/generate'
 
 /**
  * Application router with CRUD operations
@@ -112,8 +115,9 @@ export const applicationRouter = router({
         },
       })
 
-      // Generate timeline using stub algorithm
-      const timelineData = generateTimelineStub(application)
+      // Generate optimized timeline (Story 3.5)
+      const timelineInput = extractTimelineInputFromScholarship(application.scholarship)
+      const timelineData = generateOptimizedTimeline(timelineInput)
 
       // Create timeline record
       await prisma.timeline.create({
@@ -124,7 +128,7 @@ export const applicationRouter = router({
           uploadDocsDate: timelineData.uploadDocsDate,
           requestRecsDate: timelineData.requestRecsDate,
           startEssayDate: timelineData.startEssayDate,
-          estimatedHours: timelineData.estimatedHours,
+          estimatedHours: Math.round(timelineData.estimatedHours),
           hasConflicts: timelineData.hasConflicts,
           conflictsWith: timelineData.conflictsWith,
         },
