@@ -44,23 +44,23 @@ export default function ScholarshipSearchPage() {
   const { isSignedIn } = useAuth()
 
   // Parse initial state from URL
-  const initialQuery = searchParams.get('q') || ''
-  const initialSort = (searchParams.get('sort') as SortOption) || (isSignedIn ? 'match' : 'amount')
-  const initialPage = parseInt(searchParams.get('page') || '0', 10)
+  const initialQuery = searchParams?.get('q') || ''
+  const initialSort = (searchParams?.get('sort') as SortOption) || (isSignedIn ? 'match' : 'amount')
+  const initialPage = parseInt(searchParams?.get('page') || '0', 10)
 
   // Parse filters from URL
   const initialFilters: SearchFilters = {
-    minAward: searchParams.get('minAward')
+    minAward: searchParams?.get('minAward')
       ? parseInt(searchParams.get('minAward')!, 10)
       : undefined,
-    maxAward: searchParams.get('maxAward')
+    maxAward: searchParams?.get('maxAward')
       ? parseInt(searchParams.get('maxAward')!, 10)
       : undefined,
-    minMatchScore: searchParams.get('minMatchScore')
+    minMatchScore: searchParams?.get('minMatchScore')
       ? parseInt(searchParams.get('minMatchScore')!, 10)
       : undefined,
-    effortLevel: (searchParams.get('effortLevel') as SearchFilters['effortLevel']) || undefined,
-    priorityTier: searchParams.get('priorityTier')
+    effortLevel: (searchParams?.get('effortLevel') as SearchFilters['effortLevel']) || undefined,
+    priorityTier: searchParams?.get('priorityTier')
       ? (searchParams.get('priorityTier')!.split(',') as SearchFilters['priorityTier'])
       : undefined,
   }
