@@ -14,22 +14,10 @@
 
 import type { Scholarship } from '@prisma/client'
 
-/**
- * Effort level type matching Prisma enum
- */
-export type EffortLevel = 'LOW' | 'MEDIUM' | 'HIGH'
+import type { EffortLevel, EffortBreakdown } from './types'
 
-/**
- * Breakdown of application requirements
- */
-export interface EffortBreakdown {
-  /** Number of essays required */
-  essays: number
-  /** Number of documents required */
-  documents: number
-  /** Number of recommendation letters required */
-  recommendations: number
-}
+// Re-export for convenience
+export type { EffortLevel, EffortBreakdown }
 
 /**
  * Result of effort estimation

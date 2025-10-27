@@ -64,7 +64,8 @@
       "Bash(npx prisma db push:*)",
       "Bash(pnpm list:*)",
       "Bash(npm run typecheck:*)",
-      "Bash(pnpm prisma migrate:*)"
+      "Bash(pnpm prisma migrate:*)",
+      "Bash(q)"
     ],
     "deny": [],
     "ask": []

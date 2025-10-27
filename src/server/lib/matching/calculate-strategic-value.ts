@@ -46,7 +46,7 @@ export function calculateStrategicValue(params: {
   awardAmount: number
   effortLevel: EffortLevel
 }): StrategicValueResult {
-  const { matchScore, successProbability, awardAmount, effortLevel } = params
+  const { successProbability, awardAmount, effortLevel } = params
 
   // Handle edge cases
   if (awardAmount <= 0 || successProbability <= 0) {

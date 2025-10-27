@@ -9,7 +9,6 @@ import { describe, it, expect } from 'vitest'
 import {
   estimateEffortLevel,
   estimateTimeInvestment,
-  type EffortLevel,
 } from '@/server/lib/matching/estimate-effort-level'
 
 describe('estimateEffortLevel', () => {

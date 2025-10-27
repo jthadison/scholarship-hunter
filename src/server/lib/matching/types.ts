@@ -24,11 +24,13 @@ export type StrategicValueTier = 'BEST_BET' | 'HIGH_VALUE' | 'MEDIUM_VALUE' | 'L
 
 /**
  * Effort breakdown (Story 2.6)
+ * Index signature added for Prisma JsonValue compatibility
  */
 export interface EffortBreakdown {
   essays: number
   documents: number
   recommendations: number
+  [key: string]: number
 }
 
 /**
