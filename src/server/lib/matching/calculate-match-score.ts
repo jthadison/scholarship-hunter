@@ -29,6 +29,11 @@ import { calculateExperienceMatch } from './scorers/experience-scorer'
 import { calculateFinancialMatch } from './scorers/financial-scorer'
 import { calculateSpecialCriteriaMatch } from './scorers/special-criteria-scorer'
 
+// Story 2.5: Success probability calculation
+import { calculateSuccessProbability } from './calculate-success-probability'
+import { calculateCompetitionFactor } from './calculate-competition-factor'
+import { classifySuccessTier } from './classify-success-tier'
+
 /**
  * Calculate comprehensive match score for student-scholarship pair
  *
@@ -86,6 +91,19 @@ export async function calculateMatchScore(
     specialCriteriaScore,
   })
 
+  // Story 2.5: Calculate success probability
+  const successProbability = calculateSuccessProbability(
+    overallMatchScore,
+    student.profile,
+    scholarship
+  )
+
+  // Story 2.5: Classify success tier
+  const tierResult = classifySuccessTier(successProbability)
+
+  // Story 2.5: Get competition factor for storage
+  const competitionFactor = calculateCompetitionFactor(scholarship)
+
   // Return structured match score
   return {
     overallMatchScore,
@@ -95,6 +113,10 @@ export async function calculateMatchScore(
     experienceScore,
     financialScore,
     specialCriteriaScore,
+    // Story 2.5: Include success probability fields
+    successProbability,
+    successTier: tierResult.tier,
+    competitionFactor,
     calculatedAt: new Date(),
   }
 }

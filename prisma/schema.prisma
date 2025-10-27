@@ -250,7 +250,9 @@ model Match {
   specialCriteriaScore Float @default(0)
 
   // Strategic Metrics
-  successProbability Float        @default(0) // 0.0 to 1.0
+  successProbability Float        @default(0) // 0.0 to 1.0 (Story 2.5: updated to percentage 0-100)
+  successTier        SuccessTier? // Story 2.5: STRONG_MATCH, COMPETITIVE_MATCH, REACH, LONG_SHOT
+  competitionFactor  Float?       // Story 2.5: Competition level factor (0.0-1.0)
   priorityTier       PriorityTier @default(IF_TIME_PERMITS)
   strategicValue     Float        @default(0) // ROI calculation
   applicationEffort  EffortLevel  @default(MEDIUM)
@@ -283,6 +285,13 @@ enum EffortLevel {
   LOW
   MEDIUM
   HIGH
+}
+
+enum SuccessTier {
+  STRONG_MATCH       // 70-100% success probability
+  COMPETITIVE_MATCH  // 40-69% success probability
+  REACH              // 10-39% success probability
+  LONG_SHOT          // <10% success probability
 }
 
 // ============================================================================
