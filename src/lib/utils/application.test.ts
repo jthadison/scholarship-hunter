@@ -161,16 +161,16 @@ describe('groupByStatus', () => {
     const grouped = groupByStatus(apps)
 
     expect(grouped.BACKLOG).toHaveLength(1)
-    expect(grouped.BACKLOG[0].id).toBe('app1')
+    expect(grouped.BACKLOG?.[0]?.id).toBe('app1')
 
     expect(grouped.TODO).toHaveLength(1)
-    expect(grouped.TODO[0].id).toBe('app2')
+    expect(grouped.TODO?.[0]?.id).toBe('app2')
 
     expect(grouped.IN_PROGRESS).toHaveLength(1)
-    expect(grouped.IN_PROGRESS[0].id).toBe('app3')
+    expect(grouped.IN_PROGRESS?.[0]?.id).toBe('app3')
 
     expect(grouped.SUBMITTED).toHaveLength(1)
-    expect(grouped.SUBMITTED[0].id).toBe('app4')
+    expect(grouped.SUBMITTED?.[0]?.id).toBe('app4')
   })
 
   it('should group READY_FOR_REVIEW with IN_PROGRESS', () => {

@@ -9,6 +9,7 @@
 
 import { Resend } from 'resend'
 import { render } from '@react-email/render'
+import jwt from 'jsonwebtoken'
 import DeadlineAlertEmail, {
   UrgencyLevel,
   type DeadlineAlertEmailProps,
@@ -18,6 +19,9 @@ import { differenceInDays } from 'date-fns'
 
 // Initialize Resend client
 const resend = new Resend(process.env.RESEND_API_KEY)
+
+// JWT secret for signing tokens (should be in env)
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 
 /**
  * Calculate urgency level based on days remaining
@@ -30,13 +34,37 @@ export function calculateUrgencyLevel(daysRemaining: number): UrgencyLevel {
 }
 
 /**
- * Generate signed token for alert action URLs
- * In production, this should use a proper JWT library
+ * Generate signed JWT token for alert action URLs
+ *
+ * @param alertId - Alert ID
+ * @param action - Action type (snooze or dismiss)
+ * @returns Signed JWT token valid for 7 days
  */
 function generateActionToken(alertId: string, action: 'snooze' | 'dismiss'): string {
-  // TODO: Use proper JWT signing in production
-  // For now, use simple base64 encoding (NOT SECURE - replace with JWT)
-  return Buffer.from(`${alertId}:${action}:${Date.now()}`).toString('base64')
+  const payload = {
+    alertId,
+    action,
+    iat: Math.floor(Date.now() / 1000),
+  }
+
+  // Sign token with 7-day expiration
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' })
+}
+
+/**
+ * Verify and decode alert action token
+ *
+ * @param token - JWT token from URL
+ * @returns Decoded payload or null if invalid
+ */
+export function verifyActionToken(token: string): { alertId: string; action: 'snooze' | 'dismiss' } | null {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { alertId: string; action: 'snooze' | 'dismiss' }
+    return decoded
+  } catch (error) {
+    console.error('Invalid alert action token:', error)
+    return null
+  }
 }
 
 /**
