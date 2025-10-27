@@ -15,13 +15,15 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { trpc } from '@/shared/lib/trpc'
-import { Loader2, Home, ArrowLeft, Share2 } from 'lucide-react'
+import { Loader2, Home, ArrowLeft, Share2, User2 } from 'lucide-react'
 import { ScholarshipDetailHeader } from '@/components/scholarships/ScholarshipDetailHeader'
 import { MatchScoreSection } from '@/components/scholarships/MatchScoreSection'
 import { EligibilityBreakdown } from '@/components/scholarships/EligibilityBreakdown'
 import { ApplicationRequirements } from '@/components/scholarships/ApplicationRequirements'
 import { CompetitionContext } from '@/components/scholarships/CompetitionContext'
+import { AlexAnalysisDialog } from '@/components/alex/AlexAnalysisDialog'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { useUser } from '@clerk/nextjs'
 import Link from 'next/link'
@@ -257,6 +259,59 @@ export default function ScholarshipDetailPage() {
             {/* Eligibility Breakdown */}
             {eligibilityResults.length > 0 && (
               <EligibilityBreakdown eligibilityResults={eligibilityResults} />
+            )}
+
+            {/* Alex Eligibility Analysis (Story 2.12) */}
+            {user && profile && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white text-lg font-bold">
+                      A
+                    </div>
+                    Ask Alex for Detailed Analysis
+                  </CardTitle>
+                  <CardDescription>
+                    Get a comprehensive 6-dimension eligibility analysis with personalized recommendations
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-700">
+                      Alex, your eligibility analyst, can provide you with:
+                    </p>
+                    <ul className="space-y-2 text-sm text-gray-600">
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 mt-0.5">✓</span>
+                        <span>Detailed breakdown of how you match each requirement</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 mt-0.5">✓</span>
+                        <span>Gap identification showing missing criteria</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 mt-0.5">✓</span>
+                        <span>Actionable recommendations to improve your eligibility</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 mt-0.5">✓</span>
+                        <span>Competitive positioning compared to typical applicants</span>
+                      </li>
+                    </ul>
+                    <AlexAnalysisDialog
+                      studentId={profile.studentId}
+                      scholarshipId={scholarshipId}
+                      scholarshipName={scholarship.name}
+                      trigger={
+                        <Button className="w-full gap-2 bg-blue-600 hover:bg-blue-700">
+                          <User2 className="h-5 w-5" />
+                          Get Alex's Eligibility Analysis
+                        </Button>
+                      }
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Application Requirements */}

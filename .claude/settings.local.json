@@ -67,7 +67,8 @@
       "Bash(pnpm prisma migrate:*)",
       "Bash(q)",
       "Bash(git cherry-pick:*)",
-      "Bash(gh pr edit:*)"
+      "Bash(gh pr edit:*)",
+      "Bash(gh pr comment:*)"
     ],
     "deny": [],
     "ask": []
