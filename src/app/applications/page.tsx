@@ -1,50 +1,119 @@
 /**
- * Applications Dashboard Page (Sprint 1 Stub)
+ * Applications Dashboard Page (Story 3.3 - Full Kanban Board)
  *
- * Displays student's scholarship applications in a simple grid layout.
- * Features:
- * - Status filter tabs (All, TODO, IN_PROGRESS, SUBMITTED)
- * - Application cards with scholarship info, deadline, progress
- * - Mobile-responsive grid layout
- *
- * Sprint 2 Enhancement (Story 3.3):
- * - Full Kanban board with drag-and-drop
- * - Advanced filters (priority tier, deadline range)
- * - Visual at-risk indicators
+ * Displays student's scholarship applications in a Kanban board layout with:
+ * - 4 columns: BACKLOG, TODO, IN_PROGRESS, SUBMITTED
+ * - Drag-and-drop functionality (desktop only)
+ * - Mobile-responsive vertical list (mobile)
+ * - Filter controls (priority tier, deadline range, status)
+ * - At-risk application banner
+ * - Real-time status updates with optimistic UI
  *
  * @page /applications
  */
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { trpc } from '@/shared/lib/trpc'
-import { Loader2, Plus, Home, ChevronRight } from 'lucide-react'
-import { ApplicationCard } from '@/components/applications/ApplicationCard'
+import { Loader2, Plus, Home, ChevronRight, AlertTriangle } from 'lucide-react'
+import { KanbanBoard } from '@/components/applications/KanbanBoard'
+import { MobileList } from '@/components/applications/MobileList'
+import { FilterBar, type FilterState } from '@/components/applications/FilterBar'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { useUser } from '@clerk/nextjs'
+import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
-
-type StatusFilter = 'ALL' | 'TODO' | 'IN_PROGRESS' | 'SUBMITTED'
+import { getAtRiskCount } from '@/lib/utils/application'
+import { differenceInDays } from 'date-fns'
+import type { ApplicationStatus } from '@prisma/client'
 
 export default function ApplicationsPage() {
   const router = useRouter()
   const { user, isLoaded: isUserLoaded } = useUser()
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
+  const { toast } = useToast()
 
-  // Fetch applications with optional status filter
-  const { data: applications, isLoading } = trpc.application.list.useQuery(
-    statusFilter !== 'ALL'
-      ? {
-          status: statusFilter,
+  // Filter state
+  const [filters, setFilters] = useState<FilterState>({
+    priorityTiers: [],
+    deadlineRange: 'all',
+    statuses: [],
+  })
+
+
+  // Fetch applications using new getByStudent query
+  const {
+    data: applications,
+    isLoading,
+    refetch,
+  } = trpc.application.getByStudent.useQuery(undefined, {
+    enabled: !!user,
+  })
+
+  // Update status mutation
+  const updateStatusMutation = trpc.application.updateStatus.useMutation({
+    onSuccess: () => {
+      toast({
+        title: 'Status updated',
+        description: 'Application status has been updated successfully.',
+      })
+      refetch()
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to update status',
+        description: error.message,
+        variant: 'destructive',
+      })
+    },
+  })
+
+  // Apply filters (must be called before early returns per React Hooks rules)
+  const filteredApplications = useMemo(() => {
+    if (!applications) return []
+
+    return applications.filter((app) => {
+      // Priority tier filter
+      if (
+        filters.priorityTiers.length > 0 &&
+        app.priorityTier &&
+        !filters.priorityTiers.includes(app.priorityTier)
+      ) {
+        return false
+      }
+
+      // Deadline range filter
+      if (filters.deadlineRange !== 'all') {
+        const daysUntilDeadline = differenceInDays(
+          new Date(app.scholarship.deadline),
+          new Date()
+        )
+
+        switch (filters.deadlineRange) {
+          case 'next_7_days':
+            if (daysUntilDeadline > 7) return false
+            break
+          case 'next_30_days':
+            if (daysUntilDeadline > 30) return false
+            break
+          case 'next_90_days':
+            if (daysUntilDeadline > 90) return false
+            break
         }
-      : undefined,
-    {
-      enabled: !!user,
-    }
-  )
+      }
+
+      // Status filter
+      if (filters.statuses.length > 0 && !filters.statuses.includes(app.status)) {
+        return false
+      }
+
+      return true
+    })
+  }, [applications, filters])
+
+  // Calculate at-risk count
+  const atRiskCount = filteredApplications ? getAtRiskCount(filteredApplications) : 0
 
   // Require authentication
   if (isUserLoaded && !user) {
@@ -61,16 +130,26 @@ export default function ApplicationsPage() {
     )
   }
 
-  // Filter applications by status (client-side backup)
-  const filteredApplications = applications || []
+  /**
+   * Handle status change
+   */
+  const handleStatusChange = async (applicationId: string, newStatus: ApplicationStatus) => {
+    await updateStatusMutation.mutateAsync({
+      applicationId,
+      status: newStatus,
+    })
+  }
 
-  // Count by status for badge
-  const statusCounts = {
-    ALL: applications?.length || 0,
-    TODO: applications?.filter((app) => app.status === 'TODO').length || 0,
-    IN_PROGRESS:
-      applications?.filter((app) => app.status === 'IN_PROGRESS').length || 0,
-    SUBMITTED: applications?.filter((app) => app.status === 'SUBMITTED').length || 0,
+  /**
+   * Handle at-risk banner click
+   */
+  const handleAtRiskClick = () => {
+    // Filter to show only at-risk applications
+    setFilters({
+      priorityTiers: [],
+      deadlineRange: 'next_7_days',
+      statuses: [],
+    })
   }
 
   return (
@@ -92,7 +171,7 @@ export default function ApplicationsPage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">My Applications</h1>
             <p className="text-gray-600 mt-1">
@@ -105,45 +184,48 @@ export default function ApplicationsPage() {
           </Button>
         </div>
 
-        {/* Status Filter Tabs */}
-        <Tabs
-          value={statusFilter}
-          onValueChange={(value: string) => setStatusFilter(value as StatusFilter)}
-          className="mb-6"
-        >
-          <TabsList className="grid w-full sm:w-auto grid-cols-4 sm:grid-cols-4">
-            <TabsTrigger value="ALL" className="gap-2">
-              All <span className="text-xs">({statusCounts.ALL})</span>
-            </TabsTrigger>
-            <TabsTrigger value="TODO" className="gap-2">
-              To Do <span className="text-xs">({statusCounts.TODO})</span>
-            </TabsTrigger>
-            <TabsTrigger value="IN_PROGRESS" className="gap-2">
-              In Progress <span className="text-xs">({statusCounts.IN_PROGRESS})</span>
-            </TabsTrigger>
-            <TabsTrigger value="SUBMITTED" className="gap-2">
-              Submitted <span className="text-xs">({statusCounts.SUBMITTED})</span>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* At-Risk Banner (AC5) */}
+        {atRiskCount > 0 && (
+          <button
+            onClick={handleAtRiskClick}
+            className="w-full mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-lg flex items-center gap-3 hover:bg-red-100 transition-colors"
+          >
+            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
+            <div className="flex-1 text-left">
+              <p className="font-semibold text-red-900">
+                ⚠️ {atRiskCount} {atRiskCount === 1 ? 'application' : 'applications'} need
+                attention
+              </p>
+              <p className="text-sm text-red-700">
+                These applications have deadlines in less than 7 days and are less than 50%
+                complete. Click to view.
+              </p>
+            </div>
+          </button>
+        )}
 
-        {/* Applications Grid */}
+        {/* Filter Bar (AC6) */}
+        <div className="mb-6">
+          <FilterBar onFilterChange={setFilters} activeFilters={filters} />
+        </div>
+
+        {/* Applications View */}
         {filteredApplications.length === 0 ? (
           <div className="text-center py-16">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
               <Plus className="h-8 w-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {statusFilter === 'ALL'
-                ? 'No applications yet'
-                : `No ${statusFilter.toLowerCase().replace('_', ' ')} applications`}
+              {applications && applications.length > 0
+                ? 'No applications match your filters'
+                : 'No applications yet'}
             </h3>
             <p className="text-gray-600 mb-6">
-              {statusFilter === 'ALL'
-                ? 'Start by adding scholarships from the search page'
-                : 'Try selecting a different status filter'}
+              {applications && applications.length > 0
+                ? 'Try adjusting your filters or clear them to see all applications'
+                : 'Start by adding scholarships from the search page'}
             </p>
-            {statusFilter === 'ALL' && (
+            {(!applications || applications.length === 0) && (
               <Button onClick={() => router.push('/scholarships/search')}>
                 <Plus className="h-4 w-4 mr-2" />
                 Browse Scholarships
@@ -151,21 +233,23 @@ export default function ApplicationsPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredApplications.map((application) => (
-              <ApplicationCard key={application.id} application={application} />
-            ))}
-          </div>
-        )}
+          <>
+            {/* Desktop: Kanban Board (AC1, AC3) */}
+            <div className="hidden lg:block">
+              <KanbanBoard
+                applications={filteredApplications}
+                onStatusChange={handleStatusChange}
+              />
+            </div>
 
-        {/* Sprint 2 Notice */}
-        {filteredApplications.length > 0 && (
-          <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Coming in Sprint 2 (Story 3.3):</strong> Kanban board with
-              drag-and-drop, advanced filters, and visual at-risk indicators.
-            </p>
-          </div>
+            {/* Mobile: Vertical List (AC7) */}
+            <div className="lg:hidden">
+              <MobileList
+                applications={filteredApplications}
+                onStatusChange={handleStatusChange}
+              />
+            </div>
+          </>
         )}
       </div>
     </div>

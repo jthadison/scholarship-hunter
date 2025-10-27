@@ -182,11 +182,46 @@ export const applicationRouter = router({
     }),
 
   /**
+   * Get student's applications (Story 3.3)
+   *
+   * Returns all applications for authenticated student with scholarship and timeline relations.
+   * Ordered by deadline (soonest first).
+   *
+   * @returns Array of applications with scholarship and timeline details
+   */
+  getByStudent: protectedProcedure.query(async ({ ctx }) => {
+    const studentId = ctx.userId
+
+    const applications = await prisma.application.findMany({
+      where: {
+        studentId,
+      },
+      include: {
+        scholarship: {
+          select: {
+            name: true,
+            provider: true,
+            awardAmount: true,
+            deadline: true,
+            category: true,
+            tags: true,
+          },
+        },
+        timeline: true,
+      },
+      orderBy: [{ targetSubmitDate: 'asc' }],
+    })
+
+    return applications
+  }),
+
+  /**
    * List student's applications with filtering and sorting
    *
    * @input status - Filter by application status (optional)
    * @input priorityTier - Filter by priority tier (optional)
    * @returns Array of applications with scholarship details
+   * @deprecated Use getByStudent instead
    */
   list: protectedProcedure
     .input(
@@ -236,6 +271,113 @@ export const applicationRouter = router({
       })
 
       return applications
+    }),
+
+  /**
+   * Update application status (Story 3.3)
+   *
+   * Updates the status of an application with transition validation.
+   * Sets actualSubmitDate when status changes to SUBMITTED.
+   *
+   * @input applicationId - Application ID to update
+   * @input status - New status to set
+   * @returns Updated application
+   * @throws FORBIDDEN - If transition is invalid
+   * @throws NOT_FOUND - If application doesn't exist
+   */
+  updateStatus: protectedProcedure
+    .input(
+      z.object({
+        applicationId: z.string(),
+        status: z.enum([
+          'NOT_STARTED',
+          'TODO',
+          'IN_PROGRESS',
+          'READY_FOR_REVIEW',
+          'SUBMITTED',
+          'AWAITING_DECISION',
+          'AWARDED',
+          'DENIED',
+          'WITHDRAWN',
+        ]),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { applicationId, status } = input
+      const studentId = ctx.userId
+
+      // Verify ownership
+      const application = await prisma.application.findUnique({
+        where: { id: applicationId },
+        select: { studentId: true, status: true },
+      })
+
+      if (!application) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Application not found',
+        })
+      }
+
+      if (application.studentId !== studentId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to update this application',
+        })
+      }
+
+      // Validate status transition
+      const validTransitions: Record<
+        string,
+        string[]
+      > = {
+        NOT_STARTED: ['TODO'],
+        TODO: ['IN_PROGRESS', 'WITHDRAWN'],
+        IN_PROGRESS: ['READY_FOR_REVIEW', 'TODO', 'WITHDRAWN'],
+        READY_FOR_REVIEW: ['SUBMITTED', 'IN_PROGRESS'],
+        SUBMITTED: ['AWAITING_DECISION'],
+        AWAITING_DECISION: ['AWARDED', 'DENIED'],
+        AWARDED: [],
+        DENIED: [],
+        WITHDRAWN: [],
+      }
+
+      const currentStatus = application.status
+      const allowedTransitions = validTransitions[currentStatus] || []
+
+      if (!allowedTransitions.includes(status) && currentStatus !== status) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: `Cannot transition from ${currentStatus} to ${status}`,
+        })
+      }
+
+      // Update application with actualSubmitDate if transitioning to SUBMITTED
+      const updateData: any = {
+        status,
+      }
+
+      if (status === 'SUBMITTED' && currentStatus !== 'SUBMITTED') {
+        updateData.actualSubmitDate = new Date()
+      }
+
+      const updatedApplication = await prisma.application.update({
+        where: { id: applicationId },
+        data: updateData,
+        include: {
+          scholarship: {
+            select: {
+              name: true,
+              provider: true,
+              awardAmount: true,
+              deadline: true,
+            },
+          },
+          timeline: true,
+        },
+      })
+
+      return updatedApplication
     }),
 
   /**

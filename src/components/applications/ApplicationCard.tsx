@@ -1,12 +1,14 @@
 /**
- * ApplicationCard Component
+ * ApplicationCard Component (Enhanced for Story 3.3)
  *
  * Displays a scholarship application in card format with:
  * - Scholarship name and provider
  * - Award amount
  * - Deadline and days remaining
  * - Status badge
- * - Progress indicators
+ * - Progress indicators (essays, documents, recommendations)
+ * - At-risk visual indicator
+ * - Drag-and-drop support (desktop only)
  *
  * @component
  */
@@ -15,11 +17,13 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, DollarSign, Clock, Building2 } from 'lucide-react'
+import { Calendar, DollarSign, Clock, Building2, AlertTriangle, FileText, Upload, Users } from 'lucide-react'
 import { formatDaysUntilDeadline, calculateDaysUntilDeadline } from '@/lib/utils/timeline'
 import { cn } from '@/lib/utils'
+import { isAtRisk, getStatusText, getStatusColor } from '@/lib/utils/application'
 import type { Application, Scholarship } from '@prisma/client'
 import Link from 'next/link'
+import { forwardRef } from 'react'
 
 interface ApplicationCardProps {
   application: Application & {
@@ -28,105 +32,98 @@ interface ApplicationCardProps {
       'name' | 'provider' | 'awardAmount' | 'deadline' | 'category' | 'tags'
     >
   }
+  isDraggable?: boolean
+  className?: string
+  style?: React.CSSProperties
 }
 
 /**
- * Get status badge color based on application status
+ * Progress Indicator Component
  */
-function getStatusColor(
-  status: Application['status']
-): 'blue' | 'yellow' | 'purple' | 'green' | 'gray' {
-  switch (status) {
-    case 'NOT_STARTED':
-    case 'TODO':
-      return 'blue'
-    case 'IN_PROGRESS':
-      return 'yellow'
-    case 'READY_FOR_REVIEW':
-      return 'purple'
-    case 'SUBMITTED':
-    case 'AWAITING_DECISION':
-      return 'green'
-    case 'AWARDED':
-      return 'green'
-    case 'DENIED':
-    case 'WITHDRAWN':
-      return 'gray'
-    default:
-      return 'blue'
-  }
-}
-
-/**
- * Get status display text
- */
-function getStatusText(status: Application['status']): string {
-  switch (status) {
-    case 'NOT_STARTED':
-      return 'Not Started'
-    case 'TODO':
-      return 'To Do'
-    case 'IN_PROGRESS':
-      return 'In Progress'
-    case 'READY_FOR_REVIEW':
-      return 'Ready for Review'
-    case 'SUBMITTED':
-      return 'Submitted'
-    case 'AWAITING_DECISION':
-      return 'Awaiting Decision'
-    case 'AWARDED':
-      return 'Awarded'
-    case 'DENIED':
-      return 'Denied'
-    case 'WITHDRAWN':
-      return 'Withdrawn'
-    default:
-      return status
-  }
-}
-
-export function ApplicationCard({ application }: ApplicationCardProps) {
-  const { scholarship } = application
-  const daysUntilDeadline = calculateDaysUntilDeadline(scholarship.deadline)
-  const daysText = formatDaysUntilDeadline(scholarship.deadline)
-  const isUrgent = daysUntilDeadline <= 7 && daysUntilDeadline >= 0
+function ProgressIndicator({
+  icon: Icon,
+  completed,
+  total,
+  label,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  completed: number
+  total: number
+  label: string
+}) {
+  const isComplete = completed === total && total > 0
 
   return (
-    <Link href={`/applications/${application.id}`} className="block">
-      <Card
+    <div className="flex items-center gap-2 text-sm">
+      <Icon
         className={cn(
-          'hover:shadow-lg transition-shadow cursor-pointer',
-          isUrgent && 'border-orange-400 border-2'
+          'h-4 w-4',
+          isComplete ? 'text-green-600' : 'text-gray-400'
         )}
-      >
-        <CardContent className="p-6">
-          {/* Header */}
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg text-gray-900 mb-1 line-clamp-2">
-                {scholarship.name}
-              </h3>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Building2 className="h-4 w-4" />
-                <span className="truncate">{scholarship.provider}</span>
+      />
+      <span className={cn('text-xs', isComplete ? 'text-green-600 font-medium' : 'text-gray-600')}>
+        {completed}/{total} {label}
+      </span>
+    </div>
+  )
+}
+
+export const ApplicationCard = forwardRef<HTMLDivElement, ApplicationCardProps>(
+  ({ application, isDraggable = false, className, style }, ref) => {
+    const { scholarship } = application
+    const daysUntilDeadline = calculateDaysUntilDeadline(scholarship.deadline)
+    const daysText = formatDaysUntilDeadline(scholarship.deadline)
+    const isUrgent = daysUntilDeadline <= 7 && daysUntilDeadline >= 0
+    const atRisk = isAtRisk(application)
+
+    return (
+      <Link href={`/applications/${application.id}`} className="block">
+        <Card
+          ref={ref}
+          className={cn(
+            'hover:shadow-lg transition-shadow cursor-pointer',
+            atRisk && 'border-red-400 border-2',
+            isDraggable && 'cursor-grab active:cursor-grabbing',
+            className
+          )}
+          style={style}
+        >
+          <CardContent className="p-6">
+            {/* At-Risk Indicator */}
+            {atRisk && (
+              <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-md">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <span className="text-xs font-medium text-red-700">At Risk - Needs Attention</span>
               </div>
+            )}
+
+            {/* Header */}
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg text-gray-900 mb-1 line-clamp-2">
+                  {scholarship.name}
+                </h3>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Building2 className="h-4 w-4" />
+                  <span className="truncate">{scholarship.provider}</span>
+                </div>
+              </div>
+              <Badge
+                variant="secondary"
+                className={cn(
+                  'ml-2',
+                  getStatusColor(application.status) === 'blue' && 'bg-blue-100 text-blue-700',
+                  getStatusColor(application.status) === 'yellow' &&
+                    'bg-yellow-100 text-yellow-700',
+                  getStatusColor(application.status) === 'purple' &&
+                    'bg-purple-100 text-purple-700',
+                  getStatusColor(application.status) === 'green' && 'bg-green-100 text-green-700',
+                  getStatusColor(application.status) === 'gray' && 'bg-gray-100 text-gray-700'
+                )}
+              >
+                {getStatusText(application.status)}
+              </Badge>
             </div>
-            <Badge
-              variant="secondary"
-              className={cn(
-                'ml-2',
-                getStatusColor(application.status) === 'blue' && 'bg-blue-100 text-blue-700',
-                getStatusColor(application.status) === 'yellow' &&
-                  'bg-yellow-100 text-yellow-700',
-                getStatusColor(application.status) === 'purple' &&
-                  'bg-purple-100 text-purple-700',
-                getStatusColor(application.status) === 'green' && 'bg-green-100 text-green-700',
-                getStatusColor(application.status) === 'gray' && 'bg-gray-100 text-gray-700'
-              )}
-            >
-              {getStatusText(application.status)}
-            </Badge>
-          </div>
 
           {/* Details Grid */}
           <div className="grid grid-cols-2 gap-4 text-sm">
@@ -184,6 +181,28 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
             </div>
           </div>
 
+          {/* Progress Indicators (Story 3.3 AC2) */}
+          <div className="mt-4 pt-4 border-t space-y-2">
+            <ProgressIndicator
+              icon={FileText}
+              completed={application.essayComplete}
+              total={application.essayCount}
+              label="Essays"
+            />
+            <ProgressIndicator
+              icon={Upload}
+              completed={application.documentsUploaded}
+              total={application.documentsRequired}
+              label="Docs"
+            />
+            <ProgressIndicator
+              icon={Users}
+              completed={application.recsReceived}
+              total={application.recsRequired}
+              label="Recs"
+            />
+          </div>
+
           {/* Priority Tier */}
           {application.priorityTier && (
             <div className="mt-4 pt-4 border-t">
@@ -209,3 +228,6 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
     </Link>
   )
 }
+)
+
+ApplicationCard.displayName = 'ApplicationCard'
