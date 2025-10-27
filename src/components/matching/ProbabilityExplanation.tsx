@@ -96,7 +96,6 @@ export function ProbabilityExplanation({
   baseProbability,
   afterCompetition,
   finalProbability,
-  competitionFactor,
   strengthAdjustment,
   applicantPoolSize,
   acceptanceRate,
