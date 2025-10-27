@@ -8,3 +8,6 @@
 
 export { MatchScoreBadge, MatchScoreBadgeWithLabel } from './MatchScoreBadge'
 export { MatchScoreBreakdown, MatchScoreSummary } from './MatchScoreBreakdown'
+export { StrategicValueBadge, BestBetIndicator } from './StrategicValueBadge'
+export { StrategicValueBreakdown } from './StrategicValueBreakdown'
+export { EffortBreakdown, EffortSummary } from './EffortBreakdown'

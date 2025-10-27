@@ -13,6 +13,25 @@
 export type SuccessTier = 'STRONG_MATCH' | 'COMPETITIVE_MATCH' | 'REACH' | 'LONG_SHOT'
 
 /**
+ * Effort level type (Story 2.6)
+ */
+export type EffortLevel = 'LOW' | 'MEDIUM' | 'HIGH'
+
+/**
+ * Strategic value tier type (Story 2.6)
+ */
+export type StrategicValueTier = 'BEST_BET' | 'HIGH_VALUE' | 'MEDIUM_VALUE' | 'LOW_VALUE'
+
+/**
+ * Effort breakdown (Story 2.6)
+ */
+export interface EffortBreakdown {
+  essays: number
+  documents: number
+  recommendations: number
+}
+
+/**
  * Match score result containing overall score and dimensional breakdowns
  *
  * All scores range from 0-100:
@@ -50,6 +69,18 @@ export interface MatchScore {
 
   /** Story 2.5: Competition factor (0.0-1.0) */
   competitionFactor: number
+
+  /** Story 2.6: Strategic value ROI score (0-10) */
+  strategicValue: number
+
+  /** Story 2.6: Application effort level */
+  applicationEffort: EffortLevel
+
+  /** Story 2.6: Detailed effort breakdown */
+  effortBreakdown: EffortBreakdown
+
+  /** Story 2.6: Strategic value tier classification */
+  strategicValueTier: StrategicValueTier
 
   /** Timestamp when match was calculated */
   calculatedAt: Date

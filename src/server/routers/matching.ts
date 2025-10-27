@@ -43,14 +43,21 @@ export const matchingRouter = router({
             priorityTier: z
               .enum(['MUST_APPLY', 'SHOULD_APPLY', 'IF_TIME_PERMITS', 'HIGH_VALUE_REACH'])
               .optional(),
+            // Story 2.6: Strategic value filters
+            strategicValueTier: z
+              .enum(['BEST_BET', 'HIGH_VALUE', 'MEDIUM_VALUE', 'LOW_VALUE'])
+              .optional(),
+            minStrategicValue: z.number().min(0).max(10).optional(),
           })
           .optional(),
+        // Story 2.6: Sort by strategic value
+        sortBy: z.enum(['matchScore', 'strategicValue', 'deadline']).default('matchScore'),
         limit: z.number().min(1).max(100).default(50),
         offset: z.number().min(0).default(0),
       })
     )
     .query(async ({ input, ctx }) => {
-      const { studentId, filters, limit, offset } = input
+      const { studentId, filters, sortBy, limit, offset } = input
 
       // Verify student belongs to authenticated user
       const student = await prisma.student.findUnique({
@@ -85,6 +92,25 @@ export const matchingRouter = router({
         where.priorityTier = filters.priorityTier
       }
 
+      // Story 2.6: Strategic value filters
+      if (filters?.strategicValueTier) {
+        where.strategicValueTier = filters.strategicValueTier
+      }
+
+      if (filters?.minStrategicValue !== undefined) {
+        where.strategicValue = { gte: filters.minStrategicValue }
+      }
+
+      // Story 2.6: Determine sort order
+      let orderBy: any
+      if (sortBy === 'strategicValue') {
+        orderBy = { strategicValue: 'desc' }
+      } else if (sortBy === 'deadline') {
+        orderBy = { scholarship: { deadline: 'asc' } }
+      } else {
+        orderBy = { overallMatchScore: 'desc' }
+      }
+
       // Fetch matches with scholarship details
       const matches = await prisma.match.findMany({
         where,
@@ -102,9 +128,7 @@ export const matchingRouter = router({
             },
           },
         },
-        orderBy: {
-          overallMatchScore: 'desc', // Highest matches first
-        },
+        orderBy,
         take: limit,
         skip: offset,
       })
