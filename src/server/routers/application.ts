@@ -608,4 +608,170 @@ export const applicationRouter = router({
 
       return { success: true }
     }),
+
+  /**
+   * Get workspace data for single application (Story 3.8)
+   *
+   * Fetches complete application data graph for workspace interface.
+   * Single comprehensive query to reduce N+1 queries and ensure consistent data.
+   *
+   * @input applicationId - Application ID
+   * @returns Complete application data with all relations
+   * @throws NOT_FOUND - If application doesn't exist
+   * @throws FORBIDDEN - If user doesn't own application
+   */
+  getWorkspaceData: protectedProcedure
+    .input(
+      z.object({
+        applicationId: z.string(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const { applicationId } = input
+      const studentId = ctx.userId
+
+      const application = await prisma.application.findUnique({
+        where: { id: applicationId },
+        include: {
+          scholarship: {
+            select: {
+              id: true,
+              name: true,
+              provider: true,
+              awardAmount: true,
+              deadline: true,
+              category: true,
+              description: true,
+              essayPrompts: true,
+              requiredDocuments: true,
+              recommendationCount: true,
+              eligibilityCriteria: true,
+            },
+          },
+          timeline: true,
+          essays: {
+            select: {
+              id: true,
+              title: true,
+              wordCount: true,
+              phase: true,
+              updatedAt: true,
+            },
+            orderBy: { createdAt: 'asc' },
+          },
+          documents: {
+            select: {
+              id: true,
+              type: true,
+              fileName: true,
+              fileSize: true,
+              createdAt: true,
+              compliant: true,
+            },
+            orderBy: { createdAt: 'desc' },
+          },
+          recommendations: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              status: true,
+              createdAt: true,
+              submittedAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+          },
+        },
+      })
+
+      if (!application) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Application not found',
+        })
+      }
+
+      if (application.studentId !== studentId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to view this application',
+        })
+      }
+
+      // Fetch match data for match score badge
+      const match = await prisma.match.findUnique({
+        where: {
+          studentId_scholarshipId: {
+            studentId,
+            scholarshipId: application.scholarshipId,
+          },
+        },
+        select: {
+          overallMatchScore: true,
+          priorityTier: true,
+        },
+      })
+
+      return {
+        ...application,
+        match: match || null,
+      }
+    }),
+
+  /**
+   * Update application notes (Story 3.8)
+   *
+   * Updates rich text notes for application. Called by auto-save mechanism
+   * with debounced input (500ms) and interval-based saves (every 30 seconds).
+   *
+   * @input applicationId - Application ID
+   * @input notes - Rich text notes content (HTML or JSON)
+   * @returns Updated application
+   * @throws NOT_FOUND - If application doesn't exist
+   * @throws FORBIDDEN - If user doesn't own application
+   */
+  updateNotes: protectedProcedure
+    .input(
+      z.object({
+        applicationId: z.string(),
+        notes: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { applicationId, notes } = input
+      const studentId = ctx.userId
+
+      // Verify ownership
+      const application = await prisma.application.findUnique({
+        where: { id: applicationId },
+        select: { studentId: true },
+      })
+
+      if (!application) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Application not found',
+        })
+      }
+
+      if (application.studentId !== studentId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to update this application',
+        })
+      }
+
+      // Update notes
+      const updatedApplication = await prisma.application.update({
+        where: { id: applicationId },
+        data: { notes },
+        select: {
+          id: true,
+          notes: true,
+          updatedAt: true,
+        },
+      })
+
+      return updatedApplication
+    }),
 })
