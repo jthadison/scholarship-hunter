@@ -70,7 +70,8 @@
       "Bash(gh pr edit:*)",
       "Bash(gh pr comment:*)",
       "Bash(npx prisma migrate reset --skip-seed)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(npx prisma migrate reset:*)"
     ],
     "deny": [],
     "ask": []

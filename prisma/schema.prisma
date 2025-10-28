@@ -374,6 +374,9 @@ model Application {
   // Notes
   notes String? @db.Text
 
+  // Story 3.9: Archive functionality
+  archived Boolean @default(false)
+
   timeline        Timeline?
   outcome         Outcome?
   essays          Essay[]
@@ -390,6 +393,7 @@ model Application {
   @@index([scholarshipId])
   @@index([status])
   @@index([targetSubmitDate])
+  @@index([studentId, archived]) // Story 3.9: Efficient filtering of archived applications
 }
 
 model Timeline {

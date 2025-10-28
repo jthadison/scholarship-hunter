@@ -39,6 +39,7 @@ type ApplicationWithRelations = Application & {
 interface MobileListProps {
   applications: ApplicationWithRelations[]
   onStatusChange: (applicationId: string, newStatus: ApplicationStatus) => Promise<void>
+  showCheckbox?: boolean // Story 3.9: Enable bulk selection mode
 }
 
 /**
@@ -94,9 +95,11 @@ function CollapsibleSection({
 function MobileApplicationCard({
   application,
   onStatusChange,
+  showCheckbox,
 }: {
   application: ApplicationWithRelations
   onStatusChange: (applicationId: string, newStatus: ApplicationStatus) => Promise<void>
+  showCheckbox?: boolean
 }) {
   const [isChangingStatus, setIsChangingStatus] = useState(false)
 
@@ -127,7 +130,7 @@ function MobileApplicationCard({
 
   return (
     <div className="relative">
-      <ApplicationCard application={application} />
+      <ApplicationCard application={application} showCheckbox={showCheckbox} />
 
       {/* Status Change Dropdown */}
       <div className="absolute top-4 right-4">
@@ -163,7 +166,7 @@ function MobileApplicationCard({
   )
 }
 
-export function MobileList({ applications, onStatusChange }: MobileListProps) {
+export function MobileList({ applications, onStatusChange, showCheckbox = false }: MobileListProps) {
   // Group applications by column status
   const groupedApplications = groupByStatus(applications)
 
@@ -176,7 +179,12 @@ export function MobileList({ applications, onStatusChange }: MobileListProps) {
         defaultOpen={true}
       >
         {groupedApplications.TODO.map((app) => (
-          <MobileApplicationCard key={app.id} application={app} onStatusChange={onStatusChange} />
+          <MobileApplicationCard
+            key={app.id}
+            application={app}
+            onStatusChange={onStatusChange}
+            showCheckbox={showCheckbox}
+          />
         ))}
       </CollapsibleSection>
 
@@ -187,7 +195,12 @@ export function MobileList({ applications, onStatusChange }: MobileListProps) {
         defaultOpen={true}
       >
         {groupedApplications.IN_PROGRESS.map((app) => (
-          <MobileApplicationCard key={app.id} application={app} onStatusChange={onStatusChange} />
+          <MobileApplicationCard
+            key={app.id}
+            application={app}
+            onStatusChange={onStatusChange}
+            showCheckbox={showCheckbox}
+          />
         ))}
       </CollapsibleSection>
 
@@ -198,7 +211,12 @@ export function MobileList({ applications, onStatusChange }: MobileListProps) {
         defaultOpen={false}
       >
         {groupedApplications.BACKLOG.map((app) => (
-          <MobileApplicationCard key={app.id} application={app} onStatusChange={onStatusChange} />
+          <MobileApplicationCard
+            key={app.id}
+            application={app}
+            onStatusChange={onStatusChange}
+            showCheckbox={showCheckbox}
+          />
         ))}
       </CollapsibleSection>
 
@@ -209,7 +227,12 @@ export function MobileList({ applications, onStatusChange }: MobileListProps) {
         defaultOpen={false}
       >
         {groupedApplications.SUBMITTED.map((app) => (
-          <MobileApplicationCard key={app.id} application={app} onStatusChange={onStatusChange} />
+          <MobileApplicationCard
+            key={app.id}
+            application={app}
+            onStatusChange={onStatusChange}
+            showCheckbox={showCheckbox}
+          />
         ))}
       </CollapsibleSection>
     </div>
