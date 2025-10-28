@@ -17,11 +17,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/shared/components/ui/dropdown-menu'
 import { ApplicationStatus, PriorityTier } from '@prisma/client'
 import { useState } from 'react'
 import { ConfirmationDialog } from './ConfirmationDialog'
-import { api } from '@/trpc/react'
+import { trpc } from '@/shared/lib/trpc'
 import { toast } from 'sonner'
 
 interface BulkActionsToolbarProps {
@@ -37,15 +37,15 @@ export function BulkActionsToolbar({ onActionComplete }: BulkActionsToolbarProps
   const [showArchiveDialog, setShowArchiveDialog] = useState(false)
 
   // tRPC mutations
-  const bulkUpdateMutation = api.application.bulkUpdate.useMutation({
-    onSuccess: (data) => {
+  const bulkUpdateMutation = trpc.application.bulkUpdate.useMutation({
+    onSuccess: (data: { success: number; failed: number; errors?: Array<{ id: string; reason: string }> }) => {
       if (data.failed === 0) {
         toast.success(`${data.success} application${data.success > 1 ? 's' : ''} updated successfully`)
       } else {
         toast.warning(
           `${data.success} of ${selectedCount} application${selectedCount > 1 ? 's' : ''} updated. ${data.failed} failed.`,
           {
-            description: data.errors?.map(e => e.reason).join(', ')
+            description: data.errors?.map((e: { id: string; reason: string }) => e.reason).join(', ')
           }
         )
       }

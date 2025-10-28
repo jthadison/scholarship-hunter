@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { addDays, addHours } from 'date-fns'
+import { addHours } from 'date-fns'
 import {
   generateRecoveryPlan,
   calculateRequiredPace,
@@ -89,11 +89,11 @@ describe('generateRecoveryPlan', () => {
     const plan = generateRecoveryPlan(app)
 
     expect(plan).toHaveLength(1)
-    expect(plan[0].type).toBe('ESSAY')
-    expect(plan[0].priority).toBe(1)
-    expect(plan[0].blockerLevel).toBe('HIGH')
-    expect(plan[0].estimatedHours).toBe(6) // 2 essays * 3 hours
-    expect(plan[0].message).toContain('2 essays')
+    expect(plan[0]!.type).toBe('ESSAY')
+    expect(plan[0]!.priority).toBe(1)
+    expect(plan[0]!.blockerLevel).toBe('HIGH')
+    expect(plan[0]!.estimatedHours).toBe(6) // 2 essays * 3 hours
+    expect(plan[0]!.message).toContain('2 essays')
   })
 
   it('should generate document recommendation when docs incomplete', () => {
@@ -112,10 +112,10 @@ describe('generateRecoveryPlan', () => {
     const plan = generateRecoveryPlan(app)
 
     expect(plan).toHaveLength(1)
-    expect(plan[0].type).toBe('DOCUMENT')
-    expect(plan[0].priority).toBe(2)
-    expect(plan[0].blockerLevel).toBe('MEDIUM')
-    expect(plan[0].message).toContain('2 remaining documents')
+    expect(plan[0]!.type).toBe('DOCUMENT')
+    expect(plan[0]!.priority).toBe(2)
+    expect(plan[0]!.blockerLevel).toBe('MEDIUM')
+    expect(plan[0]!.message).toContain('2 remaining documents')
   })
 
   it('should generate recommendation follow-up when recs incomplete', () => {
@@ -134,11 +134,11 @@ describe('generateRecoveryPlan', () => {
     const plan = generateRecoveryPlan(app)
 
     expect(plan).toHaveLength(1)
-    expect(plan[0].type).toBe('RECOMMENDATION')
-    expect(plan[0].priority).toBe(3)
-    expect(plan[0].blockerLevel).toBe('HIGH') // High because outside student control
-    expect(plan[0].estimatedHours).toBe(0)
-    expect(plan[0].message).toContain('2 recommenders')
+    expect(plan[0]!.type).toBe('RECOMMENDATION')
+    expect(plan[0]!.priority).toBe(3)
+    expect(plan[0]!.blockerLevel).toBe('HIGH') // High because outside student control
+    expect(plan[0]!.estimatedHours).toBe(0)
+    expect(plan[0]!.message).toContain('2 recommenders')
   })
 
   it('should prioritize essays over docs over recs', () => {
@@ -157,9 +157,9 @@ describe('generateRecoveryPlan', () => {
     const plan = generateRecoveryPlan(app)
 
     expect(plan).toHaveLength(3)
-    expect(plan[0].type).toBe('ESSAY') // Priority 1
-    expect(plan[1].type).toBe('DOCUMENT') // Priority 2
-    expect(plan[2].type).toBe('RECOMMENDATION') // Priority 3
+    expect(plan[0]!.type).toBe('ESSAY') // Priority 1
+    expect(plan[1]!.type).toBe('DOCUMENT') // Priority 2
+    expect(plan[2]!.type).toBe('RECOMMENDATION') // Priority 3
   })
 
   it('should return empty plan when all requirements complete', () => {
@@ -195,12 +195,12 @@ describe('generateRecoveryPlan', () => {
 
     const plan = generateRecoveryPlan(app)
 
-    expect(plan[0].message).toContain('1 essay')
-    expect(plan[0].message).not.toContain('essays')
-    expect(plan[1].message).toContain('1 remaining document')
-    expect(plan[1].message).not.toContain('documents')
-    expect(plan[2].message).toContain('1 recommender')
-    expect(plan[2].message).not.toContain('recommenders')
+    expect(plan[0]!.message).toContain('1 essay')
+    expect(plan[0]!.message).not.toContain('essays')
+    expect(plan[1]!.message).toContain('1 remaining document')
+    expect(plan[1]!.message).not.toContain('documents')
+    expect(plan[2]!.message).toContain('1 recommender')
+    expect(plan[2]!.message).not.toContain('recommenders')
   })
 
   it('should include deadline in essay recommendation', () => {
@@ -218,8 +218,8 @@ describe('generateRecoveryPlan', () => {
 
     const plan = generateRecoveryPlan(app)
 
-    expect(plan[0].deadline).toBeDefined()
-    expect(plan[0].message).toMatch(/by \w+ \d+:\d+ [AP]M/) // Format check
+    expect(plan[0]!.deadline).toBeDefined()
+    expect(plan[0]!.message).toMatch(/by \w+ \d+:\d+ [AP]M/) // Format check
   })
 })
 

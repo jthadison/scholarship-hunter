@@ -1021,15 +1021,7 @@ export const applicationRouter = router({
         archived: false,
       },
       include: {
-        scholarship: {
-          select: {
-            id: true,
-            name: true,
-            provider: true,
-            awardAmount: true,
-            deadline: true,
-          },
-        },
+        scholarship: true,
       },
     })
 

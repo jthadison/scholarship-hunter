@@ -17,7 +17,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { trpc } from '@/shared/lib/trpc'
-import { Loader2, Plus, Home, ChevronRight, AlertTriangle, CheckSquare, Archive } from 'lucide-react'
+import { Loader2, Plus, Home, ChevronRight, CheckSquare, Archive } from 'lucide-react'
 import { KanbanBoard } from '@/components/applications/KanbanBoard'
 import { MobileList } from '@/components/applications/MobileList'
 import { FilterBar, type FilterState } from '@/components/applications/FilterBar'
@@ -69,7 +69,6 @@ export default function ApplicationsPage() {
   // Story 3.10: Fetch at-risk applications
   const {
     data: atRiskApplications,
-    isLoading: isLoadingAtRisk,
   } = trpc.application.getAtRisk.useQuery(undefined, {
     enabled: !!user && !showArchived,
   })

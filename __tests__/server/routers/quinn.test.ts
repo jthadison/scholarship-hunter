@@ -11,11 +11,10 @@
  * Covers all acceptance criteria AC1-AC7
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest'
 import { quinnRouter } from '@/server/routers/quinn'
 import { prisma } from '@/server/db'
-import { addDays, subDays, startOfWeek, endOfWeek } from 'date-fns'
-import { TRPCError } from '@trpc/server'
+import { addDays, startOfWeek } from 'date-fns'
 
 // Mock prisma
 vi.mock('@/server/db', () => ({
@@ -42,7 +41,6 @@ describe('Quinn Router - Story 3.6 Tests', () => {
 
   const today = new Date('2025-11-15')
   const weekStart = startOfWeek(today)
-  const weekEnd = endOfWeek(today)
 
   const mockScholarship1 = {
     name: 'Women in STEM Scholarship',
@@ -109,11 +107,11 @@ describe('Quinn Router - Story 3.6 Tests', () => {
       const result = await caller.getWeeklyTasks()
 
       expect(result).toHaveLength(2) // Essay (day 2) and Rec request (day 5)
-      expect(result[0].type).toBe('ESSAY')
-      expect(result[0].urgency).toBe('CRITICAL')
-      expect(result[0].daysUntil).toBe(2)
-      expect(result[1].type).toBe('REC')
-      expect(result[1].urgency).toBe('UPCOMING')
+      expect(result[0]?.type).toBe('ESSAY')
+      expect(result[0]?.urgency).toBe('CRITICAL')
+      expect(result[0]?.daysUntil).toBe(2)
+      expect(result[1]?.type).toBe('REC')
+      expect(result[1]?.urgency).toBe('UPCOMING')
     })
 
     it('should categorize tasks by urgency levels', async () => {
@@ -133,9 +131,9 @@ describe('Quinn Router - Story 3.6 Tests', () => {
       const caller = quinnRouter.createCaller(mockCtx)
       const result = await caller.getWeeklyTasks()
 
-      expect(result[0].urgency).toBe('CRITICAL')
-      expect(result[1].urgency).toBe('URGENT')
-      expect(result[2].urgency).toBe('UPCOMING')
+      expect(result[0]?.urgency).toBe('CRITICAL')
+      expect(result[1]?.urgency).toBe('URGENT')
+      expect(result[2]?.urgency).toBe('UPCOMING')
     })
 
     it('should exclude tasks beyond 7 days', async () => {
@@ -189,8 +187,8 @@ describe('Quinn Router - Story 3.6 Tests', () => {
       const caller = quinnRouter.createCaller(mockCtx)
       const result = await caller.getWeeklyTasks()
 
-      expect(result[0].daysUntil).toBe(1)
-      expect(result[1].daysUntil).toBe(2)
+      expect(result[0]?.daysUntil).toBe(1)
+      expect(result[1]?.daysUntil).toBe(2)
     })
   })
 
@@ -298,10 +296,10 @@ describe('Quinn Router - Story 3.6 Tests', () => {
       const caller = quinnRouter.createCaller(mockCtx)
       const result = await caller.getWorkloadSummary()
 
-      expect(result.breakdown[0].scholarshipName).toBe('Scholarship A')
-      expect(result.breakdown[0].hours).toBe(10)
-      expect(result.breakdown[1].scholarshipName).toBe('Scholarship B')
-      expect(result.breakdown[1].hours).toBe(5)
+      expect(result.breakdown[0]?.scholarshipName).toBe('Scholarship A')
+      expect(result.breakdown[0]?.hours).toBe(10)
+      expect(result.breakdown[1]?.scholarshipName).toBe('Scholarship B')
+      expect(result.breakdown[1]?.hours).toBe(5)
     })
   })
 
@@ -423,7 +421,7 @@ describe('Quinn Router - Story 3.6 Tests', () => {
       } as any)
 
       const caller = quinnRouter.createCaller(mockCtx)
-      const result = await caller.markTaskComplete({
+      await caller.markTaskComplete({
         taskId: 'app-1-rec',
         taskType: 'REC',
       })

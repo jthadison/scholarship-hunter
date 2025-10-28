@@ -9,7 +9,7 @@
  */
 
 import { differenceInDays } from "date-fns";
-import type { Application, ApplicationStatus, Scholarship } from "@prisma/client";
+import type { Application, Scholarship } from "@prisma/client";
 import type { AtRiskReason, Severity } from "@prisma/client";
 
 export interface AtRiskApplication extends Application {
@@ -73,8 +73,9 @@ export function detectAtRiskApplications(
 
     // Rule 3: 1-day critical (highest priority check)
     // Deadline <1 day AND status NOT IN [READY_FOR_REVIEW, SUBMITTED]
+    // Note: SUBMITTED already filtered out above, so only check READY_FOR_REVIEW
     if (daysUntilDeadline <= 1) {
-      if (app.status !== "READY_FOR_REVIEW" && app.status !== "SUBMITTED") {
+      if (app.status !== "READY_FOR_REVIEW") {
         atRiskApps.push({
           ...app,
           atRisk: true,

@@ -8,7 +8,6 @@
 
 import { differenceInHours, subHours, format } from "date-fns";
 import type { Application, Scholarship } from "@prisma/client";
-import type { AtRiskApplication } from "./detection";
 
 export type RecommendationType = "ESSAY" | "DOCUMENT" | "RECOMMENDATION";
 export type BlockerLevel = "HIGH" | "MEDIUM" | "LOW";
@@ -30,7 +29,6 @@ export function generateRecoveryPlan(
   app: Application & { scholarship: Scholarship }
 ): RecoveryRecommendation[] {
   const recommendations: RecoveryRecommendation[] = [];
-  const hoursUntilDeadline = differenceInHours(app.scholarship.deadline, new Date());
 
   // Essay recommendations (Priority 1 - highest)
   // Subtask 4.3: If essay incomplete

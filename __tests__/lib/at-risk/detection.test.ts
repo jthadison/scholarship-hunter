@@ -143,9 +143,9 @@ describe('detectAtRiskApplications - Rule 1: 7-day warning', () => {
     const result = detectAtRiskApplications([app])
 
     expect(result).toHaveLength(1)
-    expect(result[0].atRiskReason).toBe('SEVEN_DAY_LOW_PROGRESS')
-    expect(result[0].severity).toBe('WARNING')
-    expect(result[0].daysUntilDeadline).toBe(5)
+    expect(result[0]!.atRiskReason).toBe('SEVEN_DAY_LOW_PROGRESS')
+    expect(result[0]!.severity).toBe('WARNING')
+    expect(result[0]!.daysUntilDeadline).toBe(5)
   })
 
   it('should NOT flag application with deadline <7 days but progress >=50%', () => {
@@ -198,8 +198,8 @@ describe('detectAtRiskApplications - Rule 2: 3-day urgent', () => {
     const result = detectAtRiskApplications([app])
 
     expect(result).toHaveLength(1)
-    expect(result[0].atRiskReason).toBe('THREE_DAY_INCOMPLETE')
-    expect(result[0].severity).toBe('URGENT')
+    expect(result[0]!.atRiskReason).toBe('THREE_DAY_INCOMPLETE')
+    expect(result[0]!.severity).toBe('URGENT')
   })
 
   it('should flag application with deadline <3 days and incomplete documents', () => {
@@ -218,7 +218,7 @@ describe('detectAtRiskApplications - Rule 2: 3-day urgent', () => {
     const result = detectAtRiskApplications([app])
 
     expect(result).toHaveLength(1)
-    expect(result[0].atRiskReason).toBe('THREE_DAY_INCOMPLETE')
+    expect(result[0]!.atRiskReason).toBe('THREE_DAY_INCOMPLETE')
   })
 
   it('should flag application with deadline <3 days and incomplete recommendations', () => {
@@ -237,7 +237,7 @@ describe('detectAtRiskApplications - Rule 2: 3-day urgent', () => {
     const result = detectAtRiskApplications([app])
 
     expect(result).toHaveLength(1)
-    expect(result[0].atRiskReason).toBe('THREE_DAY_INCOMPLETE')
+    expect(result[0]!.atRiskReason).toBe('THREE_DAY_INCOMPLETE')
   })
 
   it('should NOT flag if all requirements complete', () => {
@@ -271,8 +271,8 @@ describe('detectAtRiskApplications - Rule 3: 1-day critical', () => {
     const result = detectAtRiskApplications([app])
 
     expect(result).toHaveLength(1)
-    expect(result[0].atRiskReason).toBe('ONE_DAY_NOT_READY')
-    expect(result[0].severity).toBe('CRITICAL')
+    expect(result[0]!.atRiskReason).toBe('ONE_DAY_NOT_READY')
+    expect(result[0]!.severity).toBe('CRITICAL')
   })
 
   it('should NOT flag if status is READY_FOR_REVIEW', () => {
@@ -392,8 +392,8 @@ describe('detectAtRiskApplications - Priority ordering', () => {
     const result = detectAtRiskApplications([app])
 
     expect(result).toHaveLength(1)
-    expect(result[0].atRiskReason).toBe('ONE_DAY_NOT_READY') // Rule 3 takes precedence
-    expect(result[0].severity).toBe('CRITICAL')
+    expect(result[0]!.atRiskReason).toBe('ONE_DAY_NOT_READY') // Rule 3 takes precedence
+    expect(result[0]!.severity).toBe('CRITICAL')
   })
 
   it('should prioritize Rule 2 (urgent) over Rule 1 (warning)', () => {
@@ -408,8 +408,8 @@ describe('detectAtRiskApplications - Priority ordering', () => {
     const result = detectAtRiskApplications([app])
 
     expect(result).toHaveLength(1)
-    expect(result[0].atRiskReason).toBe('THREE_DAY_INCOMPLETE') // Rule 2 takes precedence
-    expect(result[0].severity).toBe('URGENT')
+    expect(result[0]!.atRiskReason).toBe('THREE_DAY_INCOMPLETE') // Rule 2 takes precedence
+    expect(result[0]!.severity).toBe('URGENT')
   })
 })
 
@@ -436,6 +436,6 @@ describe('detectAtRiskApplications - Multiple applications', () => {
     const result = detectAtRiskApplications(apps)
 
     expect(result).toHaveLength(1)
-    expect(result[0].atRiskReason).toBe('SEVEN_DAY_LOW_PROGRESS')
+    expect(result[0]!.atRiskReason).toBe('SEVEN_DAY_LOW_PROGRESS')
   })
 })

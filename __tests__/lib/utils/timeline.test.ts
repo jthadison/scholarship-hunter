@@ -38,6 +38,7 @@ describe('Timeline Utilities - Story 3.2 Tests', () => {
         actualSubmitDate: null,
         outcomeDate: null,
         awardAmount: null,
+        archived: false,
         createdAt: new Date(),
         updatedAt: new Date(),
         scholarship: {
@@ -102,6 +103,7 @@ describe('Timeline Utilities - Story 3.2 Tests', () => {
         actualSubmitDate: null,
         outcomeDate: null,
         awardAmount: null,
+        archived: false,
         createdAt: new Date(),
         updatedAt: new Date(),
         scholarship: {
@@ -161,6 +163,7 @@ describe('Timeline Utilities - Story 3.2 Tests', () => {
         actualSubmitDate: null,
         outcomeDate: null,
         awardAmount: null,
+        archived: false,
         createdAt: new Date(),
         updatedAt: new Date(),
         scholarship: {
