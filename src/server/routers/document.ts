@@ -180,7 +180,7 @@ export const documentRouter = router({
           application: {
             select: {
               id: true,
-              scholarshipName: true,
+              scholarship: { select: { name: true } },
             },
           },
         },
@@ -205,7 +205,7 @@ export const documentRouter = router({
           application: {
             select: {
               id: true,
-              scholarshipName: true,
+              scholarship: { select: { name: true } },
             },
           },
         },

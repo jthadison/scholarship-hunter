@@ -33,15 +33,6 @@ import { cn } from '@/lib/utils'
 import { DocumentType } from '@prisma/client'
 import { trpc } from '@/shared/lib/trpc'
 
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'text/plain',
-]
-
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const MAX_BATCH_SIZE = 5
 
@@ -69,7 +60,7 @@ export function DocumentUploadZone({
   const { toast } = useToast()
 
   const uploadMutation = trpc.document.uploadDocument.useMutation({
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       const fileId = variables.fileName
       setUploadQueue((prev) =>
         prev.map((f) =>

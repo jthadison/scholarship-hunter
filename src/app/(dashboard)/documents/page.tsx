@@ -9,12 +9,14 @@
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { Search, Upload, FileText } from 'lucide-react'
 import { DocumentUploadZone } from '@/components/document/DocumentUploadZone'
+import { DocumentCard } from '@/components/document/DocumentCard'
+import { DocumentPreview } from '@/components/document/DocumentPreview'
 import { trpc } from '@/shared/lib/trpc'
 import { DocumentType } from '@prisma/client'
 
@@ -23,6 +25,7 @@ export default function DocumentsPage() {
   const [search, setSearch] = useState('')
   const [selectedType, setSelectedType] = useState<DocumentType | undefined>()
   const [showUpload, setShowUpload] = useState(false)
+  const [previewDocumentId, setPreviewDocumentId] = useState<string | null>(null)
 
   // Get student profile
   const { data: student } = trpc.profile.get.useQuery(undefined, {
@@ -136,7 +139,7 @@ export default function DocumentsPage() {
                 <Input
                   placeholder="Search documents..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
                   className="pl-8 w-64"
                 />
               </div>
@@ -146,8 +149,8 @@ export default function DocumentsPage() {
         <CardContent>
           <Tabs
             value={selectedType ?? 'ALL'}
-            onValueChange={(value) =>
-              setSelectedType((
+            onValueChange={(value: string) =>
+              setSelectedType(
                 value === 'ALL' ? undefined : (value as DocumentType)
               )
             }
@@ -175,27 +178,12 @@ export default function DocumentsPage() {
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {documents.map((doc) => (
-                    <Card key={doc.id}>
-                      <CardContent className="pt-6">
-                        <div className="space-y-2">
-                          <div className="flex items-start justify-between">
-                            <FileText className="h-5 w-5 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">
-                              {(doc.fileSize / 1024).toFixed(0)} KB
-                            </span>
-                          </div>
-                          <h3 className="font-medium truncate">{doc.name}</h3>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(doc.createdAt).toLocaleDateString()}
-                          </p>
-                          {doc.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {doc.description}
-                            </p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <DocumentCard
+                      key={doc.id}
+                      document={doc}
+                      onPreview={(id) => setPreviewDocumentId(id)}
+                      onDelete={() => refetch()}
+                    />
                   ))}
                 </div>
               )}
@@ -203,6 +191,15 @@ export default function DocumentsPage() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Preview Modal */}
+      <DocumentPreview
+        documentId={previewDocumentId}
+        open={!!previewDocumentId}
+        onOpenChange={(open) => {
+          if (!open) setPreviewDocumentId(null)
+        }}
+      />
     </div>
   )
 }

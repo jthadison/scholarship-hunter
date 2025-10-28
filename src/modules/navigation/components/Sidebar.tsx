@@ -11,6 +11,7 @@ import {
   Settings,
   HelpCircle,
   Search,
+  FolderOpen,
 } from 'lucide-react'
 import { Separator } from '@/shared/components/ui/separator'
 import { Badge } from '@/shared/components/ui/badge'
@@ -50,6 +51,13 @@ const navigationItems = [
     active: false,
     comingSoon: true,
     tooltip: 'Coming Soon - Epic 3',
+  },
+  {
+    label: 'Documents',
+    href: '/documents',
+    icon: FolderOpen,
+    active: true,
+    badge: 'New',
   },
   {
     label: 'Settings',
