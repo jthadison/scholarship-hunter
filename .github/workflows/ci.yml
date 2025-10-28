@@ -200,3 +200,4 @@ jobs:
           CLERK_SECRET_KEY: "sk_test_placeholder"
           MEILISEARCH_HOST: "http://localhost:7700"
           MEILISEARCH_API_KEY: "test_api_key"
+          RESEND_API_KEY: "re_placeholder_for_build"
