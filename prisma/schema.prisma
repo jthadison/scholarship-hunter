@@ -383,6 +383,7 @@ model Application {
   documents       Document[]
   recommendations Recommendation[]
   alerts          Alert[] // Story 3.4
+  atRiskEvents    AtRiskEvent[] // Story 3.10
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -695,4 +696,53 @@ enum OutcomeResult {
   DENIED
   WAITLISTED
   WITHDRAWN
+}
+
+// Story 3.10: At-Risk Application Detection & Recovery
+model AtRiskEvent {
+  id                  String   @id @default(cuid())
+  applicationId       String
+  detectedAt          DateTime @default(now())
+  resolvedAt          DateTime?
+  reason              AtRiskReason
+  severity            Severity
+  daysUntilDeadline   Int
+  progressAtDetection Float
+  outcome             AtRiskOutcome?
+  resolutionNotes     String?
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@index([detectedAt])
+}
+
+model EmailLog {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String // 'AT_RISK_ALERT', 'DEADLINE_REMINDER', etc.
+  applicationId String?
+  sentAt        DateTime @default(now())
+
+  @@index([userId, type, sentAt])
+}
+
+enum AtRiskReason {
+  SEVEN_DAY_LOW_PROGRESS
+  THREE_DAY_INCOMPLETE
+  ONE_DAY_NOT_READY
+}
+
+enum Severity {
+  WARNING  // 7-day threshold
+  URGENT   // 3-day threshold
+  CRITICAL // 1-day threshold
+}
+
+enum AtRiskOutcome {
+  SUBMITTED_ON_TIME
+  SUBMITTED_LATE
+  MISSED_DEADLINE
+  WITHDRAWN
+  DEADLINE_EXTENDED
 }

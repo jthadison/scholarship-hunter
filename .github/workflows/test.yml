@@ -200,6 +200,7 @@ jobs:
           NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: /dashboard
           MEILISEARCH_HOST: http://localhost:7700
           MEILISEARCH_API_KEY: test_api_key
+          RESEND_API_KEY: re_placeholder_for_build
 
   # Quality gate job (runs after all checks)
   quality-gate:

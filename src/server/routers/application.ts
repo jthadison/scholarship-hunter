@@ -18,6 +18,7 @@ import {
 } from '../services/timeline/generate'
 import { calculateProgressPercentage } from '../services/progress/calculate'
 import { canMarkReadyForReview } from '../services/progress/validation'
+import { detectAtRiskApplications } from '@/lib/at-risk/detection'
 
 /**
  * Application router with CRUD operations
@@ -993,5 +994,90 @@ export const applicationRouter = router({
       })
 
       return { updated: result.count }
+    }),
+
+  /**
+   * Get at-risk applications for student (Story 3.10)
+   *
+   * Detects applications at risk of missing deadlines using three criteria:
+   * - Rule 1: Deadline <7 days AND progress <50% (WARNING)
+   * - Rule 2: Deadline <3 days AND incomplete requirements (URGENT)
+   * - Rule 3: Deadline <1 day AND not READY_FOR_REVIEW (CRITICAL)
+   *
+   * Story 3.10 - Subtask 1.6, 1.7 (AC #1)
+   *
+   * @returns Array of at-risk applications with reason and severity
+   */
+  getAtRisk: protectedProcedure.query(async ({ ctx }) => {
+    const studentId = ctx.userId
+
+    // Fetch active applications with deadline in next 7 days
+    const applications = await prisma.application.findMany({
+      where: {
+        studentId,
+        status: {
+          notIn: ['SUBMITTED', 'WITHDRAWN', 'AWARDED', 'DENIED'],
+        },
+        archived: false,
+      },
+      include: {
+        scholarship: true,
+      },
+    })
+
+    // Run at-risk detection algorithm
+    const atRiskApps = detectAtRiskApplications(applications)
+
+    return atRiskApps
+  }),
+
+  /**
+   * Get at-risk event history for analytics (Story 3.10)
+   *
+   * Returns historical log of at-risk events for Epic 5 analytics.
+   * Can filter by student or specific application.
+   *
+   * Story 3.10 - Subtask 7.4 (AC #7)
+   *
+   * @input applicationId - Optional application ID filter
+   * @returns Array of AtRiskEvent records with application details
+   */
+  getAtRiskHistory: protectedProcedure
+    .input(
+      z
+        .object({
+          applicationId: z.string().optional(),
+        })
+        .optional()
+    )
+    .query(async ({ input, ctx }) => {
+      const studentId = ctx.userId
+
+      const events = await prisma.atRiskEvent.findMany({
+        where: {
+          application: {
+            studentId,
+          },
+          ...(input?.applicationId && { applicationId: input.applicationId }),
+        },
+        include: {
+          application: {
+            select: {
+              id: true,
+              status: true,
+              scholarship: {
+                select: {
+                  name: true,
+                  deadline: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { detectedAt: 'desc' },
+        take: 100, // Limit to most recent 100 events
+      })
+
+      return events
     }),
 })

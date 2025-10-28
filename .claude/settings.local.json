@@ -71,7 +71,9 @@
       "Bash(gh pr comment:*)",
       "Bash(npx prisma migrate reset --skip-seed)",
       "Bash(pkill:*)",
-      "Bash(npx prisma migrate reset:*)"
+      "Bash(npx prisma migrate reset:*)",
+      "Bash(tee:*)",
+      "SlashCommand(/bmad:bmm:agents:dev)"
     ],
     "deny": [],
     "ask": []
