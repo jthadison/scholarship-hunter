@@ -41,6 +41,7 @@ type ApplicationWithRelations = Application & {
 interface KanbanBoardProps {
   applications: ApplicationWithRelations[]
   onStatusChange: (applicationId: string, newStatus: ApplicationStatus) => Promise<void>
+  showCheckbox?: boolean // Story 3.9: Enable bulk selection mode
 }
 
 /**
@@ -48,8 +49,10 @@ interface KanbanBoardProps {
  */
 function DraggableApplicationCard({
   application,
+  showCheckbox,
 }: {
   application: ApplicationWithRelations
+  showCheckbox?: boolean
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: application.id,
@@ -63,7 +66,12 @@ function DraggableApplicationCard({
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <ApplicationCard application={application} isDraggable className="mb-3" />
+      <ApplicationCard
+        application={application}
+        isDraggable={!showCheckbox}
+        showCheckbox={showCheckbox}
+        className="mb-3"
+      />
     </div>
   )
 }
@@ -124,7 +132,7 @@ function getTargetStatus(columnStatus: ColumnStatus): ApplicationStatus {
   }
 }
 
-export function KanbanBoard({ applications, onStatusChange }: KanbanBoardProps) {
+export function KanbanBoard({ applications, onStatusChange, showCheckbox = false }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
 
   // Configure drag sensors (pointer sensor for desktop)
@@ -198,7 +206,7 @@ export function KanbanBoard({ applications, onStatusChange }: KanbanBoardProps) 
         >
           <DroppableColumn status="BACKLOG" applications={groupedApplications.BACKLOG}>
             {groupedApplications.BACKLOG.map((app) => (
-              <DraggableApplicationCard key={app.id} application={app} />
+              <DraggableApplicationCard key={app.id} application={app} showCheckbox={showCheckbox} />
             ))}
           </DroppableColumn>
         </SortableContext>
@@ -211,7 +219,7 @@ export function KanbanBoard({ applications, onStatusChange }: KanbanBoardProps) 
         >
           <DroppableColumn status="TODO" applications={groupedApplications.TODO}>
             {groupedApplications.TODO.map((app) => (
-              <DraggableApplicationCard key={app.id} application={app} />
+              <DraggableApplicationCard key={app.id} application={app} showCheckbox={showCheckbox} />
             ))}
           </DroppableColumn>
         </SortableContext>
@@ -224,7 +232,7 @@ export function KanbanBoard({ applications, onStatusChange }: KanbanBoardProps) 
         >
           <DroppableColumn status="IN_PROGRESS" applications={groupedApplications.IN_PROGRESS}>
             {groupedApplications.IN_PROGRESS.map((app) => (
-              <DraggableApplicationCard key={app.id} application={app} />
+              <DraggableApplicationCard key={app.id} application={app} showCheckbox={showCheckbox} />
             ))}
           </DroppableColumn>
         </SortableContext>
@@ -237,7 +245,7 @@ export function KanbanBoard({ applications, onStatusChange }: KanbanBoardProps) 
         >
           <DroppableColumn status="SUBMITTED" applications={groupedApplications.SUBMITTED}>
             {groupedApplications.SUBMITTED.map((app) => (
-              <DraggableApplicationCard key={app.id} application={app} />
+              <DraggableApplicationCard key={app.id} application={app} showCheckbox={showCheckbox} />
             ))}
           </DroppableColumn>
         </SortableContext>

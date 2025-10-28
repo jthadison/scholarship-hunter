@@ -17,7 +17,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { trpc } from '@/shared/lib/trpc'
-import { Loader2, Plus, Home, ChevronRight, AlertTriangle } from 'lucide-react'
+import { Loader2, Plus, Home, ChevronRight, AlertTriangle, CheckSquare, Archive } from 'lucide-react'
 import { KanbanBoard } from '@/components/applications/KanbanBoard'
 import { MobileList } from '@/components/applications/MobileList'
 import { FilterBar, type FilterState } from '@/components/applications/FilterBar'
@@ -28,6 +28,8 @@ import Link from 'next/link'
 import { getAtRiskCount } from '@/lib/utils/application'
 import { differenceInDays } from 'date-fns'
 import type { ApplicationStatus } from '@prisma/client'
+import { BulkActionsToolbar } from '@/components/applications/BulkActionsToolbar' // Story 3.9
+import { useSelectionStore } from '@/stores/useSelectionStore' // Story 3.9
 
 export default function ApplicationsPage() {
   const router = useRouter()
@@ -41,15 +43,33 @@ export default function ApplicationsPage() {
     statuses: [],
   })
 
+  // Story 3.9: Bulk selection state
+  const [showBulkSelection, setShowBulkSelection] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
+  const { clearSelection, selectAll } = useSelectionStore()
 
-  // Fetch applications using new getByStudent query
+  // Fetch applications using new getByStudent query (Story 3.9: conditionally show archived)
   const {
     data: applications,
     isLoading,
     refetch,
   } = trpc.application.getByStudent.useQuery(undefined, {
-    enabled: !!user,
+    enabled: !!user && !showArchived,
   })
+
+  // Story 3.9: Fetch archived applications
+  const {
+    data: archivedApplications,
+    isLoading: isLoadingArchived,
+    refetch: refetchArchived,
+  } = trpc.application.getArchived.useQuery(undefined, {
+    enabled: !!user && showArchived,
+  })
+
+  // Choose which dataset to show - use proper type narrowing
+  const displayedApplications = showArchived
+    ? (archivedApplications ?? [])
+    : (applications ?? [])
 
   // Update status mutation
   const updateStatusMutation = trpc.application.updateStatus.useMutation({
@@ -71,9 +91,9 @@ export default function ApplicationsPage() {
 
   // Apply filters (must be called before early returns per React Hooks rules)
   const filteredApplications = useMemo(() => {
-    if (!applications) return []
+    if (!displayedApplications) return []
 
-    return applications.filter((app) => {
+    return displayedApplications.filter((app) => {
       // Priority tier filter
       if (
         filters.priorityTiers.length > 0 &&
@@ -110,7 +130,7 @@ export default function ApplicationsPage() {
 
       return true
     })
-  }, [applications, filters])
+  }, [displayedApplications, filters])
 
   // Calculate at-risk count
   const atRiskCount = filteredApplications ? getAtRiskCount(filteredApplications) : 0
@@ -122,12 +142,41 @@ export default function ApplicationsPage() {
   }
 
   // Loading state
-  if (isLoading || !isUserLoaded) {
+  const loading = isLoading || isLoadingArchived || !isUserLoaded
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
       </div>
     )
+  }
+
+  // Story 3.9: Toggle bulk selection mode
+  const toggleBulkSelection = () => {
+    if (showBulkSelection) {
+      clearSelection()
+    }
+    setShowBulkSelection(!showBulkSelection)
+  }
+
+  // Story 3.9: Toggle archived view
+  const toggleArchivedView = () => {
+    clearSelection()
+    setShowArchived(!showArchived)
+    setShowBulkSelection(false)
+  }
+
+  // Story 3.9: Handle select all
+  const handleSelectAll = () => {
+    if (filteredApplications) {
+      selectAll(filteredApplications.map(app => app.id))
+    }
+  }
+
+  // Story 3.9: Handle bulk action complete
+  const handleBulkActionComplete = () => {
+    refetch()
+    refetchArchived()
   }
 
   /**
@@ -173,16 +222,49 @@ export default function ApplicationsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Applications</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {showArchived ? 'Archived Applications' : 'My Applications'}
+            </h1>
             <p className="text-gray-600 mt-1">
-              Track and manage your scholarship applications
+              {showArchived
+                ? 'View and manage archived applications'
+                : 'Track and manage your scholarship applications'}
             </p>
           </div>
-          <Button onClick={() => router.push('/scholarships/search')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Scholarship
-          </Button>
+          <div className="flex gap-2">
+            {/* Story 3.9: Bulk Selection Toggle */}
+            {!showArchived && filteredApplications.length > 0 && (
+              <Button
+                variant={showBulkSelection ? 'default' : 'outline'}
+                onClick={toggleBulkSelection}
+              >
+                <CheckSquare className="h-4 w-4 mr-2" />
+                {showBulkSelection ? 'Cancel Selection' : 'Select Multiple'}
+              </Button>
+            )}
+            {/* Story 3.9: Select All Button */}
+            {showBulkSelection && (
+              <Button variant="outline" onClick={handleSelectAll}>
+                Select All ({filteredApplications.length})
+              </Button>
+            )}
+            {/* Story 3.9: View Archived Toggle */}
+            <Button variant="outline" onClick={toggleArchivedView}>
+              <Archive className="h-4 w-4 mr-2" />
+              {showArchived ? 'View Active' : 'View Archived'}
+            </Button>
+            {/* Add Scholarship Button */}
+            {!showArchived && (
+              <Button onClick={() => router.push('/scholarships/search')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Scholarship
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* Story 3.9: Bulk Actions Toolbar */}
+        {showBulkSelection && <BulkActionsToolbar onActionComplete={handleBulkActionComplete} />}
 
         {/* At-Risk Banner (AC5) */}
         {atRiskCount > 0 && (
@@ -239,6 +321,7 @@ export default function ApplicationsPage() {
               <KanbanBoard
                 applications={filteredApplications}
                 onStatusChange={handleStatusChange}
+                showCheckbox={showBulkSelection}
               />
             </div>
 
@@ -247,6 +330,7 @@ export default function ApplicationsPage() {
               <MobileList
                 applications={filteredApplications}
                 onStatusChange={handleStatusChange}
+                showCheckbox={showBulkSelection}
               />
             </div>
           </>

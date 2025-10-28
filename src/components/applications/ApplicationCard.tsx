@@ -17,6 +17,7 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Calendar, DollarSign, Clock, Building2, AlertTriangle, FileText, Upload, Users } from 'lucide-react'
 import { formatDaysUntilDeadline, calculateDaysUntilDeadline } from '@/lib/utils/timeline'
 import { cn } from '@/lib/utils'
@@ -24,6 +25,7 @@ import { isAtRisk, getStatusText, getStatusColor } from '@/lib/utils/application
 import type { Application, Scholarship } from '@prisma/client'
 import Link from 'next/link'
 import { forwardRef } from 'react'
+import { useSelectionStore } from '@/stores/useSelectionStore'
 
 interface ApplicationCardProps {
   application: Application & {
@@ -35,6 +37,7 @@ interface ApplicationCardProps {
   isDraggable?: boolean
   className?: string
   style?: React.CSSProperties
+  showCheckbox?: boolean // Story 3.9: Enable bulk selection mode
 }
 
 /**
@@ -69,26 +72,53 @@ function ProgressIndicator({
 }
 
 export const ApplicationCard = forwardRef<HTMLDivElement, ApplicationCardProps>(
-  ({ application, isDraggable = false, className, style }, ref) => {
+  ({ application, isDraggable = false, className, style, showCheckbox = false }, ref) => {
     const { scholarship } = application
     const daysUntilDeadline = calculateDaysUntilDeadline(scholarship.deadline)
     const daysText = formatDaysUntilDeadline(scholarship.deadline)
     const isUrgent = daysUntilDeadline <= 7 && daysUntilDeadline >= 0
     const atRisk = isAtRisk(application)
 
+    // Story 3.9: Selection state
+    const { isSelected, toggleSelection } = useSelectionStore()
+    const selected = isSelected(application.id)
+
+    const handleCheckboxChange = (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      toggleSelection(application.id)
+    }
+
     return (
-      <Link href={`/applications/${application.id}`} className="block">
-        <Card
-          ref={ref}
-          className={cn(
-            'hover:shadow-lg transition-shadow cursor-pointer',
-            atRisk && 'border-red-400 border-2',
-            isDraggable && 'cursor-grab active:cursor-grabbing',
-            className
-          )}
-          style={style}
-        >
-          <CardContent className="p-6">
+      <div className="relative">
+        {/* Story 3.9: Selection checkbox overlay */}
+        {showCheckbox && (
+          <div
+            className="absolute top-3 left-3 z-10"
+            onClick={handleCheckboxChange}
+          >
+            <Checkbox
+              checked={selected}
+              onCheckedChange={() => toggleSelection(application.id)}
+              aria-label={`Select application: ${scholarship.name}`}
+              data-testid={`app-checkbox-${application.id}`}
+            />
+          </div>
+        )}
+
+        <Link href={`/applications/${application.id}`} className="block">
+          <Card
+            ref={ref}
+            className={cn(
+              'hover:shadow-lg transition-shadow cursor-pointer',
+              atRisk && 'border-red-400 border-2',
+              selected && 'border-blue-500 border-2 bg-blue-50', // Story 3.9: Visual indicator for selection
+              isDraggable && 'cursor-grab active:cursor-grabbing',
+              className
+            )}
+            style={style}
+          >
+            <CardContent className={cn('p-6', showCheckbox && 'pl-12')}>
             {/* At-Risk Indicator */}
             {atRisk && (
               <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-md">
@@ -226,6 +256,7 @@ export const ApplicationCard = forwardRef<HTMLDivElement, ApplicationCardProps>(
         </CardContent>
       </Card>
     </Link>
+      </div>
   )
 }
 )

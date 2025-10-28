@@ -192,6 +192,7 @@ export const applicationRouter = router({
    *
    * Returns all applications for authenticated student with scholarship and timeline relations.
    * Ordered by deadline (soonest first).
+   * Story 3.9: Excludes archived applications by default
    *
    * @returns Array of applications with scholarship and timeline details
    */
@@ -201,6 +202,7 @@ export const applicationRouter = router({
     const applications = await prisma.application.findMany({
       where: {
         studentId,
+        archived: false, // Story 3.9: Exclude archived applications
       },
       include: {
         scholarship: {
@@ -773,5 +775,223 @@ export const applicationRouter = router({
       })
 
       return updatedApplication
+    }),
+
+  /**
+   * Bulk update applications (Story 3.9)
+   *
+   * Performs bulk operations on multiple applications atomically.
+   * Supports: CHANGE_STATUS, SET_PRIORITY, ARCHIVE, DELETE
+   *
+   * @input applicationIds - Array of application IDs (max 50)
+   * @input action - Bulk action type
+   * @input params - Action-specific parameters (status, priorityTier)
+   * @returns { success: number, failed: number, errors?: Array }
+   * @throws BAD_REQUEST - If too many applications selected (>50)
+   */
+  bulkUpdate: protectedProcedure
+    .input(
+      z.object({
+        applicationIds: z.array(z.string()).min(1).max(50),
+        action: z.enum(['CHANGE_STATUS', 'SET_PRIORITY', 'ARCHIVE', 'DELETE']),
+        params: z
+          .object({
+            status: z
+              .enum([
+                'NOT_STARTED',
+                'TODO',
+                'IN_PROGRESS',
+                'READY_FOR_REVIEW',
+                'SUBMITTED',
+                'AWAITING_DECISION',
+                'AWARDED',
+                'DENIED',
+                'WITHDRAWN',
+              ])
+              .optional(),
+            priorityTier: z
+              .enum(['MUST_APPLY', 'SHOULD_APPLY', 'IF_TIME_PERMITS', 'HIGH_VALUE_REACH'])
+              .optional(),
+          })
+          .optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { applicationIds, action, params } = input
+      const studentId = ctx.userId
+
+      // Validate ownership for all applications
+      const applications = await prisma.application.findMany({
+        where: {
+          id: { in: applicationIds },
+          studentId, // Security: Only allow updates to user's own applications
+        },
+        select: {
+          id: true,
+          studentId: true,
+        },
+      })
+
+      // Check if all applications were found (ownership validation)
+      if (applications.length !== applicationIds.length) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to update some of these applications',
+        })
+      }
+
+      let success = 0
+      let failed = 0
+      const errors: Array<{ id: string; reason: string }> = []
+
+      try {
+        // Execute bulk action
+        switch (action) {
+          case 'CHANGE_STATUS':
+            if (!params?.status) {
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Status parameter required for CHANGE_STATUS action',
+              })
+            }
+
+            const statusResult = await prisma.application.updateMany({
+              where: { id: { in: applicationIds } },
+              data: {
+                status: params.status,
+                ...(params.status === 'SUBMITTED' && {
+                  actualSubmitDate: new Date(),
+                }),
+              },
+            })
+            success = statusResult.count
+            break
+
+          case 'SET_PRIORITY':
+            if (!params?.priorityTier) {
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Priority tier parameter required for SET_PRIORITY action',
+              })
+            }
+
+            const priorityResult = await prisma.application.updateMany({
+              where: { id: { in: applicationIds } },
+              data: { priorityTier: params.priorityTier },
+            })
+            success = priorityResult.count
+            break
+
+          case 'ARCHIVE':
+            const archiveResult = await prisma.application.updateMany({
+              where: { id: { in: applicationIds } },
+              data: { archived: true },
+            })
+            success = archiveResult.count
+            break
+
+          case 'DELETE':
+            const deleteResult = await prisma.application.deleteMany({
+              where: { id: { in: applicationIds } },
+            })
+            success = deleteResult.count
+            break
+
+          default:
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Invalid bulk action',
+            })
+        }
+      } catch (error: any) {
+        // If error occurred, all operations failed
+        failed = applicationIds.length
+        errors.push({
+          id: 'bulk',
+          reason: error.message || 'Unknown error occurred',
+        })
+      }
+
+      return {
+        success,
+        failed,
+        ...(errors.length > 0 && { errors }),
+      }
+    }),
+
+  /**
+   * Get archived applications (Story 3.9)
+   *
+   * Returns applications marked as archived for the student.
+   *
+   * @returns Array of archived applications
+   */
+  getArchived: protectedProcedure.query(async ({ ctx }) => {
+    const studentId = ctx.userId
+
+    const applications = await prisma.application.findMany({
+      where: {
+        studentId,
+        archived: true,
+      },
+      include: {
+        scholarship: {
+          select: {
+            name: true,
+            provider: true,
+            awardAmount: true,
+            deadline: true,
+            category: true,
+            tags: true,
+          },
+        },
+        timeline: true,
+      },
+      orderBy: [{ updatedAt: 'desc' }],
+    })
+
+    return applications
+  }),
+
+  /**
+   * Unarchive applications (Story 3.9)
+   *
+   * Restores archived applications back to active view.
+   *
+   * @input applicationIds - Array of application IDs to unarchive
+   * @returns { updated: number }
+   */
+  unarchive: protectedProcedure
+    .input(
+      z.object({
+        applicationIds: z.array(z.string()).min(1),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { applicationIds } = input
+      const studentId = ctx.userId
+
+      // Verify ownership
+      const applications = await prisma.application.findMany({
+        where: {
+          id: { in: applicationIds },
+          studentId,
+        },
+        select: { id: true },
+      })
+
+      if (applications.length !== applicationIds.length) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to unarchive some of these applications',
+        })
+      }
+
+      const result = await prisma.application.updateMany({
+        where: { id: { in: applicationIds } },
+        data: { archived: false },
+      })
+
+      return { updated: result.count }
     }),
 })
