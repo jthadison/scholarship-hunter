@@ -486,11 +486,12 @@ model Document {
   application Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
 
   // Document Metadata
-  name     String
-  type     DocumentType
-  fileName String
-  fileSize Int // Bytes
-  mimeType String
+  name        String
+  type        DocumentType
+  fileName    String
+  fileSize    Int // Bytes
+  mimeType    String
+  description String?
 
   // Storage
   storagePath String
