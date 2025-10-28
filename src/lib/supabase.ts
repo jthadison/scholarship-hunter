@@ -1,40 +1,67 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Supabase Client for Storage Operations
  * Used for document upload/download in Epic 4
+ *
+ * NOTE: Uses lazy initialization to prevent build failures when env vars are missing
  */
 
-// Validate environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Environment variables (with fallback for build-time)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    "Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env"
-  );
+// Cached clients
+let _supabase: SupabaseClient | null = null;
+let _supabaseAdmin: SupabaseClient | null = null;
+
+/**
+ * Get client-side Supabase client (uses anon key)
+ * Lazy initialization prevents build failures
+ */
+export function getSupabaseClient(): SupabaseClient {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      "Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env"
+    );
+  }
+
+  if (!_supabase) {
+    _supabase = createClient(supabaseUrl, supabaseAnonKey);
+  }
+
+  return _supabase;
 }
 
 /**
- * Client-side Supabase client (uses anon key)
- * For use in browser/client components
- */
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-/**
- * Server-side Supabase client (uses service role key)
+ * Get server-side Supabase client (uses service role key)
  * For use in API routes and server components
  * Has full admin access - use with caution
  */
-export const supabaseAdmin = supabaseServiceRoleKey
-  ? createClient(supabaseUrl, supabaseServiceRoleKey, {
+export function getSupabaseAdmin(): SupabaseClient | null {
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return null;
+  }
+
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
       },
-    })
-  : null;
+    });
+  }
+
+  return _supabaseAdmin;
+}
+
+/**
+ * Legacy exports for backward compatibility
+ * @deprecated Use getSupabaseClient() instead
+ */
+export const supabase = getSupabaseClient;
+export const supabaseAdmin = getSupabaseAdmin();
 
 /**
  * Storage bucket configuration

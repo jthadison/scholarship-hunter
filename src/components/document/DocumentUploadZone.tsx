@@ -126,6 +126,7 @@ export function DocumentUploadZone({
         handleUpload(uploadFile)
       })
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [selectedType, toast]
   )
 

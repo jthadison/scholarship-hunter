@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import {
-  supabaseAdmin,
+  getSupabaseAdmin,
   STORAGE_CONFIG,
   generateStoragePath,
   validateFileSize,
@@ -85,6 +85,7 @@ export const documentRouter = router({
       const fileBuffer = Buffer.from(input.fileData, "base64");
 
       // Upload to Supabase Storage
+      const supabaseAdmin = getSupabaseAdmin();
       if (!supabaseAdmin) {
         throw new Error(
           "Supabase admin client not configured. Please set SUPABASE_SERVICE_ROLE_KEY in .env"
@@ -245,6 +246,7 @@ export const documentRouter = router({
       }
 
       // Generate signed URL
+      const supabaseAdmin = getSupabaseAdmin();
       if (!supabaseAdmin) {
         throw new Error("Supabase admin client not configured");
       }
@@ -360,6 +362,7 @@ export const documentRouter = router({
       }
 
       // Delete from Supabase Storage
+      const supabaseAdmin = getSupabaseAdmin();
       if (supabaseAdmin) {
         await supabaseAdmin.storage
           .from(STORAGE_CONFIG.BUCKET_NAME)

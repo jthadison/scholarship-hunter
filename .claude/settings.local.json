@@ -74,7 +74,8 @@
       "Bash(npx prisma migrate reset:*)",
       "Bash(tee:*)",
       "SlashCommand(/bmad:bmm:agents:dev)",
-      "Bash(pnpm test:e2e:*)"
+      "Bash(pnpm test:e2e:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []
