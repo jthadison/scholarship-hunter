@@ -25,11 +25,11 @@ import { Button } from '@/components/ui/button'
 import { useUser } from '@clerk/nextjs'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
-import { getAtRiskCount } from '@/lib/utils/application'
 import { differenceInDays } from 'date-fns'
 import type { ApplicationStatus } from '@prisma/client'
 import { BulkActionsToolbar } from '@/components/applications/BulkActionsToolbar' // Story 3.9
 import { useSelectionStore } from '@/stores/useSelectionStore' // Story 3.9
+import { AtRiskBanner } from '@/components/applications/AtRiskBanner' // Story 3.10
 
 export default function ApplicationsPage() {
   const router = useRouter()
@@ -66,7 +66,16 @@ export default function ApplicationsPage() {
     enabled: !!user && showArchived,
   })
 
+  // Story 3.10: Fetch at-risk applications
+  const {
+    data: atRiskApplications,
+    isLoading: isLoadingAtRisk,
+  } = trpc.application.getAtRisk.useQuery(undefined, {
+    enabled: !!user && !showArchived,
+  })
+
   // Choose which dataset to show - use proper type narrowing
+  // Both queries return the same structure with scholarship and timeline relations
   const displayedApplications = showArchived
     ? (archivedApplications ?? [])
     : (applications ?? [])
@@ -131,9 +140,6 @@ export default function ApplicationsPage() {
       return true
     })
   }, [displayedApplications, filters])
-
-  // Calculate at-risk count
-  const atRiskCount = filteredApplications ? getAtRiskCount(filteredApplications) : 0
 
   // Require authentication
   if (isUserLoaded && !user) {
@@ -266,24 +272,16 @@ export default function ApplicationsPage() {
         {/* Story 3.9: Bulk Actions Toolbar */}
         {showBulkSelection && <BulkActionsToolbar onActionComplete={handleBulkActionComplete} />}
 
-        {/* At-Risk Banner (AC5) */}
-        {atRiskCount > 0 && (
-          <button
-            onClick={handleAtRiskClick}
-            className="w-full mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-lg flex items-center gap-3 hover:bg-red-100 transition-colors"
-          >
-            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
-            <div className="flex-1 text-left">
-              <p className="font-semibold text-red-900">
-                ⚠️ {atRiskCount} {atRiskCount === 1 ? 'application' : 'applications'} need
-                attention
-              </p>
-              <p className="text-sm text-red-700">
-                These applications have deadlines in less than 7 days and are less than 50%
-                complete. Click to view.
-              </p>
-            </div>
-          </button>
+        {/* Story 3.10: At-Risk Banner (AC #2) */}
+        {!showArchived && atRiskApplications && atRiskApplications.length > 0 && (
+          <AtRiskBanner
+            atRiskCount={atRiskApplications.length}
+            criticalCount={atRiskApplications.filter(app => app.severity === 'CRITICAL').length}
+            onViewAtRisk={handleAtRiskClick}
+            onDismiss={() => {
+              // Dismissal handled internally by component
+            }}
+          />
         )}
 
         {/* Filter Bar (AC6) */}
