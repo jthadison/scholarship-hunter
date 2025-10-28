@@ -16,6 +16,8 @@ import {
   generateOptimizedTimeline,
   extractTimelineInputFromScholarship,
 } from '../services/timeline/generate'
+import { calculateProgressPercentage } from '../services/progress/calculate'
+import { canMarkReadyForReview } from '../services/progress/validation'
 
 /**
  * Application router with CRUD operations
@@ -310,10 +312,19 @@ export const applicationRouter = router({
       const { applicationId, status } = input
       const studentId = ctx.userId
 
-      // Verify ownership
+      // Verify ownership and get progress fields
       const application = await prisma.application.findUnique({
         where: { id: applicationId },
-        select: { studentId: true, status: true },
+        select: {
+          studentId: true,
+          status: true,
+          essayCount: true,
+          essayComplete: true,
+          documentsRequired: true,
+          documentsUploaded: true,
+          recsRequired: true,
+          recsReceived: true,
+        },
       })
 
       if (!application) {
@@ -328,6 +339,17 @@ export const applicationRouter = router({
           code: 'FORBIDDEN',
           message: 'You do not have permission to update this application',
         })
+      }
+
+      // Completion gate validation for READY_FOR_REVIEW (AC6)
+      if (status === 'READY_FOR_REVIEW') {
+        const validation = canMarkReadyForReview(application)
+        if (!validation.canMark) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Cannot mark ready for review. Missing: ${validation.missingItems.join(', ')}`,
+          })
+        }
       }
 
       // Validate status transition
@@ -382,6 +404,168 @@ export const applicationRouter = router({
       })
 
       return updatedApplication
+    }),
+
+  /**
+   * Update application progress (Story 3.7)
+   *
+   * Updates essay, document, or recommendation counts and recalculates progress percentage.
+   * Used when essays are completed, documents uploaded, or recommendations received.
+   *
+   * @input applicationId - Application ID to update
+   * @input update - Progress updates (essayComplete, documentsUploaded, recsReceived)
+   * @returns Updated application with recalculated progress
+   */
+  updateProgress: protectedProcedure
+    .input(
+      z.object({
+        applicationId: z.string(),
+        update: z.object({
+          essayComplete: z.number().int().min(0).optional(),
+          documentsUploaded: z.number().int().min(0).optional(),
+          recsReceived: z.number().int().min(0).optional(),
+        }),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { applicationId, update } = input
+      const studentId = ctx.userId
+
+      // Verify ownership
+      const application = await prisma.application.findUnique({
+        where: { id: applicationId },
+        select: {
+          studentId: true,
+          essayCount: true,
+          essayComplete: true,
+          documentsRequired: true,
+          documentsUploaded: true,
+          recsRequired: true,
+          recsReceived: true,
+        },
+      })
+
+      if (!application) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Application not found',
+        })
+      }
+
+      if (application.studentId !== studentId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to update this application',
+        })
+      }
+
+      // Apply updates
+      const updatedData = {
+        essayComplete: update.essayComplete ?? application.essayComplete,
+        documentsUploaded: update.documentsUploaded ?? application.documentsUploaded,
+        recsReceived: update.recsReceived ?? application.recsReceived,
+      }
+
+      // Recalculate progress percentage
+      const progressPercentage = calculateProgressPercentage({
+        essayCount: application.essayCount,
+        essayComplete: updatedData.essayComplete,
+        documentsRequired: application.documentsRequired,
+        documentsUploaded: updatedData.documentsUploaded,
+        recsRequired: application.recsRequired,
+        recsReceived: updatedData.recsReceived,
+      })
+
+      // Update application in database
+      const updatedApplication = await prisma.application.update({
+        where: { id: applicationId },
+        data: {
+          ...updatedData,
+          progressPercentage,
+        },
+        include: {
+          scholarship: {
+            select: {
+              name: true,
+              provider: true,
+              awardAmount: true,
+              deadline: true,
+            },
+          },
+          timeline: true,
+        },
+      })
+
+      return updatedApplication
+    }),
+
+  /**
+   * Get progress summary for student's applications (Story 3.7)
+   *
+   * Returns aggregated progress data for dashboard display.
+   * Includes progress percentage, status, deadline for each application.
+   *
+   * @input statusFilter - Optional array of statuses to filter by
+   * @returns Array of applications with progress summary
+   */
+  getProgressSummary: protectedProcedure
+    .input(
+      z
+        .object({
+          statusFilter: z
+            .array(
+              z.enum([
+                'NOT_STARTED',
+                'TODO',
+                'IN_PROGRESS',
+                'READY_FOR_REVIEW',
+                'SUBMITTED',
+                'AWAITING_DECISION',
+                'AWARDED',
+                'DENIED',
+                'WITHDRAWN',
+              ])
+            )
+            .optional(),
+        })
+        .optional()
+    )
+    .query(async ({ input, ctx }) => {
+      const studentId = ctx.userId
+      const statusFilter = input?.statusFilter
+
+      const applications = await prisma.application.findMany({
+        where: {
+          studentId,
+          ...(statusFilter && statusFilter.length > 0 && { status: { in: statusFilter } }),
+        },
+        select: {
+          id: true,
+          progressPercentage: true,
+          status: true,
+          essayCount: true,
+          essayComplete: true,
+          documentsRequired: true,
+          documentsUploaded: true,
+          recsRequired: true,
+          recsReceived: true,
+          scholarship: {
+            select: {
+              name: true,
+              awardAmount: true,
+              deadline: true,
+            },
+          },
+          timeline: {
+            select: {
+              submitDate: true,
+            },
+          },
+        },
+        orderBy: [{ targetSubmitDate: 'asc' }],
+      })
+
+      return applications
     }),
 
   /**
