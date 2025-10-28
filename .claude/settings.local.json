@@ -73,7 +73,8 @@
       "Bash(pkill:*)",
       "Bash(npx prisma migrate reset:*)",
       "Bash(tee:*)",
-      "SlashCommand(/bmad:bmm:agents:dev)"
+      "SlashCommand(/bmad:bmm:agents:dev)",
+      "Bash(pnpm test:e2e:*)"
     ],
     "deny": [],
     "ask": []
