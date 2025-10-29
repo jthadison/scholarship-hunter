@@ -39,7 +39,10 @@ export const documentRouter = router({
         mimeType: z.string(),
         fileData: z.string(), // Base64 encoded file data
         description: z.string().optional(),
-        versionNote: z.string().optional(), // Story 4.2: Version notes
+        versionNote: z
+          .string()
+          .max(1000, "Version note cannot exceed 1000 characters")
+          .optional(), // Story 4.2: Version notes
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -430,13 +433,29 @@ export const documentRouter = router({
       // Get all versions in the chain
       const versions = await getVersionHistory(input.documentId);
 
-      // Check which is current version
-      const versionsWithStatus = await Promise.all(
-        versions.map(async (v) => ({
-          ...v,
-          isCurrent: await isCurrentVersion(v.id),
-        }))
+      if (versions.length === 0) {
+        return [];
+      }
+
+      // Find current version by checking which document has no successors
+      // This is a single query instead of N queries
+      const versionIds = versions.map((v) => v.id);
+      const documentsWithSuccessors = await ctx.prisma.document.findMany({
+        where: {
+          previousVersionId: { in: versionIds },
+        },
+        select: { previousVersionId: true },
+      });
+
+      const successorIds = new Set(
+        documentsWithSuccessors.map((d) => d.previousVersionId).filter(Boolean)
       );
+
+      // Mark versions with status (current = no successor)
+      const versionsWithStatus = versions.map((v) => ({
+        ...v,
+        isCurrent: !successorIds.has(v.id),
+      }));
 
       return versionsWithStatus;
     }),
@@ -521,6 +540,11 @@ export const documentRouter = router({
         throw new Error("Current version not found");
       }
 
+      // Prevent restoring current version
+      if (targetVersion.id === currentVersion.id) {
+        throw new Error("Cannot restore the current version");
+      }
+
       // Get file from storage
       const supabaseAdmin = getSupabaseAdmin();
       if (!supabaseAdmin) {
@@ -556,44 +580,62 @@ export const documentRouter = router({
         versionedFileName
       );
 
-      // Upload restored content as new version
-      const { error: uploadError } = await supabaseAdmin.storage
-        .from(STORAGE_CONFIG.BUCKET_NAME)
-        .upload(newStoragePath, fileBuffer, {
-          contentType: targetVersion.mimeType,
-          cacheControl: "3600",
-          upsert: false,
+      let uploadedPath: string | null = null;
+
+      try {
+        // Upload restored content as new version
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from(STORAGE_CONFIG.BUCKET_NAME)
+          .upload(newStoragePath, fileBuffer, {
+            contentType: targetVersion.mimeType,
+            cacheControl: "3600",
+            upsert: false,
+          });
+
+        if (uploadError) {
+          throw new Error(`Failed to upload restored version: ${uploadError.message}`);
+        }
+
+        uploadedPath = newStoragePath;
+
+        // Create new document record with restored content (in transaction)
+        const restoredDocument = await ctx.prisma.document.create({
+          data: {
+            studentId: targetVersion.studentId,
+            applicationId: targetVersion.applicationId,
+            name: targetVersion.name,
+            type: targetVersion.type,
+            fileName: targetVersion.fileName,
+            fileSize: targetVersion.fileSize,
+            mimeType: targetVersion.mimeType,
+            storagePath: newStoragePath,
+            bucketName: STORAGE_CONFIG.BUCKET_NAME,
+            description: targetVersion.description,
+            version: newVersionNumber,
+            previousVersionId: currentVersion.id,
+            versionNote:
+              input.versionNote ?? `Restored from version ${targetVersion.version}`,
+            compliant: targetVersion.compliant,
+          },
         });
 
-      if (uploadError) {
-        throw new Error(`Failed to upload restored version: ${uploadError.message}`);
+        return {
+          document: restoredDocument,
+          restoredFromVersion: targetVersion.version,
+          newVersion: newVersionNumber,
+        };
+      } catch (error) {
+        // Cleanup: Delete uploaded file if database operation failed
+        if (uploadedPath && supabaseAdmin) {
+          await supabaseAdmin.storage
+            .from(STORAGE_CONFIG.BUCKET_NAME)
+            .remove([uploadedPath])
+            .catch((cleanupError) => {
+              console.error("Failed to cleanup orphaned file:", cleanupError);
+            });
+        }
+        throw error;
       }
-
-      // Create new document record with restored content
-      const restoredDocument = await ctx.prisma.document.create({
-        data: {
-          studentId: targetVersion.studentId,
-          applicationId: targetVersion.applicationId,
-          name: targetVersion.name,
-          type: targetVersion.type,
-          fileName: targetVersion.fileName,
-          fileSize: targetVersion.fileSize,
-          mimeType: targetVersion.mimeType,
-          storagePath: newStoragePath,
-          bucketName: STORAGE_CONFIG.BUCKET_NAME,
-          description: targetVersion.description,
-          version: newVersionNumber,
-          previousVersionId: currentVersion.id,
-          versionNote: input.versionNote ?? `Restored from version ${targetVersion.version}`,
-          compliant: targetVersion.compliant,
-        },
-      });
-
-      return {
-        document: restoredDocument,
-        restoredFromVersion: targetVersion.version,
-        newVersion: newVersionNumber,
-      };
     }),
 
   /**
@@ -604,7 +646,10 @@ export const documentRouter = router({
     .input(
       z.object({
         documentId: z.string().cuid(),
-        versionNote: z.string().nullable(),
+        versionNote: z
+          .string()
+          .max(1000, "Version note cannot exceed 1000 characters")
+          .nullable(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -622,10 +667,13 @@ export const documentRouter = router({
         throw new Error("Unauthorized: You do not own this document");
       }
 
+      // Sanitize and trim version note
+      const sanitizedNote = input.versionNote?.trim() || null;
+
       const updated = await ctx.prisma.document.update({
         where: { id: input.documentId },
         data: {
-          versionNote: input.versionNote,
+          versionNote: sanitizedNote,
         },
       });
 

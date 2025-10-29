@@ -4,17 +4,42 @@ import { db } from "../../server/db";
 /**
  * Traverse version chain to get all versions of a document
  * Returns versions from newest to oldest
+ *
+ * @throws Error if circular reference detected or max depth exceeded
  */
 export async function getVersionHistory(
   documentId: string
 ): Promise<Document[]> {
+  const MAX_VERSIONS = 100; // Prevent infinite loops
   const versions: Document[] = [];
+  const visitedIds = new Set<string>();
+
   let current = await db.document.findUnique({
     where: { id: documentId },
   });
 
+  if (!current) {
+    throw new Error(`Document not found: ${documentId}`);
+  }
+
   while (current) {
+    // Check for circular reference
+    if (visitedIds.has(current.id)) {
+      throw new Error(
+        `Circular reference detected in version chain for document: ${documentId}`
+      );
+    }
+
+    // Check for max depth (prevent infinite loops)
+    if (versions.length >= MAX_VERSIONS) {
+      throw new Error(
+        `Maximum version depth (${MAX_VERSIONS}) exceeded for document: ${documentId}`
+      );
+    }
+
+    visitedIds.add(current.id);
     versions.push(current);
+
     if (current.previousVersionId) {
       current = await db.document.findUnique({
         where: { id: current.previousVersionId },
