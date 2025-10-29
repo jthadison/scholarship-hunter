@@ -11,6 +11,7 @@ import { alertRouter } from './alert'
 import { quinnRouter } from './quinn'
 import { documentRouter } from './document'
 import { recommendationRouter } from './recommendation'
+import { dexterRouter } from './dexter'
 
 export const appRouter = router({
   auth: authRouter,
@@ -25,6 +26,7 @@ export const appRouter = router({
   quinn: quinnRouter, // Story 3.6: Quinn Timeline Coordinator
   document: documentRouter, // Story 4.1: Document Vault
   recommendation: recommendationRouter, // Story 4.4: Recommendation Letter Coordination
+  dexter: dexterRouter, // Story 4.5: Dexter Agent - Document Manager Dashboard
 })
 
 export type AppRouter = typeof appRouter
