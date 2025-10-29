@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Loader2, Upload, CheckCircle2, AlertCircle, FileText } from 'lucide-react'
 import { toast } from 'sonner'
-import { useSupabaseClient } from '@supabase/auth-helpers-react'
+// Note: Supabase upload handled via API route, not direct client upload
 
 interface RecommendationUploadFormProps {
   token: string
