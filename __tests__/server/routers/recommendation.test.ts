@@ -8,6 +8,11 @@ import { appRouter } from '@/server/routers/_app'
 import { prisma } from '@/server/db'
 import type { PrismaClient } from '@prisma/client'
 
+// Mock Meilisearch client
+vi.mock('@/server/lib/search/meilisearch-client', () => ({
+  searchClient: null,
+}))
+
 // Mock email service
 vi.mock('@/server/services/emailService', () => ({
   sendRecommendationRequest: vi.fn().mockResolvedValue(undefined),
