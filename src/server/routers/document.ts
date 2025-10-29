@@ -11,7 +11,6 @@ import {
 import { DocumentType } from "@prisma/client";
 import {
   findCurrentVersion,
-  getNextVersionNumber,
   getVersionHistory,
   isCurrentVersion,
 } from "../../lib/document/versionUtils";
