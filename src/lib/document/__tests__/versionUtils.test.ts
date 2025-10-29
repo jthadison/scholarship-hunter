@@ -10,7 +10,7 @@ import {
 
 // Mock the database
 vi.mock("../../../server/db", () => ({
-  db: {
+  prisma: {
     document: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock("../../../server/db", () => ({
   },
 }));
 
-import { db } from "../../../server/db";
+import { prisma as db } from "../../../server/db";
 
 const mockDocument = (id: string, version: number, previousVersionId: string | null): Document =>
   ({

@@ -1,5 +1,5 @@
 import { type Document } from "@prisma/client";
-import { db } from "../../server/db";
+import { prisma as db } from "../../server/db";
 
 /**
  * Traverse version chain to get all versions of a document
