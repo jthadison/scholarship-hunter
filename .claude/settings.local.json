@@ -80,7 +80,8 @@
       "Bash(npx tsx:*)",
       "Bash(pnpm exec playwright test:*)",
       "Bash(pnpm exec playwright show-report:*)",
-      "Bash(git grep:*)"
+      "Bash(git grep:*)",
+      "Bash(pnpm tsc:*)"
     ],
     "deny": [],
     "ask": []

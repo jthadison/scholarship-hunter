@@ -678,11 +678,14 @@ export const applicationRouter = router({
           recommendations: {
             select: {
               id: true,
-              name: true,
-              email: true,
+              recommenderName: true,
+              recommenderEmail: true,
+              relationship: true,
               status: true,
               createdAt: true,
               submittedAt: true,
+              requestedAt: true,
+              receivedAt: true,
             },
             orderBy: { createdAt: 'desc' },
           },

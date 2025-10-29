@@ -575,24 +575,30 @@ model Recommendation {
   application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   // Recommender Info
-  name         String
-  email        String
-  relationship String
+  recommenderName  String
+  recommenderEmail String
+  relationship     String // "Teacher", "Counselor", "Coach", "Employer", "Mentor", "Other"
+
+  // Personal message from student
+  personalMessage String? @db.Text
 
   // Tracking
   status         RecommendationStatus @default(PENDING_REQUEST)
-  requestedAt    DateTime?
+  requestedAt    DateTime             @default(now())
   reminderSentAt DateTime?
   receivedAt     DateTime?
   submittedAt    DateTime?
 
   // Upload Token
-  uploadToken      String    @unique
+  uploadToken      String  @unique
   uploadLinkExpiry DateTime?
 
   // Document Reference
-  documentId String?
+  documentId String?   @unique
   document   Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  // Reminder count for rate limiting
+  reminderCount Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -600,6 +606,7 @@ model Recommendation {
   @@index([applicationId])
   @@index([status])
   @@index([uploadToken])
+  @@index([recommenderEmail])
 }
 
 enum DocumentType {
