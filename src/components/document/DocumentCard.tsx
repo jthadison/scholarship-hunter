@@ -16,6 +16,7 @@
 import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,10 +42,12 @@ import {
   Trash2,
   FileImage,
   FileCode,
+  History,
 } from 'lucide-react'
 import { trpc } from '@/shared/lib/trpc'
 import { useToast } from '@/hooks/use-toast'
 import type { Document, DocumentType } from '@prisma/client'
+import { VersionHistoryModal } from './VersionHistoryModal'
 
 interface DocumentCardProps {
   document: Document & {
@@ -91,6 +94,7 @@ export function DocumentCard({
   onDelete,
 }: DocumentCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showVersionHistory, setShowVersionHistory] = useState(false)
   const { toast } = useToast()
 
   const utils = trpc.useUtils()
@@ -161,9 +165,17 @@ export function DocumentCard({
               <div className="flex items-start gap-3 flex-1 min-w-0">
                 <Icon className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-medium truncate" title={document.name}>
-                    {document.name}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium truncate" title={document.name}>
+                      {document.name}
+                    </h3>
+                    {/* Story 4.2: Version Badge */}
+                    {document.version && document.version > 1 && (
+                      <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                        v{document.version}
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {getDocumentTypeLabel(document.type)}
                   </p>
@@ -185,6 +197,10 @@ export function DocumentCard({
                   <DropdownMenuItem onClick={handleDownload}>
                     <Download className="mr-2 h-4 w-4" />
                     Download
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowVersionHistory(true)}>
+                    <History className="mr-2 h-4 w-4" />
+                    View History
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -271,6 +287,17 @@ export function DocumentCard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Story 4.2: Version History Modal */}
+      <VersionHistoryModal
+        documentId={document.id}
+        open={showVersionHistory}
+        onOpenChange={setShowVersionHistory}
+        onPreviewVersion={(versionId) => {
+          setShowVersionHistory(false)
+          onPreview(versionId)
+        }}
+      />
     </>
   )
 }

@@ -75,7 +75,11 @@
       "Bash(tee:*)",
       "SlashCommand(/bmad:bmm:agents:dev)",
       "Bash(pnpm test:e2e:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(pnpm dev)",
+      "Bash(npx tsx:*)",
+      "Bash(pnpm exec playwright test:*)",
+      "Bash(pnpm exec playwright show-report:*)"
     ],
     "deny": [],
     "ask": []
