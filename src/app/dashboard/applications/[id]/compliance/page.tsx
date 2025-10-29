@@ -185,7 +185,7 @@ export default function ComplianceReportPage({ params }: PageProps) {
               <ul className="text-sm text-muted-foreground space-y-1">
                 {report.issues.slice(0, 3).map((issue, idx) => (
                   <li key={idx}>
-                    • {getDocumentTypeLabel(issue.documentType)}: {issue.errors[0]}
+                    • {getDocumentTypeLabel(issue.documentType)}: {issue.errors[0] ?? 'Unknown error'}
                   </li>
                 ))}
                 {report.issues.length > 3 && (

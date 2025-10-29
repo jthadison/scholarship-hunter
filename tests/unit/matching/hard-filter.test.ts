@@ -97,6 +97,7 @@ function createMockScholarship(
     renewalYears: null,
     deadline: new Date('2025-12-31'),
     announcementDate: new Date('2026-01-15'),
+    documentRequirements: null,
     eligibilityCriteria: eligibilityCriteria as any,
     essayPrompts: null,
     requiredDocuments: [],

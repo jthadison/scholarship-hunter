@@ -28,6 +28,7 @@ function createMockScholarship(
     deadline: new Date(),
     announcementDate: null,
     eligibilityCriteria: {},
+    documentRequirements: null,
     essayPrompts: null,
     requiredDocuments: [],
     recommendationCount: 0,
