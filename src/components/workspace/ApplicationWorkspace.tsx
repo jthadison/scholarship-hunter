@@ -158,6 +158,7 @@ export function ApplicationWorkspace({ applicationId }: ApplicationWorkspaceProp
         status={workspace.status}
         deadline={workspace.scholarship.deadline}
         progress={progress}
+        applicationId={applicationId}
         onStatusChange={handleStatusChange}
         isUpdating={updateStatus.isPending}
       />

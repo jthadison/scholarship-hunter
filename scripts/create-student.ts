@@ -48,7 +48,7 @@ async function main() {
         console.log(`✅ ${primaryEmail.emailAddress} - already synced`);
       } else {
         // Create missing student
-        const student = await prisma.student.create({
+        await prisma.student.create({
           data: {
             userId: existingUser.id,
             firstName: clerkUser.firstName || primaryEmail.emailAddress.split("@")[0] || "User",

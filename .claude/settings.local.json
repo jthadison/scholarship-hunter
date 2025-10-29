@@ -79,7 +79,8 @@
       "Bash(pnpm dev)",
       "Bash(npx tsx:*)",
       "Bash(pnpm exec playwright test:*)",
-      "Bash(pnpm exec playwright show-report:*)"
+      "Bash(pnpm exec playwright show-report:*)",
+      "Bash(git grep:*)"
     ],
     "deny": [],
     "ask": []
