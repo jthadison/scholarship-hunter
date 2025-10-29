@@ -31,6 +31,11 @@ type ApplicationStatus =
 
 interface WorkspaceHeaderProps {
   /**
+   * Application ID (Story 4.3)
+   */
+  applicationId: string
+
+  /**
    * Scholarship name for breadcrumb
    */
   scholarshipName: string
@@ -75,6 +80,7 @@ interface WorkspaceHeaderProps {
 }
 
 export function WorkspaceHeader({
+  applicationId,
   scholarshipName,
   status,
   deadline,
@@ -122,6 +128,7 @@ export function WorkspaceHeader({
             </label>
             <StatusDropdown
               currentStatus={status}
+              applicationId={applicationId}
               progress={progress}
               onStatusChange={onStatusChange}
               isUpdating={isUpdating}

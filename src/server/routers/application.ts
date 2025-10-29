@@ -19,6 +19,8 @@ import {
 import { calculateProgressPercentage } from '../services/progress/calculate'
 import { canMarkReadyForReview } from '../services/progress/validation'
 import { detectAtRiskApplications } from '@/lib/at-risk/detection'
+import { getSuggestedFix } from '@/lib/document/autoFixSuggestions'
+import { DocumentType } from '@prisma/client'
 
 /**
  * Application router with CRUD operations
@@ -1079,5 +1081,155 @@ export const applicationRouter = router({
       })
 
       return events
+    }),
+
+  /**
+   * Validate document compliance for application (Story 4.3)
+   *
+   * Checks all documents associated with application against scholarship
+   * document requirements. Returns compliance report with issues and suggested fixes.
+   *
+   * Story 4.3 - Task 4 (AC #3)
+   *
+   * @input applicationId - Application ID to validate
+   * @returns Compliance report with status, document counts, and issues
+   */
+  validateCompliance: protectedProcedure
+    .input(
+      z.object({
+        applicationId: z.string().cuid(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const { applicationId } = input
+      const studentId = ctx.userId
+
+      // Fetch application with scholarship and documents
+      const application = await prisma.application.findUnique({
+        where: { id: applicationId },
+        include: {
+          scholarship: {
+            select: {
+              documentRequirements: true,
+              requiredDocuments: true,
+            },
+          },
+          documents: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              fileName: true,
+              fileSize: true,
+              mimeType: true,
+              compliant: true,
+              validationErrors: true,
+            },
+          },
+        },
+      })
+
+      if (!application) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Application not found',
+        })
+      }
+
+      // Verify ownership
+      if (application.studentId !== studentId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to access this application',
+        })
+      }
+
+      // Build map of uploaded documents by type
+      const uploadedDocsByType = new Map<DocumentType, typeof application.documents[0][]>()
+      for (const doc of application.documents) {
+        const docs = uploadedDocsByType.get(doc.type) || []
+        docs.push(doc)
+        uploadedDocsByType.set(doc.type, docs)
+      }
+
+      // Check each document type for compliance
+      const issues: Array<{
+        documentType: DocumentType
+        errors: string[]
+        suggestedFixes: string[]
+      }> = []
+
+      let compliantDocuments = 0
+      let totalDocuments = application.documents.length
+
+      // Check required documents
+      const requiredDocTypes = (application.scholarship.requiredDocuments || []) as string[]
+
+      for (const docTypeStr of requiredDocTypes) {
+        const docType = docTypeStr as DocumentType
+
+        // Check if document exists
+        const docsOfType = uploadedDocsByType.get(docType) || []
+
+        if (docsOfType.length === 0) {
+          // Missing required document
+          issues.push({
+            documentType: docType,
+            errors: [`Missing required ${docType.toLowerCase().replace('_', ' ')}`],
+            suggestedFixes: ['Upload the required document to complete your application'],
+          })
+          totalDocuments++ // Count missing as part of total
+        } else {
+          // Check compliance of uploaded documents
+          for (const doc of docsOfType) {
+            if (!doc.compliant && doc.validationErrors) {
+              const errors = doc.validationErrors as Array<{
+                code: string
+                message: string
+                field?: string
+                details?: Record<string, unknown>
+              }>
+
+              issues.push({
+                documentType: doc.type,
+                errors: errors.map((e) => e.message),
+                suggestedFixes: errors.map((e) => getSuggestedFix(e as any)),
+              })
+            } else if (doc.compliant) {
+              compliantDocuments++
+            }
+          }
+        }
+      }
+
+      // Check uploaded documents that aren't in required list
+      for (const doc of application.documents) {
+        if (!requiredDocTypes.includes(doc.type)) {
+          // Optional document - still check compliance
+          if (!doc.compliant && doc.validationErrors) {
+            const errors = doc.validationErrors as Array<{
+              code: string
+              message: string
+              field?: string
+              details?: Record<string, unknown>
+            }>
+
+            issues.push({
+              documentType: doc.type,
+              errors: errors.map((e) => e.message),
+              suggestedFixes: errors.map((e) => getSuggestedFix(e as any)),
+            })
+          } else if (doc.compliant) {
+            compliantDocuments++
+          }
+        }
+      }
+
+      return {
+        compliant: issues.length === 0 && compliantDocuments === totalDocuments,
+        totalDocuments,
+        compliantDocuments,
+        issues,
+      }
     }),
 })

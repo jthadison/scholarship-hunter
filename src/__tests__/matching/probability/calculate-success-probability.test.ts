@@ -67,6 +67,7 @@ function createMockScholarship(overrides: Partial<Scholarship> = {}): Scholarshi
     renewalYears: null,
     deadline: new Date(),
     announcementDate: null,
+    documentRequirements: null,
     eligibilityCriteria: {},
     essayPrompts: null,
     requiredDocuments: [],

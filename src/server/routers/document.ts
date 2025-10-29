@@ -14,6 +14,10 @@ import {
   getVersionHistory,
   isCurrentVersion,
 } from "../../lib/document/versionUtils";
+import {
+  getDocumentRequirements,
+  type DocumentRequirements,
+} from "../../lib/document/validation";
 
 /**
  * Document Router
@@ -83,6 +87,107 @@ export const documentRouter = router({
         throw new Error(quotaCheck.error);
       }
 
+      // Story 4.3: Validate document compliance if linked to application
+      let compliant = false;
+      let validationErrors: unknown = null;
+
+      if (input.applicationId) {
+        // Fetch application with scholarship requirements
+        const application = await ctx.prisma.application.findUnique({
+          where: { id: input.applicationId },
+          include: {
+            scholarship: {
+              select: { documentRequirements: true },
+            },
+          },
+        });
+
+        if (application) {
+          const scholarshipRequirements = application.scholarship
+            .documentRequirements as DocumentRequirements | null;
+
+          const requirements = getDocumentRequirements(
+            input.type,
+            scholarshipRequirements
+          );
+
+          // Validate file size against requirements
+          const fileSizeMB = input.fileSize / (1024 * 1024);
+          const errors: Array<{
+            code: string;
+            message: string;
+            field?: string;
+            details?: Record<string, unknown>;
+          }> = [];
+
+          // Check file format
+          if (!requirements.allowedFormats.includes(input.mimeType)) {
+            const allowedFormats = requirements.allowedFormats
+              .map((mime) => {
+                const labels: Record<string, string> = {
+                  "application/pdf": "PDF",
+                  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                    "DOCX",
+                  "image/png": "PNG",
+                  "image/jpeg": "JPEG",
+                };
+                return labels[mime] || mime;
+              })
+              .join(" or ");
+
+            errors.push({
+              code: "WRONG_FORMAT",
+              message: `File must be ${allowedFormats}`,
+              field: "format",
+              details: {
+                actualFormat: input.mimeType,
+                allowedFormats: requirements.allowedFormats,
+              },
+            });
+          }
+
+          // Check file size
+          if (fileSizeMB > requirements.maxSizeMB) {
+            errors.push({
+              code: "FILE_TOO_LARGE",
+              message: `File exceeds ${requirements.maxSizeMB}MB limit (your file: ${fileSizeMB.toFixed(1)}MB)`,
+              field: "size",
+              details: {
+                actualSizeMB: fileSizeMB,
+                maxSizeMB: requirements.maxSizeMB,
+              },
+            });
+          }
+
+          // Check naming pattern (if specified)
+          if (requirements.namingPattern) {
+            const pattern = new RegExp(requirements.namingPattern);
+            if (!pattern.test(input.fileName)) {
+              errors.push({
+                code: "NAMING_PATTERN_MISMATCH",
+                message: `File name must match pattern${requirements.namingExample ? ": " + requirements.namingExample : ""}`,
+                field: "name",
+                details: {
+                  pattern: requirements.namingPattern,
+                  actualName: input.fileName,
+                  example: requirements.namingExample,
+                },
+              });
+            }
+          }
+
+          // Block upload if validation fails
+          if (errors.length > 0) {
+            throw new Error(
+              `Document validation failed: ${errors.map((e) => e.message).join("; ")}`
+            );
+          }
+
+          compliant = errors.length === 0;
+          validationErrors = errors.length > 0 ? errors : null;
+        }
+      }
+
       // Story 4.2: Check for existing document to handle versioning
       const existingDocument = await findCurrentVersion(
         input.studentId,
@@ -149,7 +254,8 @@ export const documentRouter = router({
           version: versionNumber,
           previousVersionId,
           versionNote: input.versionNote,
-          compliant: false, // Will be validated in Story 4.3
+          compliant, // Story 4.3: Compliance validation
+          validationErrors: validationErrors as any, // Story 4.3: Store validation errors
         },
       });
 

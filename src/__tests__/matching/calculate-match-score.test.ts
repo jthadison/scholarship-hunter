@@ -110,6 +110,7 @@ function createMockScholarship(criteriaOverrides?: Partial<EligibilityCriteria>)
     essayPrompts: null,
     requiredDocuments: [],
     recommendationCount: 0,
+    documentRequirements: null,
     applicantPoolSize: null,
     acceptanceRate: null,
     sourceUrl: null,
