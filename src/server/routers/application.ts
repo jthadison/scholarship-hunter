@@ -19,9 +19,6 @@ import {
 import { calculateProgressPercentage } from '../services/progress/calculate'
 import { canMarkReadyForReview } from '../services/progress/validation'
 import { detectAtRiskApplications } from '@/lib/at-risk/detection'
-import {
-  type DocumentRequirements,
-} from '@/lib/document/validation'
 import { getSuggestedFix } from '@/lib/document/autoFixSuggestions'
 import { DocumentType } from '@prisma/client'
 

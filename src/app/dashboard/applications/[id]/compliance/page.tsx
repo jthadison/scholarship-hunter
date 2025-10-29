@@ -25,7 +25,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@/shared/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { ComplianceStatusBadge } from '@/components/document/ComplianceStatusBadge'
 import { RefreshCw, ArrowLeft, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
@@ -63,12 +63,6 @@ export default function ComplianceReportPage({ params }: PageProps) {
     }
   )
 
-  const { data: application } = trpc.application.getById.useQuery(
-    { id: applicationId },
-    {
-      refetchOnWindowFocus: false,
-    }
-  )
 
   const handleRevalidate = async () => {
     toast({
@@ -98,7 +92,7 @@ export default function ComplianceReportPage({ params }: PageProps) {
     )
   }
 
-  if (!report || !application) {
+  if (!report) {
     return (
       <div className="container mx-auto p-6">
         <div className="text-center py-12">
@@ -129,7 +123,7 @@ export default function ComplianceReportPage({ params }: PageProps) {
           </div>
           <h1 className="text-3xl font-bold">Compliance Report</h1>
           <p className="text-muted-foreground">
-            {application.scholarship.name}
+            Application #{applicationId.slice(0, 8)}
           </p>
         </div>
 
