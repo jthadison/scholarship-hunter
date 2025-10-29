@@ -52,7 +52,7 @@ describe("versionUtils", () => {
     it("should return single version for document with no history", async () => {
       const doc1 = mockDocument("doc1", 1, null);
 
-      vi.mocked(db.document.findUnique).mockResolvedValueOnce(doc1).mockResolvedValueOnce(null);
+      vi.mocked(db.document.findUnique).mockResolvedValue(doc1);
 
       const history = await getVersionHistory("doc1");
 
@@ -66,11 +66,15 @@ describe("versionUtils", () => {
       const doc2 = mockDocument("doc2", 2, "doc1");
       const doc3 = mockDocument("doc3", 3, "doc2");
 
-      vi.mocked(db.document.findUnique)
-        .mockResolvedValueOnce(doc3)
-        .mockResolvedValueOnce(doc2)
-        .mockResolvedValueOnce(doc1)
-        .mockResolvedValueOnce(null);
+      const docMap = new Map([
+        ["doc3", doc3],
+        ["doc2", doc2],
+        ["doc1", doc1],
+      ]);
+
+      vi.mocked(db.document.findUnique).mockImplementation(async ({ where }) => {
+        return docMap.get(where.id as string) || null;
+      });
 
       const history = await getVersionHistory("doc3");
 
@@ -81,7 +85,7 @@ describe("versionUtils", () => {
     });
 
     it("should throw error if document not found", async () => {
-      vi.mocked(db.document.findUnique).mockResolvedValueOnce(null);
+      vi.mocked(db.document.findUnique).mockResolvedValue(null);
 
       await expect(getVersionHistory("nonexistent")).rejects.toThrow("Document not found");
     });
@@ -90,21 +94,31 @@ describe("versionUtils", () => {
       const doc1 = mockDocument("doc1", 1, "doc2"); // Points to doc2
       const doc2 = mockDocument("doc2", 2, "doc1"); // Points back to doc1
 
-      vi.mocked(db.document.findUnique)
-        .mockResolvedValueOnce(doc1)
-        .mockResolvedValueOnce(doc2)
-        .mockResolvedValueOnce(doc1); // Circular!
+      const docMap = new Map([
+        ["doc1", doc1],
+        ["doc2", doc2],
+      ]);
+
+      vi.mocked(db.document.findUnique).mockImplementation(async ({ where }) => {
+        return docMap.get(where.id as string) || null;
+      });
 
       await expect(getVersionHistory("doc1")).rejects.toThrow("Circular reference detected");
     });
 
     it("should throw error if max depth exceeded", async () => {
-      const doc = mockDocument("doc1", 1, "doc0");
+      // Create documents that form a very long chain
+      const docs = new Map<string, Document>();
+      for (let i = 0; i < 102; i++) {
+        const prevId = i > 0 ? `doc${i - 1}` : null;
+        docs.set(`doc${i}`, mockDocument(`doc${i}`, i + 1, prevId));
+      }
 
-      // Mock infinite chain
-      vi.mocked(db.document.findUnique).mockResolvedValue(doc);
+      vi.mocked(db.document.findUnique).mockImplementation(async ({ where }) => {
+        return docs.get(where.id as string) || null;
+      });
 
-      await expect(getVersionHistory("doc1")).rejects.toThrow(
+      await expect(getVersionHistory("doc101")).rejects.toThrow(
         "Maximum version depth (100) exceeded"
       );
     });
@@ -164,13 +178,13 @@ describe("versionUtils", () => {
 
   describe("hasVersions", () => {
     it("should return true if document has previous version", async () => {
-      const doc2 = mockDocument("doc2", 2, "doc1");
-
-      vi.mocked(db.document.findUnique).mockResolvedValueOnce({
-        ...doc2,
+      const doc2 = {
+        ...mockDocument("doc2", 2, "doc1"),
         previousVersion: mockDocument("doc1", 1, null),
         nextVersions: [],
-      } as any);
+      };
+
+      vi.mocked(db.document.findUnique).mockResolvedValue(doc2 as any);
 
       const result = await hasVersions("doc2");
 
@@ -178,13 +192,13 @@ describe("versionUtils", () => {
     });
 
     it("should return true if document has next versions", async () => {
-      const doc1 = mockDocument("doc1", 1, null);
-
-      vi.mocked(db.document.findUnique).mockResolvedValueOnce({
-        ...doc1,
+      const doc1 = {
+        ...mockDocument("doc1", 1, null),
         previousVersion: null,
         nextVersions: [mockDocument("doc2", 2, "doc1")],
-      } as any);
+      };
+
+      vi.mocked(db.document.findUnique).mockResolvedValue(doc1 as any);
 
       const result = await hasVersions("doc1");
 
@@ -192,13 +206,13 @@ describe("versionUtils", () => {
     });
 
     it("should return false if document has no versions", async () => {
-      const doc1 = mockDocument("doc1", 1, null);
-
-      vi.mocked(db.document.findUnique).mockResolvedValueOnce({
-        ...doc1,
+      const doc1 = {
+        ...mockDocument("doc1", 1, null),
         previousVersion: null,
         nextVersions: [],
-      } as any);
+      };
+
+      vi.mocked(db.document.findUnique).mockResolvedValue(doc1 as any);
 
       const result = await hasVersions("doc1");
 
@@ -206,7 +220,7 @@ describe("versionUtils", () => {
     });
 
     it("should return false if document not found", async () => {
-      vi.mocked(db.document.findUnique).mockResolvedValueOnce(null);
+      vi.mocked(db.document.findUnique).mockResolvedValue(null);
 
       const result = await hasVersions("nonexistent");
 
@@ -216,12 +230,12 @@ describe("versionUtils", () => {
 
   describe("isCurrentVersion", () => {
     it("should return true for document with no successors", async () => {
-      const doc = mockDocument("doc3", 3, "doc2");
-
-      vi.mocked(db.document.findUnique).mockResolvedValueOnce({
-        ...doc,
+      const doc = {
+        ...mockDocument("doc3", 3, "doc2"),
         nextVersions: [],
-      } as any);
+      };
+
+      vi.mocked(db.document.findUnique).mockResolvedValue(doc as any);
 
       const result = await isCurrentVersion("doc3");
 
@@ -229,12 +243,12 @@ describe("versionUtils", () => {
     });
 
     it("should return false for document with successors", async () => {
-      const doc = mockDocument("doc2", 2, "doc1");
-
-      vi.mocked(db.document.findUnique).mockResolvedValueOnce({
-        ...doc,
+      const doc = {
+        ...mockDocument("doc2", 2, "doc1"),
         nextVersions: [mockDocument("doc3", 3, "doc2")],
-      } as any);
+      };
+
+      vi.mocked(db.document.findUnique).mockResolvedValue(doc as any);
 
       const result = await isCurrentVersion("doc2");
 
@@ -242,7 +256,7 @@ describe("versionUtils", () => {
     });
 
     it("should return false if document not found", async () => {
-      vi.mocked(db.document.findUnique).mockResolvedValueOnce(null);
+      vi.mocked(db.document.findUnique).mockResolvedValue(null);
 
       const result = await isCurrentVersion("nonexistent");
 
