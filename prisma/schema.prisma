@@ -241,6 +241,9 @@ model Scholarship {
   requiredDocuments   String[] // Array of document types
   recommendationCount Int      @default(0)
 
+  // Document Requirements (Story 4.3)
+  documentRequirements Json? // Document validation requirements per type
+
   // Competition Metadata
   applicantPoolSize Int?
   acceptanceRate    Float? // 0.0 to 1.0
