@@ -10,6 +10,7 @@ import { timelineRouter } from './timeline'
 import { alertRouter } from './alert'
 import { quinnRouter } from './quinn'
 import { documentRouter } from './document'
+import { recommendationRouter } from './recommendation'
 
 export const appRouter = router({
   auth: authRouter,
@@ -23,6 +24,7 @@ export const appRouter = router({
   alert: alertRouter, // Story 3.4: Deadline alerts
   quinn: quinnRouter, // Story 3.6: Quinn Timeline Coordinator
   document: documentRouter, // Story 4.1: Document Vault
+  recommendation: recommendationRouter, // Story 4.4: Recommendation Letter Coordination
 })
 
 export type AppRouter = typeof appRouter

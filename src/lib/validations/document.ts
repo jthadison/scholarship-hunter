@@ -121,86 +121,70 @@ export const documentFilterSchema = z.object({
   bucketName: z.string().optional(),
 });
 
-// Recommendation Create Schema
-export const recommendationCreateSchema = z.object({
+// Recommendation relationship enum
+const relationshipEnum = z.enum([
+  "Teacher",
+  "Counselor",
+  "Coach",
+  "Employer",
+  "Mentor",
+  "Other",
+]);
+
+// Recommendation status enum
+const recommendationStatusEnum = z.enum([
+  "PENDING_REQUEST",
+  "REQUESTED",
+  "REMINDED",
+  "RECEIVED",
+  "SUBMITTED",
+]);
+
+// Schema for creating a recommendation request (user input)
+export const recommendationRequestSchema = z.object({
   applicationId: z.string().cuid(),
+  recommenderName: z.string().min(1, "Recommender name is required"),
+  recommenderEmail: z.string().email("Valid email address is required"),
+  relationship: relationshipEnum,
+  personalMessage: z.string().optional(),
+});
 
-  // Recommender Info
-  name: z.string().min(1, "Recommender name is required"),
-  email: z.string().email("Valid email is required"),
-  relationship: z.string().min(1, "Relationship is required"),
-
-  // Tracking
-  status: z.enum([
-    "PENDING_REQUEST",
-    "REQUESTED",
-    "REMINDED",
-    "RECEIVED",
-    "SUBMITTED",
-  ]).default("PENDING_REQUEST"),
-  requestedAt: z.coerce.date().optional(),
-  reminderSentAt: z.coerce.date().optional(),
-  receivedAt: z.coerce.date().optional(),
-  submittedAt: z.coerce.date().optional(),
-
-  // Upload Token
-  uploadToken: z.string().min(32, "Upload token must be at least 32 characters"),
-  uploadLinkExpiry: z.coerce.date().optional(),
-
-  // Document Reference
-  documentId: z.string().cuid().optional(),
+// Schema for uploading a recommendation via token (public endpoint)
+export const recommendationUploadSchema = z.object({
+  token: z.string().length(64, "Invalid upload token format"),
+  fileUrl: z.string().url("Valid file URL is required"),
+  fileName: z.string().min(1, "File name is required"),
+  fileSize: z.number().int().positive("File size must be positive"),
+  mimeType: z.string().refine(
+    (mime) => allowedMimeTypes.includes(mime),
+    {
+      message: `File type must be PDF or DOCX`,
+    }
+  ),
+  message: z.string().optional(),
 }).refine(
   (data) => {
-    // If upload link expiry is provided, it must be in the future
-    if (data.uploadLinkExpiry !== undefined) {
-      return data.uploadLinkExpiry > new Date();
-    }
-    return true;
+    // File size limit: 10MB
+    const maxFileSize = 10 * 1024 * 1024;
+    return data.fileSize <= maxFileSize;
   },
   {
-    message: "Upload link expiry must be in the future",
-    path: ["uploadLinkExpiry"],
+    message: "File size must not exceed 10MB",
+    path: ["fileSize"],
   }
 );
 
-// Base recommendation schema without refinements
-const recommendationBaseSchema = z.object({
-  applicationId: z.string().cuid(),
-
-  // Recommender Info
-  name: z.string().min(1, "Recommender name is required"),
-  email: z.string().email("Valid email is required"),
-  relationship: z.string().min(1, "Relationship is required"),
-
-  // Tracking
-  status: z.enum([
-    "PENDING_REQUEST",
-    "REQUESTED",
-    "REMINDED",
-    "RECEIVED",
-    "SUBMITTED",
-  ]).default("PENDING_REQUEST"),
-  requestedAt: z.coerce.date().optional(),
-  reminderSentAt: z.coerce.date().optional(),
-  receivedAt: z.coerce.date().optional(),
-  submittedAt: z.coerce.date().optional(),
-
-  // Upload Token
-  uploadToken: z.string().min(32, "Upload token must be at least 32 characters"),
-  uploadLinkExpiry: z.coerce.date().optional(),
-
-  // Document Reference
-  documentId: z.string().cuid().optional(),
-});
-
-export const recommendationUpdateSchema = recommendationBaseSchema.partial().omit({
-  applicationId: true,
-  uploadToken: true, // Cannot update upload token after creation
+// Schema for filtering recommendations
+export const recommendationFilterSchema = z.object({
+  applicationId: z.string().cuid().optional(),
+  status: recommendationStatusEnum.optional(),
+  recommenderEmail: z.string().email().optional(),
 });
 
 // Type exports
 export type DocumentCreateInput = z.infer<typeof documentCreateSchema>;
 export type DocumentUpdateInput = z.infer<typeof documentUpdateSchema>;
 export type DocumentFilterInput = z.infer<typeof documentFilterSchema>;
-export type RecommendationCreateInput = z.infer<typeof recommendationCreateSchema>;
-export type RecommendationUpdateInput = z.infer<typeof recommendationUpdateSchema>;
+export type RecommendationRequestInput = z.infer<typeof recommendationRequestSchema>;
+export type RecommendationUploadInput = z.infer<typeof recommendationUploadSchema>;
+export type RecommendationFilterInput = z.infer<typeof recommendationFilterSchema>;

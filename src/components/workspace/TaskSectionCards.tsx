@@ -262,10 +262,12 @@ export function DocumentSectionCard({
 interface RecommendationSectionCardProps {
   recommendations: Array<{
     id: string
-    name: string
-    email: string
+    recommenderName: string
+    recommenderEmail: string
+    relationship?: string
     status: string
-    createdAt?: Date | null
+    requestedAt?: Date | null
+    receivedAt?: Date | null
     submittedAt?: Date | null
   }>
   recsRequired: number
@@ -279,14 +281,17 @@ interface RecommendationSectionCardProps {
 
 function getRecStatusColor(status: string): string {
   switch (status) {
+    case 'RECEIVED':
     case 'SUBMITTED':
       return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-    case 'REQUESTED':
+    case 'REMINDED':
       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+    case 'REQUESTED':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
     case 'PENDING_REQUEST':
       return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
     default:
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
   }
 }
 
@@ -320,22 +325,25 @@ export function RecommendationSectionCard({
               >
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {rec.name}
+                    {rec.recommenderName}
                   </p>
                   <div className="mt-1 flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                    <span>{rec.email}</span>
+                    <span>{rec.recommenderEmail}</span>
+                    {rec.relationship && (
+                      <span className="text-gray-500">• {rec.relationship}</span>
+                    )}
                     <Badge className={getRecStatusColor(rec.status)}>
                       {rec.status.toLowerCase().replace('_', ' ')}
                     </Badge>
-                    {rec.submittedAt && (
-                      <span>Submitted {format(rec.submittedAt, 'MMM d')}</span>
+                    {rec.receivedAt && (
+                      <span>Received {format(rec.receivedAt, 'MMM d')}</span>
                     )}
-                    {rec.createdAt && !rec.submittedAt && (
-                      <span>Requested {format(rec.createdAt, 'MMM d')}</span>
+                    {rec.requestedAt && !rec.receivedAt && (
+                      <span>Requested {format(rec.requestedAt, 'MMM d')}</span>
                     )}
                   </div>
                 </div>
-                {rec.status === 'REQUESTED' && !rec.submittedAt && (
+                {(rec.status === 'REQUESTED' || rec.status === 'REMINDED') && !rec.receivedAt && (
                   <Button
                     size="sm"
                     variant="outline"
