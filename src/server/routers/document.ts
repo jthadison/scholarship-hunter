@@ -9,6 +9,11 @@ import {
   checkStorageQuota,
 } from "../../lib/supabase";
 import { DocumentType } from "@prisma/client";
+import {
+  findCurrentVersion,
+  getVersionHistory,
+  isCurrentVersion,
+} from "../../lib/document/versionUtils";
 
 /**
  * Document Router
@@ -33,6 +38,10 @@ export const documentRouter = router({
         mimeType: z.string(),
         fileData: z.string(), // Base64 encoded file data
         description: z.string().optional(),
+        versionNote: z
+          .string()
+          .max(1000, "Version note cannot exceed 1000 characters")
+          .optional(), // Story 4.2: Version notes
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -74,11 +83,31 @@ export const documentRouter = router({
         throw new Error(quotaCheck.error);
       }
 
-      // Generate storage path
+      // Story 4.2: Check for existing document to handle versioning
+      const existingDocument = await findCurrentVersion(
+        input.studentId,
+        input.name,
+        input.type
+      );
+
+      let versionNumber = 1;
+      let previousVersionId: string | undefined;
+
+      if (existingDocument) {
+        // Document exists, create new version
+        versionNumber = existingDocument.version + 1;
+        previousVersionId = existingDocument.id;
+      }
+
+      // Generate versioned storage path
+      const fileNameWithoutExt = input.fileName.replace(/\.[^/.]+$/, "");
+      const fileExt = input.fileName.match(/\.[^/.]+$/)?.[0] ?? "";
+      const versionedFileName = `${fileNameWithoutExt}_v${versionNumber}${fileExt}`;
+
       const storagePath = generateStoragePath(
         input.studentId,
         input.type,
-        input.fileName
+        versionedFileName
       );
 
       // Decode base64 file data
@@ -117,7 +146,9 @@ export const documentRouter = router({
           storagePath,
           bucketName: STORAGE_CONFIG.BUCKET_NAME,
           description: input.description,
-          version: 1,
+          version: versionNumber,
+          previousVersionId,
+          versionNote: input.versionNote,
           compliant: false, // Will be validated in Story 4.3
         },
       });
@@ -375,5 +406,276 @@ export const documentRouter = router({
       });
 
       return { success: true };
+    }),
+
+  /**
+   * Story 4.2: Get version history for a document
+   * AC2: Version History Display
+   */
+  getVersionHistory: protectedProcedure
+    .input(z.object({ documentId: z.string().cuid() }))
+    .query(async ({ ctx, input }) => {
+      const document = await ctx.prisma.document.findUnique({
+        where: { id: input.documentId },
+        include: { student: true },
+      });
+
+      if (!document) {
+        throw new Error("Document not found");
+      }
+
+      // Verify user owns this student profile
+      if (document.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized: You do not own this document");
+      }
+
+      // Get all versions in the chain
+      const versions = await getVersionHistory(input.documentId);
+
+      if (versions.length === 0) {
+        return [];
+      }
+
+      // Find current version by checking which document has no successors
+      // This is a single query instead of N queries
+      const versionIds = versions.map((v) => v.id);
+      const documentsWithSuccessors = await ctx.prisma.document.findMany({
+        where: {
+          previousVersionId: { in: versionIds },
+        },
+        select: { previousVersionId: true },
+      });
+
+      const successorIds = new Set(
+        documentsWithSuccessors.map((d) => d.previousVersionId).filter(Boolean)
+      );
+
+      // Mark versions with status (current = no successor)
+      const versionsWithStatus = versions.map((v) => ({
+        ...v,
+        isCurrent: !successorIds.has(v.id),
+      }));
+
+      return versionsWithStatus;
+    }),
+
+  /**
+   * Story 4.2: Get specific version by ID
+   * AC3: View and Download Previous Versions
+   */
+  getVersionById: protectedProcedure
+    .input(z.object({ versionId: z.string().cuid() }))
+    .query(async ({ ctx, input }) => {
+      const document = await ctx.prisma.document.findUnique({
+        where: { id: input.versionId },
+        include: { student: true },
+      });
+
+      if (!document) {
+        throw new Error("Version not found");
+      }
+
+      // Verify user owns this student profile
+      if (document.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized: You do not own this document");
+      }
+
+      // Generate signed URL for this version
+      const supabaseAdmin = getSupabaseAdmin();
+      if (!supabaseAdmin) {
+        throw new Error("Supabase admin client not configured");
+      }
+
+      const { data, error } = await supabaseAdmin.storage
+        .from(STORAGE_CONFIG.BUCKET_NAME)
+        .createSignedUrl(document.storagePath, STORAGE_CONFIG.SIGNED_URL_EXPIRY);
+
+      if (error) {
+        throw new Error(`Failed to generate preview URL: ${error.message}`);
+      }
+
+      return {
+        document,
+        signedUrl: data.signedUrl,
+        expiresAt: new Date(Date.now() + STORAGE_CONFIG.SIGNED_URL_EXPIRY * 1000),
+        isCurrent: await isCurrentVersion(document.id),
+      };
+    }),
+
+  /**
+   * Story 4.2: Restore a previous version
+   * AC6: Rollback Functionality
+   */
+  restoreVersion: protectedProcedure
+    .input(
+      z.object({
+        versionId: z.string().cuid(),
+        versionNote: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const targetVersion = await ctx.prisma.document.findUnique({
+        where: { id: input.versionId },
+        include: { student: true },
+      });
+
+      if (!targetVersion) {
+        throw new Error("Version not found");
+      }
+
+      // Verify user owns this student profile
+      if (targetVersion.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized: You do not own this document");
+      }
+
+      // Find current version
+      const currentVersion = await findCurrentVersion(
+        targetVersion.studentId,
+        targetVersion.name,
+        targetVersion.type
+      );
+
+      if (!currentVersion) {
+        throw new Error("Current version not found");
+      }
+
+      // Prevent restoring current version
+      if (targetVersion.id === currentVersion.id) {
+        throw new Error("Cannot restore the current version");
+      }
+
+      // Get file from storage
+      const supabaseAdmin = getSupabaseAdmin();
+      if (!supabaseAdmin) {
+        throw new Error("Supabase admin client not configured");
+      }
+
+      // Download the target version's file
+      const { data: fileData, error: downloadError } = await supabaseAdmin.storage
+        .from(STORAGE_CONFIG.BUCKET_NAME)
+        .download(targetVersion.storagePath);
+
+      if (downloadError || !fileData) {
+        throw new Error(
+          `Failed to download version file: ${downloadError?.message ?? "File not found"}`
+        );
+      }
+
+      // Convert blob to buffer
+      const arrayBuffer = await fileData.arrayBuffer();
+      const fileBuffer = Buffer.from(arrayBuffer);
+
+      // Create new version number
+      const newVersionNumber = currentVersion.version + 1;
+
+      // Generate new versioned storage path
+      const fileNameWithoutExt = targetVersion.fileName.replace(/\.[^/.]+$/, "");
+      const fileExt = targetVersion.fileName.match(/\.[^/.]+$/)?.[0] ?? "";
+      const versionedFileName = `${fileNameWithoutExt}_v${newVersionNumber}${fileExt}`;
+
+      const newStoragePath = generateStoragePath(
+        targetVersion.studentId,
+        targetVersion.type,
+        versionedFileName
+      );
+
+      let uploadedPath: string | null = null;
+
+      try {
+        // Upload restored content as new version
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from(STORAGE_CONFIG.BUCKET_NAME)
+          .upload(newStoragePath, fileBuffer, {
+            contentType: targetVersion.mimeType,
+            cacheControl: "3600",
+            upsert: false,
+          });
+
+        if (uploadError) {
+          throw new Error(`Failed to upload restored version: ${uploadError.message}`);
+        }
+
+        uploadedPath = newStoragePath;
+
+        // Create new document record with restored content (in transaction)
+        const restoredDocument = await ctx.prisma.document.create({
+          data: {
+            studentId: targetVersion.studentId,
+            applicationId: targetVersion.applicationId,
+            name: targetVersion.name,
+            type: targetVersion.type,
+            fileName: targetVersion.fileName,
+            fileSize: targetVersion.fileSize,
+            mimeType: targetVersion.mimeType,
+            storagePath: newStoragePath,
+            bucketName: STORAGE_CONFIG.BUCKET_NAME,
+            description: targetVersion.description,
+            version: newVersionNumber,
+            previousVersionId: currentVersion.id,
+            versionNote:
+              input.versionNote ?? `Restored from version ${targetVersion.version}`,
+            compliant: targetVersion.compliant,
+          },
+        });
+
+        return {
+          document: restoredDocument,
+          restoredFromVersion: targetVersion.version,
+          newVersion: newVersionNumber,
+        };
+      } catch (error) {
+        // Cleanup: Delete uploaded file if database operation failed
+        if (uploadedPath && supabaseAdmin) {
+          await supabaseAdmin.storage
+            .from(STORAGE_CONFIG.BUCKET_NAME)
+            .remove([uploadedPath])
+            .catch((cleanupError) => {
+              console.error("Failed to cleanup orphaned file:", cleanupError);
+            });
+        }
+        throw error;
+      }
+    }),
+
+  /**
+   * Story 4.2: Update version note
+   * AC7: Version Notes
+   */
+  updateVersionNote: protectedProcedure
+    .input(
+      z.object({
+        documentId: z.string().cuid(),
+        versionNote: z
+          .string()
+          .max(1000, "Version note cannot exceed 1000 characters")
+          .nullable(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const document = await ctx.prisma.document.findUnique({
+        where: { id: input.documentId },
+        include: { student: true },
+      });
+
+      if (!document) {
+        throw new Error("Document not found");
+      }
+
+      // Verify user owns this student profile
+      if (document.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized: You do not own this document");
+      }
+
+      // Sanitize and trim version note
+      const sanitizedNote = input.versionNote?.trim() || null;
+
+      const updated = await ctx.prisma.document.update({
+        where: { id: input.documentId },
+        data: {
+          versionNote: sanitizedNote,
+        },
+      });
+
+      return updated;
     }),
 });

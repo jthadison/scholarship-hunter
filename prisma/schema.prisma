@@ -500,6 +500,7 @@ model Document {
   // Version Control
   version           Int        @default(1)
   previousVersionId String?
+  versionNote       String?    @db.Text
   previousVersion   Document?  @relation("DocumentVersions", fields: [previousVersionId], references: [id], onDelete: SetNull)
   nextVersions      Document[] @relation("DocumentVersions")
 
@@ -515,6 +516,7 @@ model Document {
   @@index([studentId])
   @@index([applicationId])
   @@index([type])
+  @@index([previousVersionId])
 }
 
 model Essay {
