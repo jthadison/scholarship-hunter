@@ -88,17 +88,6 @@ export function QuickActions({ onRunComplianceCheck }: QuickActionsProps) {
             </div>
           </Button>
         </div>
-
-        {/* Keyboard Shortcuts Hint */}
-        <div className="mt-4 text-center">
-          <p className="text-xs text-gray-500">
-            <span className="font-semibold">Pro tip:</span> Press{' '}
-            <kbd className="px-1.5 py-0.5 text-xs font-mono bg-gray-100 border border-gray-300 rounded">
-              Ctrl+U
-            </kbd>{' '}
-            to quick upload
-          </p>
-        </div>
       </CardContent>
     </Card>
   )

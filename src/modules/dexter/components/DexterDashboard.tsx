@@ -34,8 +34,28 @@ interface DexterDashboardProps {
   firstName: string
 }
 
+interface ComplianceCheckResult {
+  timestamp: Date
+  summary: {
+    totalChecked: number
+    passed: number
+    failed: number
+  }
+  issues: Array<{
+    documentId: string
+    documentName: string
+    scholarshipName: string | null
+    issues: Array<{
+      code: string
+      message: string
+      autoFixAvailable: boolean
+    }>
+  }>
+  message: string
+}
+
 export function DexterDashboard({ firstName }: DexterDashboardProps) {
-  const [complianceCheckResult, setComplianceCheckResult] = useState<any>(null)
+  const [complianceCheckResult, setComplianceCheckResult] = useState<ComplianceCheckResult | null>(null)
   const [showComplianceModal, setShowComplianceModal] = useState(false)
 
   // Get student ID from session
@@ -100,11 +120,33 @@ export function DexterDashboard({ firstName }: DexterDashboardProps) {
       setComplianceCheckResult(data)
       setShowComplianceModal(true)
     },
+    onError: (error) => {
+      console.error('Compliance check failed:', error)
+      // Show error state in modal
+      setComplianceCheckResult({
+        timestamp: new Date(),
+        summary: {
+          totalChecked: 0,
+          passed: 0,
+          failed: 0,
+        },
+        issues: [],
+        message: `Compliance check failed: ${error.message}. Please try again.`,
+      })
+      setShowComplianceModal(true)
+    },
   })
 
   const handleRunComplianceCheck = () => {
-    if (studentId) {
+    if (!studentId) {
+      console.error('Cannot run compliance check: No student ID')
+      return
+    }
+
+    try {
       runComplianceCheckMutation.mutate({ studentId })
+    } catch (error) {
+      console.error('Error initiating compliance check:', error)
     }
   }
 
