@@ -12,6 +12,7 @@ import {
   HelpCircle,
   Search,
   FolderOpen,
+  FileCheck,
 } from 'lucide-react'
 import { Separator } from '@/shared/components/ui/separator'
 import { Badge } from '@/shared/components/ui/badge'
@@ -56,6 +57,13 @@ const navigationItems = [
     label: 'Documents',
     href: '/documents',
     icon: FolderOpen,
+    active: true,
+    badge: 'New',
+  },
+  {
+    label: 'Dexter - Document Manager',
+    href: '/dashboard/dexter',
+    icon: FileCheck,
     active: true,
     badge: 'New',
   },
