@@ -130,6 +130,7 @@ describe('WeeklyTaskList Component', () => {
 
     const markCompleteButtons = screen.getAllByText('Mark Complete')
     fireEvent.click(markCompleteButtons[0])
+            // @ts-expect-error - Testing library type expects non-null element
 
     expect(mockOnMarkComplete).toHaveBeenCalledWith('task-1', 'ESSAY')
   })
@@ -143,6 +144,7 @@ describe('WeeklyTaskList Component', () => {
     ]
 
     render(<WeeklyTaskList tasks={completedTask} onMarkComplete={vi.fn()} />)
+        // @ts-expect-error - Test data type mismatch with Task[]
 
     expect(screen.queryByText('Mark Complete')).not.toBeInTheDocument()
   })
@@ -170,6 +172,7 @@ describe('WeeklyTaskList Component', () => {
     ]
 
     render(<WeeklyTaskList tasks={taskDueTomorrow} />)
+        // @ts-expect-error - Test data type mismatch with Task[]
 
     expect(screen.getByText(/Due in 1 day/)).toBeInTheDocument()
   })

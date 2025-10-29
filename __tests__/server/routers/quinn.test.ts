@@ -36,6 +36,7 @@ vi.mock('@/server/db', () => ({
 describe('Quinn Router - Story 3.6 Tests', () => {
   const mockCtx = {
     userId: 'student-123',
+    clerkId: 'clerk_123',
     prisma,
   }
 

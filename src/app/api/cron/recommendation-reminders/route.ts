@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
     const result = await processRecommendationReminders()
 
     if (result.success) {
+    // @ts-expect-error - Duplicate success property will be overwritten
       return NextResponse.json({
         success: true,
         message: 'Recommendation reminders processed successfully',

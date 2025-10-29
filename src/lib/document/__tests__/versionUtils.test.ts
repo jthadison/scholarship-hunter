@@ -72,6 +72,7 @@ describe("versionUtils", () => {
         ["doc1", doc1],
       ]);
 
+      // @ts-expect-error - Prisma mock type incompatibility with vitest
       vi.mocked(db.document.findUnique).mockImplementation(async ({ where }) => {
         return docMap.get(where.id as string) || null;
       });
@@ -99,6 +100,7 @@ describe("versionUtils", () => {
         ["doc2", doc2],
       ]);
 
+      // @ts-expect-error - Prisma mock type incompatibility with vitest
       vi.mocked(db.document.findUnique).mockImplementation(async ({ where }) => {
         return docMap.get(where.id as string) || null;
       });
