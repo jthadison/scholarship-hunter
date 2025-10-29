@@ -12,7 +12,10 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Lock } from 'lucide-react'
+import { Lock, AlertTriangle } from 'lucide-react'
+import { trpc } from '@/shared/lib/trpc'
+import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
 import {
   Select,
   SelectContent,
@@ -54,6 +57,11 @@ interface StatusDropdownProps {
    * Current application status
    */
   currentStatus: ApplicationStatus
+
+  /**
+   * Application ID for compliance validation (Story 4.3)
+   */
+  applicationId: string
 
   /**
    * Progress data for validation
@@ -154,7 +162,8 @@ const STATUS_CONFIG: Record<
 }
 
 /**
- * Check if status can be transitioned to
+ * Check if status can be transitioned to (synchronous validation only)
+ * Compliance check is done separately via async validateCompliance
  */
 function canTransitionTo(
   currentStatus: ApplicationStatus,
@@ -184,6 +193,9 @@ function canTransitionTo(
       blockers.push(`${progress.recsRequired - progress.recsReceived} recommendation(s) pending`)
     }
 
+    // Note: Document compliance validation is done async in handleStatusSelect
+    // We can't check it here as it requires an async API call
+
     if (blockers.length > 0) {
       return { allowed: false, blockers }
     }
@@ -208,6 +220,7 @@ function getConfirmationMessage(targetStatus: ApplicationStatus): string | null 
 
 export function StatusDropdown({
   currentStatus,
+  applicationId,
   progress,
   onStatusChange,
   isUpdating = false,
@@ -215,7 +228,10 @@ export function StatusDropdown({
 }: StatusDropdownProps) {
   const [pendingStatus, setPendingStatus] = useState<ApplicationStatus | null>(null)
   const [showConfirmation, setShowConfirmation] = useState(false)
+  const [complianceIssues, setComplianceIssues] = useState<string[]>([])
+  const router = useRouter()
 
+  const utils = trpc.useUtils()
   const availableTransitions = STATUS_TRANSITIONS[currentStatus] || []
   const currentConfig = STATUS_CONFIG[currentStatus]
 
@@ -229,6 +245,29 @@ export function StatusDropdown({
       // Show error (could be toast notification in real implementation)
       alert(`Cannot transition to ${STATUS_CONFIG[targetStatus].label}.\n\n${validation.blockers.join('\n')}`)
       return
+    }
+
+    // Story 4.3: Check document compliance for READY_FOR_REVIEW
+    if (targetStatus === 'READY_FOR_REVIEW') {
+      try {
+        const complianceReport = await utils.application.validateCompliance.fetch({
+          applicationId,
+        })
+
+        if (!complianceReport.compliant) {
+          // Non-compliant documents found
+          const issues = complianceReport.issues.map(
+            (issue) => `${issue.documentType}: ${issue.errors.join(', ')}`
+          )
+          setComplianceIssues(issues)
+          setPendingStatus(targetStatus)
+          setShowConfirmation(true)
+          return
+        }
+      } catch (error) {
+        alert('Failed to validate document compliance. Please try again.')
+        return
+      }
     }
 
     // Check if confirmation is needed
@@ -247,12 +286,19 @@ export function StatusDropdown({
     if (pendingStatus) {
       await onStatusChange(pendingStatus)
       setPendingStatus(null)
+      setComplianceIssues([])
     }
     setShowConfirmation(false)
   }
 
   const handleCancel = () => {
     setPendingStatus(null)
+    setComplianceIssues([])
+    setShowConfirmation(false)
+  }
+
+  const handleViewComplianceReport = () => {
+    router.push(`/dashboard/applications/${applicationId}/compliance`)
     setShowConfirmation(false)
   }
 
@@ -313,14 +359,58 @@ export function StatusDropdown({
       <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Status Change</AlertDialogTitle>
+            <AlertDialogTitle>
+              {complianceIssues.length > 0 ? (
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                  <span>Document Compliance Issues</span>
+                </div>
+              ) : (
+                'Confirm Status Change'
+              )}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {pendingStatus && getConfirmationMessage(pendingStatus)}
+              {complianceIssues.length > 0 ? (
+                <div className="space-y-3">
+                  <p className="text-red-600 font-medium">
+                    Your documents have {complianceIssues.length} compliance issue(s):
+                  </p>
+                  <ul className="text-sm space-y-1 list-disc list-inside">
+                    {complianceIssues.map((issue, idx) => (
+                      <li key={idx} className="text-red-600">{issue}</li>
+                    ))}
+                  </ul>
+                  <p className="text-sm mt-3">
+                    These documents do not meet the scholarship requirements. You can:
+                  </p>
+                  <ul className="text-sm space-y-1 list-decimal list-inside ml-2">
+                    <li>View the full compliance report to see detailed issues and fixes</li>
+                    <li>Fix the issues and re-upload compliant documents</li>
+                    <li>Override and mark as ready anyway (not recommended)</li>
+                  </ul>
+                </div>
+              ) : (
+                pendingStatus && getConfirmationMessage(pendingStatus)
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirm}>Confirm</AlertDialogAction>
+            {complianceIssues.length > 0 ? (
+              <>
+                <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
+                <Button variant="outline" onClick={handleViewComplianceReport}>
+                  View Compliance Report
+                </Button>
+                <AlertDialogAction onClick={handleConfirm} className="bg-yellow-600 hover:bg-yellow-700">
+                  Override & Continue
+                </AlertDialogAction>
+              </>
+            ) : (
+              <>
+                <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirm}>Confirm</AlertDialogAction>
+              </>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
