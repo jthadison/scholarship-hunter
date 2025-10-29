@@ -551,6 +551,10 @@ model Essay {
   qualityBreakdown       Json?
   improvementSuggestions String? @db.Text
 
+  // Prompt Analysis (Story 4.6)
+  promptAnalysis Json?   // Detailed AI analysis of essay prompt
+  promptHash     String? // MD5 hash for caching identical prompts
+
   // Version Control
   version           Int     @default(1)
   previousVersionId String?
@@ -567,6 +571,7 @@ model Essay {
   @@index([studentId])
   @@index([applicationId])
   @@index([phase])
+  @@index([promptHash])
 }
 
 model Recommendation {
