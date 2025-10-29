@@ -99,6 +99,7 @@ describe('ConflictWarnings Component', () => {
 
     render(
       <ConflictWarnings
+    // @ts-expect-error - Test data type mismatch with ConflictedWeek[]
         hasConflicts={true}
         conflictedWeeks={multipleWeeks}
         totalConflictedApplications={5}
@@ -227,6 +228,7 @@ describe('ConflictWarnings Component', () => {
     )
 
     const deferButton = screen.getAllByText('Defer')[0]
+            // @ts-expect-error - Testing library type expects non-null element
     fireEvent.click(deferButton)
 
     expect(mockOnDefer).toHaveBeenCalledWith('app-3') // IF_TIME_PERMITS app

@@ -3,7 +3,7 @@
  * Story 4.4: Recommendation Letter Coordination
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   generateUploadToken,
   validateUploadToken,
@@ -117,6 +117,7 @@ describe('Token Utilities', () => {
     })
 
     it('should ignore already received recommendations', async () => {
+      // @ts-expect-error - Prisma mock type incompatibility with vitest
       vi.spyOn(prisma.recommendation, 'findFirst').mockImplementation((args: any) => {
         // Only return null if status filter includes RECEIVED
         if (args.where?.status?.in?.includes('RECEIVED')) {

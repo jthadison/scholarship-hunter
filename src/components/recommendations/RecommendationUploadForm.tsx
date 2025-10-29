@@ -12,7 +12,7 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { trpc } from '@/shared/lib/trpc'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -31,7 +31,6 @@ export function RecommendationUploadForm({ token }: RecommendationUploadFormProp
   const [message, setMessage] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
-  const [fileUrl, setFileUrl] = useState<string | null>(null)
 
   // Note: For public upload, we'll need to handle Supabase differently
   // This is a placeholder - actual implementation will depend on your Supabase setup
@@ -106,7 +105,7 @@ export function RecommendationUploadForm({ token }: RecommendationUploadFormProp
     try {
       // Step 1: Upload file to Supabase Storage
       const uploadedFileUrl = await uploadToSupabase(file)
-      setFileUrl(uploadedFileUrl)
+      // File uploaded successfully to: uploadedFileUrl
 
       // Step 2: Update recommendation record via tRPC
       await uploadRecommendation.mutateAsync({

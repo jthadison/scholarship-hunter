@@ -85,7 +85,7 @@ export async function findCurrentVersion(
     where: {
       studentId,
       name,
-      type,
+      type: type as any,
       nextVersions: { none: {} }, // No documents have this as previousVersion
     },
     orderBy: { version: "desc" },

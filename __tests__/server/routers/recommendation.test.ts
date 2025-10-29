@@ -35,7 +35,6 @@ describe('Recommendation Router', () => {
   const mockUserId = 'clwxyz1234567890abcd'
   const mockStudentId = 'clwxyz1234567890abce'
   const mockApplicationId = 'clwxyz1234567890abcf'
-  const mockScholarshipId = 'clwxyz1234567890abcg'
   const mockRecId = 'clwxyz1234567890abch'
 
   beforeEach(() => {
@@ -162,7 +161,7 @@ describe('Recommendation Router', () => {
       })
 
       expect(result).toHaveLength(1)
-      expect(result[0].recommenderName).toBe('Dr. Smith')
+      expect(result[0]?.recommenderName).toBe('Dr. Smith')
     })
   })
 
