@@ -48,6 +48,8 @@ import { trpc } from '@/shared/lib/trpc'
 import { useToast } from '@/hooks/use-toast'
 import type { Document, DocumentType } from '@prisma/client'
 import { VersionHistoryModal } from './VersionHistoryModal'
+import { ComplianceStatusBadge, getComplianceStatus } from './ComplianceStatusBadge'
+import { ComplianceTooltip } from './ComplianceTooltip'
 
 interface DocumentCardProps {
   document: Document & {
@@ -165,7 +167,7 @@ export function DocumentCard({
               <div className="flex items-start gap-3 flex-1 min-w-0">
                 <Icon className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-medium truncate" title={document.name}>
                       {document.name}
                     </h3>
@@ -174,6 +176,16 @@ export function DocumentCard({
                       <Badge variant="secondary" className="text-xs px-1.5 py-0">
                         v{document.version}
                       </Badge>
+                    )}
+                    {/* Story 4.3: Compliance Badge */}
+                    {document.application && (
+                      <ComplianceTooltip document={document}>
+                        <div>
+                          <ComplianceStatusBadge
+                            status={getComplianceStatus(document)}
+                          />
+                        </div>
+                      </ComplianceTooltip>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
