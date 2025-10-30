@@ -8,14 +8,21 @@
 import OpenAI from "openai";
 import { createHash } from "crypto";
 
-// Initialize OpenAI client
-if (!process.env.OPENAI_API_KEY) {
-  console.warn('⚠️  OPENAI_API_KEY not configured - adaptation guidance will use fallback mode');
-}
+// Lazy initialization to avoid build-time errors
+let openaiClient: OpenAI | null = null;
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'sk-fallback',
-});
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      console.warn('⚠️  OPENAI_API_KEY not configured - adaptation guidance will use fallback mode');
+    }
+    openaiClient = new OpenAI({
+      apiKey: apiKey || 'sk-fallback',
+    });
+  }
+  return openaiClient;
+}
 
 /**
  * Adaptability score result with breakdown
@@ -220,6 +227,7 @@ Respond in JSON format:
   "confidence": "high" | "medium" | "low"
 }`;
 
+    const openai = getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: 'gpt-4', // Use GPT-4 for higher quality strategic advice
       messages: [{ role: 'user', content: userPrompt }],
