@@ -1218,4 +1218,316 @@ export const essayRouter = router({
         themeCount,
       };
     }),
+
+  /**
+   * Story 4.9: Assess essay quality using AI
+   * Analyzes essay across 5 dimensions and provides improvement suggestions
+   */
+  assessQuality: protectedProcedure
+    .input(
+      z.object({
+        essayId: z.string().cuid(),
+        forceReassess: z.boolean().default(false),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // 1. Get essay and verify ownership
+      const essay = await ctx.prisma.essay.findUnique({
+        where: { id: input.essayId },
+        select: {
+          id: true,
+          content: true,
+          prompt: true,
+          qualityAssessment: true,
+          updatedAt: true,
+          student: {
+            select: { userId: true },
+          },
+        },
+      });
+
+      if (!essay) {
+        throw new Error("Essay not found");
+      }
+
+      if (essay.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized: You can only assess your own essays");
+      }
+
+      // 2. Check if we should use cached assessment
+      if (!input.forceReassess && essay.qualityAssessment) {
+        const assessment = essay.qualityAssessment as any;
+        const assessedAt = new Date(assessment.assessedAt);
+        const hoursSinceAssessment =
+          (Date.now() - assessedAt.getTime()) / (1000 * 60 * 60);
+
+        // Return cached assessment if less than 1 hour old
+        if (hoursSinceAssessment < 1) {
+          return assessment;
+        }
+      }
+
+      // 3. Rate limiting check: max 20 assessments per day per student
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const recentAssessments = await ctx.prisma.essay.count({
+        where: {
+          student: {
+            userId: ctx.userId,
+          },
+          qualityAssessment: {
+            not: undefined,
+          },
+          updatedAt: {
+            gte: oneDayAgo,
+          },
+        },
+      });
+
+      if (recentAssessments >= 20 && !input.forceReassess) {
+        throw new Error(
+          "Daily assessment limit reached (20 per day). Please try again tomorrow."
+        );
+      }
+
+      // 4. Call quality assessment service
+      const { assessEssayQuality } = await import(
+        "../services/essayQualityAssessor"
+      );
+      const assessment = await assessEssayQuality(
+        essay.content,
+        essay.prompt
+      );
+
+      // 5. Save assessment to database
+      await ctx.prisma.essay.update({
+        where: { id: input.essayId },
+        data: {
+          qualityAssessment: assessment as unknown as Prisma.InputJsonValue,
+          qualityScore: assessment.overall,
+        },
+      });
+
+      return assessment;
+    }),
+
+  /**
+   * Story 4.9: Get quality assessment for an essay
+   * Returns cached assessment if available
+   */
+  getQualityAssessment: protectedProcedure
+    .input(z.object({ essayId: z.string().cuid() }))
+    .query(async ({ ctx, input }) => {
+      const essay = await ctx.prisma.essay.findUnique({
+        where: { id: input.essayId },
+        select: {
+          qualityAssessment: true,
+          qualityScore: true,
+          student: {
+            select: { userId: true },
+          },
+        },
+      });
+
+      if (!essay) {
+        throw new Error("Essay not found");
+      }
+
+      if (essay.student.userId !== ctx.userId) {
+        throw new Error(
+          "Unauthorized: You can only view assessments for your own essays"
+        );
+      }
+
+      return {
+        assessment: essay.qualityAssessment,
+        score: essay.qualityScore,
+      };
+    }),
+
+  /**
+   * Story 4.9: Get library benchmarks for comparison
+   * Returns quality score distribution from completed essays
+   */
+  getLibraryBenchmarks: protectedProcedure
+    .input(z.object({ studentId: z.string().cuid() }))
+    .query(async ({ ctx, input }) => {
+      // Verify user owns this student
+      const student = await ctx.prisma.student.findUnique({
+        where: { id: input.studentId },
+        select: { userId: true },
+      });
+
+      if (!student || student.userId !== ctx.userId) {
+        throw new Error(
+          "Unauthorized: You can only view benchmarks for your own essays"
+        );
+      }
+
+      // Get all completed essays with quality scores
+      const essays = await ctx.prisma.essay.findMany({
+        where: {
+          studentId: input.studentId,
+          isComplete: true,
+          qualityScore: {
+            not: null,
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          qualityScore: true,
+          themes: true,
+          createdAt: true,
+        },
+        orderBy: {
+          qualityScore: "desc",
+        },
+      });
+
+      if (essays.length === 0) {
+        return {
+          avgScore: 0,
+          distribution: [],
+          topEssays: [],
+          totalEssays: 0,
+        };
+      }
+
+      // Calculate average score
+      const totalScore = essays.reduce(
+        (sum, e) => sum + (e.qualityScore || 0),
+        0
+      );
+      const avgScore = totalScore / essays.length;
+
+      // Create score distribution (buckets of 10)
+      const distribution: { range: string; count: number }[] = [];
+      for (let i = 0; i < 10; i++) {
+        const min = i * 10;
+        const max = (i + 1) * 10;
+        const count = essays.filter(
+          (e) =>
+            e.qualityScore &&
+            e.qualityScore >= min &&
+            e.qualityScore < max
+        ).length;
+        distribution.push({ range: `${min}-${max}`, count });
+      }
+
+      // Top 5 essays
+      const topEssays = essays.slice(0, 5).map((e) => ({
+        id: e.id,
+        title: e.title,
+        score: e.qualityScore || 0,
+        themes: e.themes,
+      }));
+
+      return {
+        avgScore: Math.round(avgScore),
+        distribution,
+        topEssays,
+        totalEssays: essays.length,
+      };
+    }),
+
+  /**
+   * Story 4.9: Calculate success probability for an essay
+   */
+  calculateSuccessProbability: protectedProcedure
+    .input(
+      z.object({
+        essayId: z.string().cuid(),
+        profileStrength: z.number().min(0).max(100).optional(),
+        matchScore: z.number().min(0).max(100).optional(),
+        competitionLevel: z
+          .enum(["low", "medium", "high"])
+          .default("medium"),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      // Get essay quality score
+      const essay = await ctx.prisma.essay.findUnique({
+        where: { id: input.essayId },
+        select: {
+          qualityScore: true,
+          student: {
+            select: {
+              userId: true,
+              profile: {
+                select: { strengthScore: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!essay) {
+        throw new Error("Essay not found");
+      }
+
+      if (essay.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      if (!essay.qualityScore) {
+        throw new Error(
+          "Essay must be assessed before calculating success probability"
+        );
+      }
+
+      const { calculateSuccessProbability } = await import(
+        "../services/essayQualityAssessor"
+      );
+
+      const profileStrength =
+        input.profileStrength || essay.student.profile?.strengthScore || 50;
+
+      return calculateSuccessProbability(
+        essay.qualityScore,
+        profileStrength,
+        input.matchScore || 50,
+        input.competitionLevel
+      );
+    }),
+
+  /**
+   * Story 4.9: Get Morgan's personalized feedback
+   */
+  getMorganFeedback: protectedProcedure
+    .input(
+      z.object({
+        essayId: z.string().cuid(),
+        isFirstDraft: z.boolean().default(false),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const essay = await ctx.prisma.essay.findUnique({
+        where: { id: input.essayId },
+        select: {
+          qualityAssessment: true,
+          student: {
+            select: { userId: true },
+          },
+        },
+      });
+
+      if (!essay) {
+        throw new Error("Essay not found");
+      }
+
+      if (essay.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      if (!essay.qualityAssessment) {
+        throw new Error("Essay must be assessed first");
+      }
+
+      const { generateMorganFeedback } = await import(
+        "../services/essayQualityAssessor"
+      );
+
+      const assessment = essay.qualityAssessment as any;
+      return generateMorganFeedback(assessment, input.isFirstDraft);
+    }),
 });
