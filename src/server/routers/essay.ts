@@ -477,4 +477,261 @@ export const essayRouter = router({
 
       return { success: true };
     }),
+
+  /**
+   * Generate discovery ideas (Story 4.7 - Discovery Phase)
+   */
+  generateDiscoveryIdeas: protectedProcedure
+    .input(
+      z.object({
+        essayId: z.string(),
+        prompt: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { essayId, prompt } = input;
+
+      // Get essay and verify ownership
+      const essay = await ctx.prisma.essay.findUnique({
+        where: { id: essayId },
+        include: {
+          student: {
+            select: {
+              id: true,
+              userId: true,
+              profile: true,
+            },
+          },
+        },
+      });
+
+      if (!essay) {
+        throw new Error("Essay not found");
+      }
+
+      if (essay.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      // Import AI service
+      const { generateDiscoveryIdeas } = await import("../services/aiEssayAssistant");
+
+      const ideas = await generateDiscoveryIdeas(
+        prompt,
+        essay.student.profile || {},
+        essay.student.id
+      );
+
+      return ideas;
+    }),
+
+  /**
+   * Get contextual feedback on paragraph (Story 4.7 - Drafting Phase)
+   */
+  getContextualFeedback: protectedProcedure
+    .input(
+      z.object({
+        essayId: z.string(),
+        paragraphText: z.string().min(10),
+        prompt: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify ownership
+      const essay = await ctx.prisma.essay.findUnique({
+        where: { id: input.essayId },
+        select: {
+          student: {
+            select: {
+              id: true,
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!essay) {
+        throw new Error("Essay not found");
+      }
+
+      if (essay.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      const { getContextualFeedback } = await import("../services/aiEssayAssistant");
+
+      const suggestions = await getContextualFeedback(
+        input.paragraphText,
+        input.prompt,
+        essay.student.id
+      );
+
+      return suggestions;
+    }),
+
+  /**
+   * Analyze essay for revision (Story 4.7 - Revision Phase)
+   */
+  analyzeForRevision: protectedProcedure
+    .input(
+      z.object({
+        essayId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      // Get essay and verify ownership
+      const essay = await ctx.prisma.essay.findUnique({
+        where: { id: input.essayId },
+        select: {
+          content: true,
+          prompt: true,
+          student: {
+            select: {
+              id: true,
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!essay) {
+        throw new Error("Essay not found");
+      }
+
+      if (essay.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      const { analyzeForRevision } = await import("../services/aiEssayAssistant");
+
+      const feedback = await analyzeForRevision(
+        essay.content,
+        essay.prompt,
+        essay.student.id
+      );
+
+      return feedback;
+    }),
+
+  /**
+   * Check grammar and style (Story 4.7 - Polish Phase)
+   */
+  checkGrammarAndStyle: protectedProcedure
+    .input(
+      z.object({
+        essayId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      // Get essay and verify ownership
+      const essay = await ctx.prisma.essay.findUnique({
+        where: { id: input.essayId },
+        select: {
+          content: true,
+          student: {
+            select: {
+              id: true,
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!essay) {
+        throw new Error("Essay not found");
+      }
+
+      if (essay.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      const { checkGrammarAndStyle } = await import("../services/aiEssayAssistant");
+
+      const analysis = await checkGrammarAndStyle(essay.content, essay.student.id);
+
+      return analysis;
+    }),
+
+  /**
+   * Validate authenticity (Story 4.7 - Finalization Phase)
+   */
+  validateAuthenticity: protectedProcedure
+    .input(
+      z.object({
+        essayId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      // Get essay and verify ownership
+      const essay = await ctx.prisma.essay.findUnique({
+        where: { id: input.essayId },
+        select: {
+          content: true,
+          student: {
+            select: {
+              id: true,
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!essay) {
+        throw new Error("Essay not found");
+      }
+
+      if (essay.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      const { validateAuthenticity } = await import("../services/aiEssayAssistant");
+
+      const score = await validateAuthenticity(essay.content, essay.student.id);
+
+      return score;
+    }),
+
+  /**
+   * Generate sentence starters for writer's block (Story 4.7 - Drafting Phase)
+   */
+  generateSentenceStarters: protectedProcedure
+    .input(
+      z.object({
+        essayId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Get essay and verify ownership
+      const essay = await ctx.prisma.essay.findUnique({
+        where: { id: input.essayId },
+        select: {
+          content: true,
+          prompt: true,
+          student: {
+            select: {
+              id: true,
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!essay) {
+        throw new Error("Essay not found");
+      }
+
+      if (essay.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      const { generateSentenceStarters } = await import("../services/aiEssayAssistant");
+
+      const help = await generateSentenceStarters(
+        essay.content,
+        essay.prompt,
+        essay.student.id
+      );
+
+      return help;
+    }),
 });
