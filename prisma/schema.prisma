@@ -566,9 +566,12 @@ model Essay {
   previousVersion   Essay?  @relation("EssayVersions", fields: [previousVersionId], references: [id], onDelete: SetNull)
   nextVersions      Essay[] @relation("EssayVersions")
 
-  // Reusability
+  // Reusability (Story 4.8)
   themes             String[] // Tags for matching to prompts
-  adaptabilityScores Json?
+  adaptabilityScores Json?    // Cache: { promptHash: { score, confidence, matchingThemes } }
+  clonedFrom         String?  // Reference to original essay if this is a clone
+  originalEssay      Essay?   @relation("EssayClones", fields: [clonedFrom], references: [id], onDelete: SetNull)
+  clones             Essay[]  @relation("EssayClones")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -577,6 +580,9 @@ model Essay {
   @@index([applicationId])
   @@index([phase])
   @@index([promptHash])
+  @@index([themes])
+  @@index([isComplete])
+  @@index([clonedFrom])
 }
 
 model Recommendation {
