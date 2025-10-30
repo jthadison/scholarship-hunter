@@ -9,6 +9,7 @@
 
 'use client'
 
+import Head from 'next/head'
 import { useParams, useRouter } from 'next/navigation'
 import { trpc } from '@/shared/lib/trpc'
 import { Button } from '@/components/ui/button'
@@ -62,9 +63,13 @@ export default function EssayEditorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="border-b bg-white">
+    <>
+      <Head>
+        <meta name="robots" content="noindex, nofollow" />
+      </Head>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="border-b bg-white">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -129,10 +134,13 @@ export default function EssayEditorPage() {
                 <div className="space-y-4">
                   <div className="rounded-lg border bg-gray-50 p-6">
                     <h3 className="font-semibold text-gray-900 mb-2">Essay Content</h3>
-                    <div
-                      className="prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: essay.content || '<p class="text-gray-500">No content yet. Start writing your essay...</p>' }}
-                    />
+                    <div className="prose prose-sm max-w-none whitespace-pre-wrap">
+                      {essay.content ? (
+                        <p className="text-gray-900">{essay.content}</p>
+                      ) : (
+                        <p className="text-gray-500">No content yet. Start writing your essay...</p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between text-sm text-gray-600 bg-blue-50 p-4 rounded-lg">
@@ -164,6 +172,7 @@ export default function EssayEditorPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+      </div>
+    </>
   )
 }
