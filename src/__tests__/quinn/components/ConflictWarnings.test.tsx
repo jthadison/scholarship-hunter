@@ -91,15 +91,15 @@ describe('ConflictWarnings Component', () => {
     const multipleWeeks = [
       ...mockConflictedWeeks,
       {
-        ...mockConflictedWeeks[0],
+        ...mockConflictedWeeks[0]!,
         weekStart: new Date('2025-11-24'),
+        weekEnd: new Date('2025-11-30'),
         weekNumber: 48,
       },
     ]
 
     render(
       <ConflictWarnings
-    // @ts-expect-error - Test data type mismatch with ConflictedWeek[]
         hasConflicts={true}
         conflictedWeeks={multipleWeeks}
         totalConflictedApplications={5}

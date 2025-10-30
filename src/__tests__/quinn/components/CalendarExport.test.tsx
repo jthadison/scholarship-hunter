@@ -128,18 +128,17 @@ describe('CalendarExport Component', () => {
     const multipleApps = [
       ...mockApplications,
       {
-        ...mockApplications[0],
+        ...mockApplications[0]!,
         applicationId: 'app-2',
         scholarshipName: 'Tech Leaders',
-    // @ts-expect-error - Test data type mismatch, needs proper TimelineMilestone[] structure
+        awardAmount: 2000,
         timeline: {
-          ...mockApplications[0].timeline,
+          ...mockApplications[0]!.timeline,
           estimatedHours: 8,
         },
       },
     ]
 
-      // @ts-expect-error - Test data type mismatch with TimelineMilestone[]
     render(<CalendarExport applications={multipleApps} />)
 
     expect(screen.getByText(/events/)).toBeInTheDocument()

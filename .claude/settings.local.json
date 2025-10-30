@@ -82,7 +82,8 @@
       "Bash(pnpm exec playwright show-report:*)",
       "Bash(git grep:*)",
       "Bash(pnpm tsc:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []
