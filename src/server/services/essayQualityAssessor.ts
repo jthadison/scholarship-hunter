@@ -14,9 +14,19 @@ import OpenAI from 'openai';
 import { analyzeGrammarAndStyle, type TechnicalQualityReport } from './grammarChecker';
 import { calculateReadabilityMetrics, type ReadabilityMetrics } from './readabilityCalculator';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization to avoid build-time errors
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openaiClient = new OpenAI({ apiKey });
+  }
+  return openaiClient;
+}
 
 // Type definitions
 export interface DimensionScore {
@@ -144,6 +154,7 @@ Respond ONLY with valid JSON (no markdown, no extra text):
 `;
 
   try {
+    const openai = getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [

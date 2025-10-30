@@ -116,6 +116,7 @@ export function SuccessIndicator({
               value={probability}
               className="h-3"
               indicatorClassName={colorScheme.progressColor}
+              aria-label={`Success probability: ${probability} percent`}
             />
           </div>
         </div>

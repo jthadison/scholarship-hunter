@@ -125,7 +125,12 @@ export function DimensionalBreakdown({ dimensions }: DimensionalBreakdownProps) 
 
               {/* Progress Bar */}
               <div className="relative">
-                <Progress value={dimension.score} className="h-2" indicatorClassName={colors.bg} />
+                <Progress
+                  value={dimension.score}
+                  className="h-2"
+                  indicatorClassName={colors.bg}
+                  aria-label={`${label} score: ${dimension.score} out of 100`}
+                />
               </div>
 
               {/* Explanation */}
