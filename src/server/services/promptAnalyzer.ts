@@ -9,9 +9,13 @@ import { createHash } from "crypto";
 import OpenAI from "openai";
 import type { PromptAnalysis } from "../../types/essay";
 
-// Initialize OpenAI client
+// Initialize OpenAI client with validation
+if (!process.env.OPENAI_API_KEY) {
+  console.warn('⚠️  OPENAI_API_KEY not configured - prompt analysis will use fallback mode');
+}
+
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || 'sk-fallback',
 });
 
 /**
@@ -23,6 +27,13 @@ export function hashPrompt(text: string): string {
 }
 
 /**
+ * Extended PromptAnalysis with analysis source indicator
+ */
+export interface PromptAnalysisWithMeta extends PromptAnalysis {
+  analysisSource: 'ai' | 'fallback';
+}
+
+/**
  * Analyze an essay prompt using AI to identify themes, structure, and strategic approaches
  *
  * @param promptText - The scholarship essay prompt to analyze
@@ -30,7 +41,13 @@ export function hashPrompt(text: string): string {
  */
 export async function analyzePrompt(
   promptText: string
-): Promise<PromptAnalysis> {
+): Promise<PromptAnalysisWithMeta> {
+  // Check if API key is configured
+  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'sk-fallback') {
+    console.warn('OPENAI_API_KEY not configured - using fallback analysis');
+    return createFallbackAnalysis(promptText);
+  }
+
   const systemPrompt = `You are Morgan, an expert scholarship essay strategist. Analyze essay prompts to help students understand what scholarships are looking for and how to craft winning responses.
 
 Your analysis should be:
@@ -43,7 +60,7 @@ Your analysis should be:
 
 "${promptText}"
 
-Provide a comprehensive analysis in JSON format with the following structure:
+Provide a comprehensive analysis in JSON format:
 
 {
   "themes": [
@@ -81,18 +98,6 @@ Provide a comprehensive analysis in JSON format with the following structure:
         "content": "Describe the obstacle or situation",
         "wordCount": 200,
         "guidance": "Be specific about what you faced"
-      },
-      {
-        "section": "Growth",
-        "content": "How you changed or what you learned",
-        "wordCount": 200,
-        "guidance": "Show reflection and personal development"
-      },
-      {
-        "section": "Future Impact",
-        "content": "Connect to your goals and aspirations",
-        "wordCount": 100,
-        "guidance": "Link past experience to future plans"
       }
     ],
     "flow": "Personal story → Challenge → Growth → Future impact"
@@ -134,6 +139,8 @@ IMPORTANT:
 - Focus on what makes essays competitive and memorable, not just what's required`;
 
   try {
+    const startTime = Date.now();
+
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -142,27 +149,42 @@ IMPORTANT:
       ],
       temperature: 0.4, // Balanced creativity and consistency
       response_format: { type: "json_object" }, // Ensure JSON response
-    });
+    })
 
-    const content = response.choices[0]?.message?.content;
+    const duration = Date.now() - startTime;
+
+    const content = response.choices[0]?.message?.content
     if (!content) {
-      throw new Error("No response from OpenAI");
+      throw new Error("No response from OpenAI")
     }
 
     const analysis = JSON.parse(content) as Omit<
       PromptAnalysis,
       "analyzedAt" | "promptHash"
-    >;
+    >
+
+    // Log performance metrics (without sensitive data)
+    console.log('OpenAI prompt analysis completed', {
+      duration: `${duration}ms`,
+      promptLength: promptText.length,
+      themesFound: analysis.themes?.length || 0,
+    });
 
     // Add metadata
     return {
       ...analysis,
       analyzedAt: new Date(),
       promptHash: hashPrompt(promptText),
-    };
+      analysisSource: 'ai',
+    }
   } catch (error) {
-    // Log error for debugging but provide graceful fallback
-    console.error("OpenAI prompt analysis failed:", error);
+    // Sanitize error logs - don't expose prompt content or API keys
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error("OpenAI prompt analysis failed:", {
+      error: errorMessage,
+      promptLength: promptText.length,
+      // Don't log the actual prompt or API responses
+    });
 
     // Return fallback generic analysis
     return createFallbackAnalysis(promptText);
@@ -173,7 +195,7 @@ IMPORTANT:
  * Create a fallback generic analysis when OpenAI fails
  * Provides basic structure but encourages manual review
  */
-function createFallbackAnalysis(promptText: string): PromptAnalysis {
+function createFallbackAnalysis(promptText: string): PromptAnalysisWithMeta {
   return {
     themes: [
       {
@@ -258,8 +280,9 @@ function createFallbackAnalysis(promptText: string): PromptAnalysis {
       extracted: false,
     },
     competitiveInsights:
-      "Note: AI analysis was unavailable. Please review this prompt carefully and consider your unique perspective.",
+      "⚠️ AI analysis was unavailable. Please review this prompt carefully and consider your unique perspective. For best results, configure OPENAI_API_KEY.",
     analyzedAt: new Date(),
     promptHash: hashPrompt(promptText),
+    analysisSource: 'fallback',
   };
 }
