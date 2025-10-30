@@ -2,6 +2,7 @@
  * Essay Router
  * Story 4.6 - Essay Prompt Analysis
  * Story 4.7 - Essay Editor with 6-Phase Guidance
+ * Story 4.8 - Essay Library & Adaptability Scoring
  */
 
 import { z } from "zod";
@@ -9,6 +10,11 @@ import { router, protectedProcedure } from "../trpc";
 import { analyzePrompt, hashPrompt, type PromptAnalysisWithMeta } from "../services/promptAnalyzer";
 import type { PromptAnalysis } from "../../types/essay";
 import type { Prisma } from "@prisma/client";
+import { extractThemes } from "../services/essayThemeExtractor";
+import {
+  calculateAdaptabilityBatch,
+  generateAdaptationGuidance,
+} from "../services/essayAdaptability";
 
 export const essayRouter = router({
   /**
@@ -733,5 +739,483 @@ export const essayRouter = router({
       );
 
       return help;
+    }),
+
+  // ==================================================================================
+  // STORY 4.8: Essay Library & Adaptability Scoring
+  // ==================================================================================
+
+  /**
+   * Get essay library (all completed essays) - Story 4.8
+   */
+  getLibrary: protectedProcedure
+    .input(
+      z.object({
+        studentId: z.string().cuid(),
+        sortBy: z.enum(['recent', 'quality', 'adaptable', 'alphabetical']).optional().default('recent'),
+        filterThemes: z.array(z.string()).optional(),
+        wordCountMin: z.number().optional(),
+        wordCountMax: z.number().optional(),
+        searchTerm: z.string().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { studentId, sortBy, filterThemes, wordCountMin, wordCountMax, searchTerm } = input;
+
+      // Verify user owns this student profile
+      const student = await ctx.prisma.student.findUnique({
+        where: { id: studentId },
+      });
+
+      if (!student || student.userId !== ctx.userId) {
+        throw new Error("Unauthorized: You do not own this student profile");
+      }
+
+      // Build where clause
+      const where: Prisma.EssayWhereInput = {
+        studentId,
+        isComplete: true, // Only completed essays in library
+        ...(filterThemes && filterThemes.length > 0 && {
+          themes: {
+            hasSome: filterThemes,
+          },
+        }),
+        ...(wordCountMin !== undefined && {
+          wordCount: { gte: wordCountMin },
+        }),
+        ...(wordCountMax !== undefined && {
+          wordCount: { lte: wordCountMax },
+        }),
+        ...(searchTerm && {
+          OR: [
+            { title: { contains: searchTerm, mode: 'insensitive' as const } },
+            { content: { contains: searchTerm, mode: 'insensitive' as const } },
+          ],
+        }),
+      };
+
+      // Build orderBy
+      let orderBy: Prisma.EssayOrderByWithRelationInput | Prisma.EssayOrderByWithRelationInput[] = { updatedAt: 'desc' };
+      if (sortBy === 'quality') {
+        orderBy = { qualityScore: 'desc' };
+      } else if (sortBy === 'alphabetical') {
+        orderBy = { title: 'asc' };
+      }
+
+      const essays = await ctx.prisma.essay.findMany({
+        where,
+        include: {
+          application: {
+            select: {
+              id: true,
+              scholarship: {
+                select: {
+                  id: true,
+                  name: true,
+                  deadline: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy,
+      });
+
+      return essays;
+    }),
+
+  /**
+   * Search essay library - Story 4.8
+   */
+  searchLibrary: protectedProcedure
+    .input(
+      z.object({
+        studentId: z.string().cuid(),
+        searchTerm: z.string().min(1),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { studentId, searchTerm } = input;
+
+      // Verify ownership
+      const student = await ctx.prisma.student.findUnique({
+        where: { id: studentId },
+      });
+
+      if (!student || student.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      const essays = await ctx.prisma.essay.findMany({
+        where: {
+          studentId,
+          isComplete: true,
+          OR: [
+            { title: { contains: searchTerm, mode: 'insensitive' as const } },
+            { content: { contains: searchTerm, mode: 'insensitive' as const } },
+            { themes: { hasSome: [searchTerm.toLowerCase()] } },
+          ],
+        },
+        include: {
+          application: {
+            select: {
+              scholarship: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 50,
+      });
+
+      return essays;
+    }),
+
+  /**
+   * Update essay themes - Story 4.8
+   */
+  updateThemes: protectedProcedure
+    .input(
+      z.object({
+        essayId: z.string(),
+        themes: z.array(z.string()).max(8, "Maximum 8 themes allowed"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify ownership
+      const essay = await ctx.prisma.essay.findUnique({
+        where: { id: input.essayId },
+        select: {
+          student: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!essay) {
+        throw new Error("Essay not found");
+      }
+
+      if (essay.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      return ctx.prisma.essay.update({
+        where: { id: input.essayId },
+        data: {
+          themes: input.themes,
+        },
+      });
+    }),
+
+  /**
+   * Extract themes from essay content using AI - Story 4.8
+   */
+  extractThemes: protectedProcedure
+    .input(
+      z.object({
+        essayId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Get essay and verify ownership
+      const essay = await ctx.prisma.essay.findUnique({
+        where: { id: input.essayId },
+        select: {
+          content: true,
+          student: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!essay) {
+        throw new Error("Essay not found");
+      }
+
+      if (essay.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      // Extract themes using AI
+      const themes = await extractThemes(essay.content);
+
+      // Update essay with extracted themes
+      await ctx.prisma.essay.update({
+        where: { id: input.essayId },
+        data: {
+          themes,
+        },
+      });
+
+      return { themes };
+    }),
+
+  /**
+   * Calculate adaptability scores for library essays against new prompt - Story 4.8
+   */
+  getAdaptabilityScores: protectedProcedure
+    .input(
+      z.object({
+        studentId: z.string().cuid(),
+        newPrompt: z.string().min(10),
+        newPromptThemes: z.array(z.string()),
+        newPromptWordLimit: z.number(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { studentId, newPrompt, newPromptThemes, newPromptWordLimit } = input;
+
+      // Verify ownership
+      const student = await ctx.prisma.student.findUnique({
+        where: { id: studentId },
+      });
+
+      if (!student || student.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      // Get all completed essays from library
+      const libraryEssays = await ctx.prisma.essay.findMany({
+        where: {
+          studentId,
+          isComplete: true,
+        },
+        select: {
+          id: true,
+          content: true,
+          prompt: true,
+          wordCount: true,
+          themes: true,
+          outline: true,
+        },
+      });
+
+      if (libraryEssays.length === 0) {
+        return [];
+      }
+
+      // Calculate adaptability scores in parallel
+      const scores = await calculateAdaptabilityBatch(
+        libraryEssays.map(e => ({
+          id: e.id,
+          content: e.content,
+          prompt: e.prompt,
+          wordCount: e.wordCount,
+          themes: e.themes,
+          outline: e.outline,
+        })),
+        newPrompt,
+        newPromptThemes,
+        newPromptWordLimit
+      );
+
+      return scores;
+    }),
+
+  /**
+   * Get adaptation guidance for specific essay - Story 4.8
+   */
+  getAdaptationGuidance: protectedProcedure
+    .input(
+      z.object({
+        essayId: z.string(),
+        newPrompt: z.string().min(10),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      // Get essay and verify ownership
+      const essay = await ctx.prisma.essay.findUnique({
+        where: { id: input.essayId },
+        select: {
+          content: true,
+          prompt: true,
+          wordCount: true,
+          themes: true,
+          outline: true,
+          student: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!essay) {
+        throw new Error("Essay not found");
+      }
+
+      if (essay.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      // Generate adaptation guidance
+      const guidance = await generateAdaptationGuidance(
+        {
+          id: input.essayId,
+          content: essay.content,
+          prompt: essay.prompt,
+          wordCount: essay.wordCount,
+          themes: essay.themes,
+          outline: essay.outline,
+        },
+        input.newPrompt
+      );
+
+      return guidance;
+    }),
+
+  /**
+   * Clone an essay for adaptation - Story 4.8
+   */
+  cloneEssay: protectedProcedure
+    .input(
+      z.object({
+        essayId: z.string(),
+        newApplicationId: z.string().optional(),
+        newPrompt: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { essayId, newApplicationId, newPrompt } = input;
+
+      // Get original essay and verify ownership
+      const originalEssay = await ctx.prisma.essay.findUnique({
+        where: { id: essayId },
+        include: {
+          student: {
+            select: {
+              id: true,
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!originalEssay) {
+        throw new Error("Essay not found");
+      }
+
+      if (originalEssay.student.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      // Create cloned essay
+      const clonedEssay = await ctx.prisma.essay.create({
+        data: {
+          studentId: originalEssay.studentId,
+          applicationId: newApplicationId,
+          title: `${originalEssay.title} (Adapted)`,
+          prompt: newPrompt || originalEssay.prompt,
+          content: originalEssay.content, // Copy content
+          wordCount: originalEssay.wordCount,
+          themes: originalEssay.themes,
+          phase: "REVISION", // Start in REVISION phase (skip Discovery/Structure/Drafting)
+          aiGenerated: false,
+          personalized: false,
+          clonedFrom: essayId, // Link to original
+          isComplete: false, // Not complete until student finalizes
+        },
+      });
+
+      return clonedEssay;
+    }),
+
+  /**
+   * Get library statistics - Story 4.8
+   */
+  getLibraryStats: protectedProcedure
+    .input(
+      z.object({
+        studentId: z.string().cuid(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      // Verify ownership
+      const student = await ctx.prisma.student.findUnique({
+        where: { id: input.studentId },
+      });
+
+      if (!student || student.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      // Get all completed essays
+      const essays = await ctx.prisma.essay.findMany({
+        where: {
+          studentId: input.studentId,
+          isComplete: true,
+        },
+        select: {
+          id: true,
+          wordCount: true,
+          themes: true,
+          qualityScore: true,
+          clonedFrom: true,
+          createdAt: true,
+        },
+      });
+
+      // Calculate statistics
+      const totalEssays = essays.length;
+      const totalWords = essays.reduce((sum, essay) => sum + essay.wordCount, 0);
+
+      // Most common themes
+      const themeCount: Record<string, number> = {};
+      essays.forEach(essay => {
+        essay.themes.forEach(theme => {
+          themeCount[theme] = (themeCount[theme] || 0) + 1;
+        });
+      });
+      const topThemes = Object.entries(themeCount)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([theme, count]) => ({ theme, count }));
+
+      // Average quality score
+      const scoresWithValues = essays.filter(e => e.qualityScore !== null);
+      const avgQualityScore = scoresWithValues.length > 0
+        ? scoresWithValues.reduce((sum, essay) => sum + (essay.qualityScore || 0), 0) / scoresWithValues.length
+        : null;
+
+      // Reuse rate
+      const clonedEssaysCount = essays.filter(e => e.clonedFrom !== null).length;
+      const reuseRate = totalEssays > 0 ? (clonedEssaysCount / totalEssays) * 100 : 0;
+
+      // Time saved estimate (assume 45 min per original essay, 15 min per adapted)
+      const timeSavedMinutes = clonedEssaysCount * (45 - 15);
+      const timeSavedHours = Math.round(timeSavedMinutes / 60);
+
+      // Essays per month (last 12 months)
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+      const essaysOverTime = essays.filter(e => e.createdAt >= oneYearAgo);
+      const monthlyData: Record<string, number> = {};
+      essaysOverTime.forEach(essay => {
+        const monthKey = essay.createdAt.toISOString().substring(0, 7); // YYYY-MM
+        monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
+      });
+
+      return {
+        totalEssays,
+        totalWords,
+        topThemes,
+        avgQualityScore,
+        reuseRate,
+        timeSavedHours,
+        essaysPerMonth: Object.entries(monthlyData).map(([month, count]) => ({
+          month,
+          count,
+        })),
+        themeCount,
+      };
     }),
 });
