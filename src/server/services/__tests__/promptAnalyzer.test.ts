@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { hashPrompt, analyzePrompt, type PromptAnalysisWithMeta } from '../promptAnalyzer'
+import { hashPrompt, analyzePrompt } from '../promptAnalyzer'
 
 // Mock OpenAI module
 vi.mock('openai', () => {

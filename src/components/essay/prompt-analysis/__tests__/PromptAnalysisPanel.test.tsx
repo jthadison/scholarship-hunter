@@ -157,9 +157,7 @@ describe('PromptAnalysisPanel Component', () => {
   })
 
   it('should display Morgan branding with orange theme', () => {
-    const { container } = render(
-      <PromptAnalysisPanel analysis={mockAnalysis} promptText={mockPromptText} />
-    )
+    render(<PromptAnalysisPanel analysis={mockAnalysis} promptText={mockPromptText} />)
 
     // Check for orange-themed elements (Morgan's brand color)
     expect(screen.getByText(/Prompt Analysis by Morgan/i)).toBeInTheDocument()
