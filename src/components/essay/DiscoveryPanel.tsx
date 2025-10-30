@@ -30,7 +30,7 @@ interface Note {
 }
 
 export function DiscoveryPanel({
-  essayId,
+  essayId: _essayId,
   prompt,
   discoveryNotes,
   onSaveNotes,

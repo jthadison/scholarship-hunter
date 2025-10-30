@@ -31,7 +31,7 @@ interface FeedbackAction {
 }
 
 export function RevisionPanel({
-  essayId,
+  essayId: _essayId,
   currentContent,
   revisionFeedback: savedFeedback,
   onAnalyze,
@@ -190,7 +190,7 @@ export function RevisionPanel({
 
       {/* View Mode Tabs */}
       {feedback.length > 0 && (
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)}>
+        <Tabs value={viewMode} onValueChange={(v: string) => setViewMode(v as typeof viewMode)}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="feedback">Feedback View</TabsTrigger>
             <TabsTrigger value="side-by-side">

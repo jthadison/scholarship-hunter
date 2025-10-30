@@ -34,7 +34,7 @@ interface VersionHistoryProps {
 }
 
 export function VersionHistory({
-  essayId,
+  essayId: _essayId,
   currentContent,
   currentWordCount,
   versions,
@@ -137,7 +137,7 @@ export function VersionHistory({
 
       {/* View Mode Tabs */}
       {versions.length > 0 && (
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)}>
+        <Tabs value={viewMode} onValueChange={(v: string) => setViewMode(v as typeof viewMode)}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="list">
               <History className="h-4 w-4 mr-1" />
@@ -166,7 +166,7 @@ export function VersionHistory({
             </div>
 
             {/* Previous Versions */}
-            {versions.map((version, index) => {
+            {versions.map((version) => {
               const diff = getDiff(version.content, currentContent);
               const wordDiff = currentWordCount - version.wordCount;
 

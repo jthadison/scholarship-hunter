@@ -94,6 +94,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
+    "@types/lodash.debounce": "^4.0.9",
     "@types/node": "^22.0.0",
     "@types/papaparse": "^5.3.16",
     "@types/react": "^18.3.0",

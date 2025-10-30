@@ -38,7 +38,7 @@ interface FinalizationPanelProps {
 }
 
 export function FinalizationPanel({
-  essayId,
+  essayId: _essayId,
   title,
   currentContent,
   wordCount,

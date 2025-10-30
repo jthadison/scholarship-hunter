@@ -19,7 +19,7 @@ export function WordCountTracker({
   current,
   targetMin,
   targetMax,
-  showCharCount = false,
+  showCharCount: _showCharCount = false,
 }: WordCountTrackerProps) {
   // Determine status and color
   const getStatus = () => {

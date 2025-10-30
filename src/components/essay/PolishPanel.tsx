@@ -22,7 +22,7 @@ interface PolishPanelProps {
 }
 
 export function PolishPanel({
-  essayId,
+  essayId: _essayId,
   currentContent,
   onAnalyze,
 }: PolishPanelProps) {

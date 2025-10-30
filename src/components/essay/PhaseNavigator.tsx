@@ -8,7 +8,6 @@
  * phase descriptions, and linear progression enforcement.
  */
 
-import { useState } from "react";
 import {
   Check,
   ChevronRight,

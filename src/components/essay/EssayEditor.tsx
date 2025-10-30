@@ -29,7 +29,7 @@ interface EssayEditorProps {
 }
 
 export function EssayEditor({
-  essayId,
+  essayId: _essayId,
   content,
   wordCount,
   targetMin = 500,
@@ -37,7 +37,7 @@ export function EssayEditor({
   onUpdate,
   onAutoSave,
   readOnly = false,
-  placeholder = "Start writing your essay here...",
+  placeholder: _placeholder = "Start writing your essay here...",
 }: EssayEditorProps) {
   // Debounced auto-save - triggers 10 seconds after user stops typing
   const debouncedAutoSave = useCallback(

@@ -143,7 +143,7 @@ Respond in JSON format:
   }
 }
 
-function createFallbackDiscoveryIdeas(prompt: string): DiscoveryResponse {
+function createFallbackDiscoveryIdeas(_prompt: string): DiscoveryResponse {
   return {
     ideas: [
       {
@@ -278,11 +278,6 @@ export async function analyzeForRevision(
   if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === "sk-fallback") {
     return createFallbackRevisionAnalysis();
   }
-
-  // Split essay into paragraphs
-  const paragraphs = essayContent
-    .split(/\n\n+/)
-    .filter((p) => p.trim().length > 0);
 
   const systemPrompt = `You are Morgan, reviewing an essay draft paragraph-by-paragraph. Provide balanced feedback highlighting both strengths and areas for improvement.`;
 

@@ -22,9 +22,9 @@ interface DraftingAssistantProps {
 }
 
 export function DraftingAssistant({
-  essayId,
+  essayId: _essayId,
   currentContent,
-  prompt,
+  prompt: _prompt,
   onGetFeedback,
   onGetSentenceStarters,
 }: DraftingAssistantProps) {

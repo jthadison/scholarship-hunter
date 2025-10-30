@@ -34,7 +34,7 @@ interface StructurePanelProps {
 }
 
 export function StructurePanel({
-  essayId,
+  essayId: _essayId,
   promptAnalysis,
   outline: savedOutline,
   targetWordCount = 650,
@@ -139,10 +139,11 @@ export function StructurePanel({
 
     const newIndex = direction === "up" ? index - 1 : index + 1;
     const reordered = [...sections];
-    [reordered[index], reordered[newIndex]] = [
-      reordered[newIndex],
-      reordered[index],
-    ];
+    const temp = reordered[index];
+    if (temp && reordered[newIndex]) {
+      reordered[index] = reordered[newIndex];
+      reordered[newIndex] = temp;
+    }
 
     // Update order numbers
     const updated = reordered.map((s, i) => ({ ...s, order: i }));
