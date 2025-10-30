@@ -128,9 +128,10 @@ describe('CalendarExport Component', () => {
     const multipleApps = [
       ...mockApplications,
       {
-        ...mockApplications[0],
+        ...mockApplications[0]!,
         applicationId: 'app-2',
         scholarshipName: 'Tech Leaders',
+        awardAmount: 2000,
         timeline: {
           ...mockApplications[0]!.timeline,
           estimatedHours: 8,
