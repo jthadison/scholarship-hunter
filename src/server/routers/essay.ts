@@ -6,8 +6,9 @@
 
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
-import { analyzePrompt, hashPrompt } from "../services/promptAnalyzer";
+import { analyzePrompt, hashPrompt, type PromptAnalysisWithMeta } from "../services/promptAnalyzer";
 import type { PromptAnalysis } from "../../types/essay";
+import type { Prisma } from "@prisma/client";
 
 export const essayRouter = router({
   /**
@@ -36,11 +37,11 @@ export const essayRouter = router({
         select: { promptAnalysis: true },
       });
 
-      let analysis: PromptAnalysis;
+      let analysis: PromptAnalysisWithMeta;
 
       if (cachedEssay?.promptAnalysis) {
         // Return cached analysis
-        analysis = cachedEssay.promptAnalysis as unknown as PromptAnalysis;
+        analysis = cachedEssay.promptAnalysis as unknown as PromptAnalysisWithMeta;
       } else {
         // No cache hit - analyze the prompt
         analysis = await analyzePrompt(promptText);
@@ -51,7 +52,7 @@ export const essayRouter = router({
         await ctx.prisma.essay.update({
           where: { id: essayId },
           data: {
-            promptAnalysis: analysis as any, // Prisma Json type
+            promptAnalysis: analysis as unknown as Prisma.InputJsonValue,
             promptHash,
           },
         });
@@ -132,14 +133,14 @@ export const essayRouter = router({
         });
 
         const analysis = cachedEssay?.promptAnalysis
-          ? (cachedEssay.promptAnalysis as unknown as PromptAnalysis)
+          ? (cachedEssay.promptAnalysis as unknown as PromptAnalysisWithMeta)
           : await analyzePrompt(prompt);
 
         // Save analysis
         await ctx.prisma.essay.update({
           where: { id: essay.id },
           data: {
-            promptAnalysis: analysis as any,
+            promptAnalysis: analysis as unknown as Prisma.InputJsonValue,
             promptHash,
           },
         });
