@@ -91,8 +91,7 @@ describe('WorkloadVisualization Component', () => {
     render(
       <WorkloadVisualization
         totalHours={6}
-        breakdown={[mockBreakdown[0]]}
-            // @ts-expect-error - Test data type mismatch with ApplicationBreakdown
+        breakdown={[mockBreakdown[0]!]}
         status="LIGHT"
         message="✓ Manageable workload - you have capacity"
       />

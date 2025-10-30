@@ -116,7 +116,7 @@ describe("versionUtils", () => {
         docs.set(`doc${i}`, mockDocument(`doc${i}`, i + 1, prevId));
       }
 
-      vi.mocked(db.document.findUnique).mockImplementation(async ({ where }) => {
+      vi.mocked(db.document.findUnique).mockImplementation(async ({ where }: any) => {
         return docs.get(where.id as string) || null;
       });
 

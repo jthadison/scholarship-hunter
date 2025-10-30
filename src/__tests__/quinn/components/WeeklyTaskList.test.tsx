@@ -129,8 +129,7 @@ describe('WeeklyTaskList Component', () => {
     render(<WeeklyTaskList tasks={mockTasks} onMarkComplete={mockOnMarkComplete} />)
 
     const markCompleteButtons = screen.getAllByText('Mark Complete')
-    fireEvent.click(markCompleteButtons[0])
-            // @ts-expect-error - Testing library type expects non-null element
+    fireEvent.click(markCompleteButtons[0]!)
 
     expect(mockOnMarkComplete).toHaveBeenCalledWith('task-1', 'ESSAY')
   })
@@ -138,13 +137,12 @@ describe('WeeklyTaskList Component', () => {
   it('should not show Mark Complete button for completed tasks', () => {
     const completedTask = [
       {
-        ...mockTasks[0],
+        ...mockTasks[0]!,
         status: 'COMPLETE' as const,
       },
     ]
 
     render(<WeeklyTaskList tasks={completedTask} onMarkComplete={vi.fn()} />)
-        // @ts-expect-error - Test data type mismatch with Task[]
 
     expect(screen.queryByText('Mark Complete')).not.toBeInTheDocument()
   })
@@ -166,13 +164,12 @@ describe('WeeklyTaskList Component', () => {
   it('should use singular "day" for 1 day until due', () => {
     const taskDueTomorrow = [
       {
-        ...mockTasks[0],
+        ...mockTasks[0]!,
         daysUntil: 1,
       },
     ]
 
     render(<WeeklyTaskList tasks={taskDueTomorrow} />)
-        // @ts-expect-error - Test data type mismatch with Task[]
 
     expect(screen.getByText(/Due in 1 day/)).toBeInTheDocument()
   })

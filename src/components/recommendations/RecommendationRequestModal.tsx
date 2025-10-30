@@ -22,7 +22,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-// @ts-expect-error - Dialog component path needs verification
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -116,10 +115,9 @@ export function RecommendationRequestModal({
 
     await createRecommendation.mutateAsync({
       applicationId,
-      // @ts-expect-error - Type narrowing needed for relationship field
       recommenderName: formData.recommenderName.trim(),
       recommenderEmail: formData.recommenderEmail.trim().toLowerCase(),
-      relationship: formData.relationship,
+      relationship: formData.relationship as "Teacher" | "Counselor" | "Coach" | "Employer" | "Mentor" | "Other",
       personalMessage: formData.personalMessage.trim() || undefined,
     })
   }
