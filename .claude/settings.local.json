@@ -85,7 +85,9 @@
       "Bash(git log:*)",
       "Bash(git merge:*)",
       "Bash(pgrep:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(git show:*)",
+      "SlashCommand(/bmad:shm:deadline-coordinator)"
     ],
     "deny": [],
     "ask": []

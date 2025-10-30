@@ -18,11 +18,11 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Calendar, DollarSign, Clock, Building2, AlertTriangle, FileText, Upload, Users } from 'lucide-react'
+import { Calendar, DollarSign, Clock, Building2, AlertTriangle, FileText, Upload, Users, Trophy, XCircle, HelpCircle } from 'lucide-react'
 import { formatDaysUntilDeadline, calculateDaysUntilDeadline } from '@/lib/utils/timeline'
 import { cn } from '@/lib/utils'
 import { isAtRisk, getStatusText, getStatusColor } from '@/lib/utils/application'
-import type { Application, Scholarship } from '@prisma/client'
+import type { Application, Scholarship, Outcome } from '@prisma/client'
 import Link from 'next/link'
 import { forwardRef } from 'react'
 import { useSelectionStore } from '@/stores/useSelectionStore'
@@ -33,6 +33,7 @@ interface ApplicationCardProps {
       Scholarship,
       'name' | 'provider' | 'awardAmount' | 'deadline' | 'category' | 'tags'
     >
+    outcome?: Pick<Outcome, 'id' | 'result' | 'awardAmountReceived'> | null // Story 5.1
   }
   isDraggable?: boolean
   className?: string
@@ -73,7 +74,7 @@ function ProgressIndicator({
 
 export const ApplicationCard = forwardRef<HTMLDivElement, ApplicationCardProps>(
   ({ application, isDraggable = false, className, style, showCheckbox = false }, ref) => {
-    const { scholarship } = application
+    const { scholarship, outcome } = application
     const daysUntilDeadline = calculateDaysUntilDeadline(scholarship.deadline)
     const daysText = formatDaysUntilDeadline(scholarship.deadline)
     const isUrgent = daysUntilDeadline <= 7 && daysUntilDeadline >= 0
@@ -88,6 +89,12 @@ export const ApplicationCard = forwardRef<HTMLDivElement, ApplicationCardProps>(
       e.stopPropagation()
       toggleSelection(application.id)
     }
+
+    // Story 5.1: Outcome-based visual distinction
+    const hasOutcome = !!outcome
+    const isAwarded = outcome?.result === 'AWARDED'
+    const isDenied = outcome?.result === 'DENIED'
+    const isWithdrawn = outcome?.result === 'WITHDRAWN'
 
     return (
       <div className="relative">
@@ -111,8 +118,11 @@ export const ApplicationCard = forwardRef<HTMLDivElement, ApplicationCardProps>(
             ref={ref}
             className={cn(
               'hover:shadow-lg transition-shadow cursor-pointer',
-              atRisk && 'border-red-400 border-2',
+              atRisk && !hasOutcome && 'border-red-400 border-2', // Story 5.1: At-risk only if no outcome
               selected && 'border-blue-500 border-2 bg-blue-50', // Story 3.9: Visual indicator for selection
+              isAwarded && 'border-green-400 border-2 bg-green-50/30', // Story 5.1: Green border for awarded
+              isDenied && 'border-red-300 border bg-red-50/20', // Story 5.1: Red border for denied
+              isWithdrawn && 'border-gray-300 border bg-gray-50/30', // Story 5.1: Gray border for withdrawn
               isDraggable && 'cursor-grab active:cursor-grabbing',
               className
             )}
@@ -120,10 +130,39 @@ export const ApplicationCard = forwardRef<HTMLDivElement, ApplicationCardProps>(
           >
             <CardContent className={cn('p-6', showCheckbox && 'pl-12')}>
             {/* At-Risk Indicator */}
-            {atRisk && (
+            {atRisk && !hasOutcome && (
               <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-md">
                 <AlertTriangle className="h-4 w-4 text-red-600" />
                 <span className="text-xs font-medium text-red-700">At Risk - Needs Attention</span>
+              </div>
+            )}
+
+            {/* Story 5.1: Outcome Badge (displayed prominently if outcome exists) */}
+            {hasOutcome && outcome && (
+              <div className={cn(
+                "flex items-center gap-2 mb-3 px-3 py-2 rounded-md font-medium",
+                isAwarded && "bg-green-100 border border-green-300",
+                isDenied && "bg-red-100 border border-red-300",
+                outcome.result === 'WAITLISTED' && "bg-yellow-100 border border-yellow-300",
+                isWithdrawn && "bg-gray-100 border border-gray-300"
+              )}>
+                {isAwarded && <Trophy className="h-4 w-4 text-green-700" />}
+                {isDenied && <XCircle className="h-4 w-4 text-red-700" />}
+                {outcome.result === 'WAITLISTED' && <HelpCircle className="h-4 w-4 text-yellow-700" />}
+                {isWithdrawn && <AlertTriangle className="h-4 w-4 text-gray-700" />}
+                <span className={cn(
+                  "text-sm",
+                  isAwarded && "text-green-800",
+                  isDenied && "text-red-800",
+                  outcome.result === 'WAITLISTED' && "text-yellow-800",
+                  isWithdrawn && "text-gray-800"
+                )}>
+                  {outcome.result === 'AWARDED' && 'Awarded'}
+                  {outcome.result === 'DENIED' && 'Denied'}
+                  {outcome.result === 'WAITLISTED' && 'Waitlisted'}
+                  {outcome.result === 'WITHDRAWN' && 'Withdrawn'}
+                  {isAwarded && outcome.awardAmountReceived && `: $${outcome.awardAmountReceived.toLocaleString()}`}
+                </span>
               </div>
             )}
 
