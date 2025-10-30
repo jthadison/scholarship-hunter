@@ -84,7 +84,8 @@
       "Bash(pnpm tsc:*)",
       "Bash(git log:*)",
       "Bash(git merge:*)",
-      "Bash(pgrep:*)"
+      "Bash(pgrep:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
