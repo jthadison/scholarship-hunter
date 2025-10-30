@@ -83,7 +83,7 @@ export function EssayPreviewModal({ essayId, isOpen, onClose, onRefetch }: Essay
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="essay-preview-description">
         {isLoading && (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin" />
@@ -120,24 +120,24 @@ export function EssayPreviewModal({ essayId, isOpen, onClose, onRefetch }: Essay
             </DialogHeader>
 
             {/* Essay Content */}
-            <div className="prose prose-sm max-w-none mt-6 p-6 bg-muted/30 rounded-lg">
+            <div className="prose prose-sm max-w-none mt-6 p-6 bg-muted/30 rounded-lg" id="essay-preview-description" role="article">
               <div className="whitespace-pre-wrap">{essay.content}</div>
             </div>
 
             {/* Quick Actions */}
-            <div className="flex flex-wrap gap-2 pt-4 border-t">
-              <Button variant="default" onClick={handleEdit}>
-                <Edit className="h-4 w-4 mr-2" />
+            <div className="flex flex-wrap gap-2 pt-4 border-t" role="group" aria-label="Essay actions">
+              <Button variant="default" onClick={handleEdit} aria-label="Edit essay in editor">
+                <Edit className="h-4 w-4 mr-2" aria-hidden="true" />
                 Edit in Editor
               </Button>
 
-              <Button variant="outline" onClick={handleClone}>
-                <Copy className="h-4 w-4 mr-2" />
+              <Button variant="outline" onClick={handleClone} aria-label="Clone and adapt essay">
+                <Copy className="h-4 w-4 mr-2" aria-hidden="true" />
                 Clone & Adapt
               </Button>
 
-              <Button variant="outline" onClick={handleExportPDF}>
-                <Download className="h-4 w-4 mr-2" />
+              <Button variant="outline" onClick={handleExportPDF} aria-label="Export essay as PDF">
+                <Download className="h-4 w-4 mr-2" aria-hidden="true" />
                 Export as PDF
               </Button>
 
@@ -147,11 +147,12 @@ export function EssayPreviewModal({ essayId, isOpen, onClose, onRefetch }: Essay
                 variant="destructive"
                 onClick={handleDelete}
                 disabled={deleteEssayMutation.isLoading}
+                aria-label="Delete essay"
               >
                 {deleteEssayMutation.isLoading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
                 ) : (
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
                 )}
                 Delete
               </Button>

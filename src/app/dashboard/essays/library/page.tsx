@@ -11,7 +11,7 @@
 
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -30,15 +30,28 @@ import { EssayPreviewModal } from '@/components/essay/library/EssayPreviewModal'
 export default function EssayLibraryPage() {
   const searchParams = useSearchParams()
   const newPromptContext = searchParams?.get('newPromptContext') // For adaptability mode
-  const studentId = 'demo-student-id' // TODO: Get from auth context
+
+  // Get student ID from session
+  const { data: sessionData } = trpc.auth.getSession.useQuery()
+  const studentId = sessionData?.student?.id ?? ''
 
   // State
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<'recent' | 'quality' | 'adaptable' | 'alphabetical'>('recent')
   const [filterThemes, setFilterThemes] = useState<string[]>([])
   const [wordCountRange, setWordCountRange] = useState<[number | undefined, number | undefined]>([undefined, undefined])
   const [showFilters, setShowFilters] = useState(false)
   const [previewEssayId, setPreviewEssayId] = useState<string | null>(null)
+
+  // Debounce search term (300ms delay)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   // Fetch library essays
   const {
@@ -51,12 +64,16 @@ export default function EssayLibraryPage() {
     filterThemes: filterThemes.length > 0 ? filterThemes : undefined,
     wordCountMin: wordCountRange[0],
     wordCountMax: wordCountRange[1],
-    searchTerm: searchTerm || undefined,
+    searchTerm: debouncedSearchTerm || undefined,
+  }, {
+    enabled: !!studentId,
   })
 
   // Fetch library statistics
   const { data: stats, isLoading: loadingStats } = trpc.essay.getLibraryStats.useQuery({
     studentId,
+  }, {
+    enabled: !!studentId,
   })
 
   // Adaptability scores (if in new prompt context)
@@ -68,7 +85,7 @@ export default function EssayLibraryPage() {
       newPromptWordLimit: 750, // TODO: Get from prompt requirements
     },
     {
-      enabled: !!newPromptContext,
+      enabled: !!newPromptContext && !!studentId,
     }
   )
 
@@ -89,7 +106,7 @@ export default function EssayLibraryPage() {
   const hasActiveFilters =
     searchTerm || filterThemes.length > 0 || wordCountRange[0] !== undefined || wordCountRange[1] !== undefined
 
-  if (loadingEssays || loadingStats) {
+  if (!studentId || loadingEssays || loadingStats) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -101,7 +118,7 @@ export default function EssayLibraryPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
+      <div role="banner">
         <h1 className="text-3xl font-bold tracking-tight">Essay Library</h1>
         <p className="text-muted-foreground">
           Manage and reuse your completed essays strategically
@@ -112,24 +129,27 @@ export default function EssayLibraryPage() {
       {stats && <LibraryStats stats={stats} />}
 
       {/* Search and Filter Bar */}
-      <Card>
+      <Card role="search" aria-label="Essay search and filters">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Search Input */}
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
               <Input
                 placeholder="Search essays by title, content, or themes..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
+                aria-label="Search essays"
+                type="search"
               />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
                   className="absolute right-3 top-1/2 -translate-y-1/2"
+                  aria-label="Clear search"
                 >
-                  <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                  <X className="h-4 w-4 text-muted-foreground hover:text-foreground" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -139,8 +159,10 @@ export default function EssayLibraryPage() {
               variant={showFilters ? 'default' : 'outline'}
               onClick={() => setShowFilters(!showFilters)}
               className="w-full sm:w-auto"
+              aria-label={showFilters ? 'Hide filters' : 'Show filters'}
+              aria-expanded={showFilters}
             >
-              <Filter className="h-4 w-4 mr-2" />
+              <Filter className="h-4 w-4 mr-2" aria-hidden="true" />
               Filters
               {hasActiveFilters && (
                 <span className="ml-2 bg-primary-foreground text-primary rounded-full px-2 py-0.5 text-xs">
@@ -199,7 +221,7 @@ export default function EssayLibraryPage() {
 
       {/* Essay Grid */}
       {essays && essays.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" role="list" aria-label="Essay library">
           {essays.map((essay) => (
             <EssayCard
               key={essay.id}

@@ -101,7 +101,7 @@ export function EssayCard({
   const adaptabilityBadge = adaptabilityScore ? getAdaptabilityBadge(adaptabilityScore.score) : null
 
   return (
-    <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
+    <Card className="hover:shadow-lg transition-shadow cursor-pointer group" role="listitem">
       <CardHeader className="pb-3" onClick={onPreview}>
         {/* Adaptability Badge (if in new essay context) */}
         {showAdaptabilityBadge && adaptabilityScore && adaptabilityBadge && (
@@ -173,8 +173,8 @@ export function EssayCard({
 
       <CardFooter className="pt-0 flex gap-2">
         {/* View Button */}
-        <Button variant="outline" size="sm" onClick={onPreview} className="flex-1">
-          <Eye className="h-4 w-4 mr-1" />
+        <Button variant="outline" size="sm" onClick={onPreview} className="flex-1" aria-label={`View ${essay.title}`}>
+          <Eye className="h-4 w-4 mr-1" aria-hidden="true" />
           View
         </Button>
 
@@ -189,8 +189,9 @@ export function EssayCard({
               alert('Clone & Adapt functionality coming soon!')
             }}
             className="flex-1"
+            aria-label={`Clone and adapt ${essay.title}`}
           >
-            <Copy className="h-4 w-4 mr-1" />
+            <Copy className="h-4 w-4 mr-1" aria-hidden="true" />
             Clone & Adapt
           </Button>
         )}
