@@ -32,6 +32,7 @@ interface FinalizationPanelProps {
   targetMax: number;
   promptAnalysis?: any;
   grammarIssuesCount: number;
+  qualityScore?: number; // Story 4.9: Quality assessment score
   onValidateAuthenticity: () => Promise<AuthenticityScore>;
   onMarkComplete: () => Promise<void>;
   onExport: (format: "txt" | "docx") => void;
@@ -46,6 +47,7 @@ export function FinalizationPanel({
   targetMax,
   promptAnalysis,
   grammarIssuesCount,
+  qualityScore,
   onValidateAuthenticity,
   onMarkComplete,
   onExport,
@@ -91,6 +93,17 @@ export function FinalizationPanel({
           : "pending",
         required: true,
       },
+      {
+        id: "quality-score",
+        label: "Quality assessment meets threshold",
+        description: "Overall quality score ≥60 required for submission",
+        status: qualityScore
+          ? qualityScore >= 60
+            ? "pass"
+            : "fail"
+          : "pending",
+        required: true,
+      },
     ];
 
     // Add prompt requirements if available
@@ -105,7 +118,7 @@ export function FinalizationPanel({
     }
 
     setChecklist(items);
-  }, [wordCount, targetMin, targetMax, grammarIssuesCount, authenticityScore, promptAnalysis]);
+  }, [wordCount, targetMin, targetMax, grammarIssuesCount, authenticityScore, promptAnalysis, qualityScore]);
 
   const handleValidateAuthenticity = async () => {
     setIsValidating(true);
