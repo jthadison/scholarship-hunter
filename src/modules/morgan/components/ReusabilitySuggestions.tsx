@@ -16,7 +16,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Recycle, TrendingUp, Calendar, ArrowRight } from 'lucide-react'
+import { Recycle, Calendar, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -78,7 +78,7 @@ export function ReusabilitySuggestions({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {suggestions.map((suggestion, index) => {
+        {suggestions.map((suggestion) => {
           const scoreColor =
             suggestion.adaptabilityScore >= 90
               ? 'bg-green-600'

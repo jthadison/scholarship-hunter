@@ -148,7 +148,7 @@ export function QualityAlerts({ alerts, isLoading }: QualityAlertsProps) {
                     </div>
 
                     {/* Top suggestions preview */}
-                    {alert.topSuggestions.length > 0 && (
+                    {alert.topSuggestions.length > 0 && alert.topSuggestions[0] && (
                       <div className="bg-blue-50 border border-blue-200 rounded p-3">
                         <p className="text-xs font-semibold text-blue-900 mb-2">
                           Quick Win: {alert.topSuggestions[0].issue}

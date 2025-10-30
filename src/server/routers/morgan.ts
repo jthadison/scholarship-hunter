@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
-import { calculateAdaptabilityScore } from "../services/essayAdaptability";
+import { calculateAdaptability } from "../services/essayAdaptability";
 import { EssayPhase } from "@prisma/client";
 
 /**
@@ -200,15 +200,19 @@ export const morganRouter = router({
           for (const essay of libraryEssays) {
             try {
               // Calculate adaptability score
-              const adaptability = await calculateAdaptabilityScore(
-                essay.content,
-                essay.prompt,
+              // For prompt themes, we'll extract simple keywords from the question
+              // This is a basic implementation - ideally would use NLP
+              const promptThemes = promptObj.question
+                .toLowerCase()
+                .split(/\W+/)
+                .filter(word => word.length > 4)
+                .slice(0, 5);
+
+              const adaptability = await calculateAdaptability(
+                essay,
                 promptObj.question,
-                {
-                  currentThemes: essay.themes,
-                  sourceWordCount: essay.wordCount,
-                  targetWordLimit: promptObj.wordLimit,
-                }
+                promptThemes,
+                promptObj.wordLimit ?? 500
               );
 
               // Only suggest if adaptability >= 70%

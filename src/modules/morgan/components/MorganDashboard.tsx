@@ -52,7 +52,7 @@ export function MorganDashboard({ firstName }: MorganDashboardProps) {
   const {
     data: reusabilitySuggestions,
     isLoading: reusabilityLoading,
-    error: reusabilityError,
+    error: _reusabilityError,
   } = trpc.morgan.getReusabilitySuggestions.useQuery(
     { studentId },
     {
@@ -65,7 +65,7 @@ export function MorganDashboard({ firstName }: MorganDashboardProps) {
   const {
     data: qualityAlerts,
     isLoading: alertsLoading,
-    error: alertsError,
+    error: _alertsError,
   } = trpc.morgan.getQualityAlerts.useQuery(
     { studentId },
     {

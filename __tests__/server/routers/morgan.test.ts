@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { EssayPhase } from '@prisma/client'
 import { morganRouter } from '../../../src/server/routers/morgan'
 import { prisma } from '../../../src/server/db'
-import { calculateAdaptabilityScore } from '../../../src/server/services/essayAdaptability'
+import { calculateAdaptability } from '../../../src/server/services/essayAdaptability'
 
 // Mock Prisma Client
 vi.mock('../../../src/server/db', () => ({
@@ -32,15 +32,17 @@ vi.mock('../../../src/server/db', () => ({
 
 // Mock essay adaptability service
 vi.mock('../../../src/server/services/essayAdaptability', () => ({
-  calculateAdaptabilityScore: vi.fn(),
+  calculateAdaptability: vi.fn(),
 }))
 
 describe('Morgan Router', () => {
-  const mockUserId = 'clx1test1234567890'
-  const mockStudentId = 'clx2test1234567890'
+  const mockUserId = 'clx1test1234567890ab'
+  const mockClerkId = 'clerk_test123'
+  const mockStudentId = 'clx2test1234567890cd'
 
   const mockCtx = {
     userId: mockUserId,
+    clerkId: mockClerkId,
     prisma,
   }
 
@@ -116,12 +118,12 @@ describe('Morgan Router', () => {
       const result = await caller.getEssaySummary({ studentId: mockStudentId })
 
       expect(result.inProgress).toHaveLength(1)
-      expect(result.inProgress[0].title).toBe('Community Service Essay')
-      expect(result.inProgress[0].phase).toBe(EssayPhase.DRAFTING)
-      expect(result.inProgress[0].scholarshipName).toBe('Community Leaders Scholarship')
+      expect(result.inProgress[0]!.title).toBe('Community Service Essay')
+      expect(result.inProgress[0]!.phase).toBe(EssayPhase.DRAFTING)
+      expect(result.inProgress[0]!.scholarshipName).toBe('Community Leaders Scholarship')
 
       expect(result.completed).toHaveLength(1)
-      expect(result.completed[0].title).toBe('Leadership Essay')
+      expect(result.completed[0]!.title).toBe('Leadership Essay')
 
       expect(result.stats.weeklyDrafts).toBe(1)
       expect(result.stats.librarySize).toBe(1)
@@ -230,7 +232,7 @@ describe('Morgan Router', () => {
       vi.mocked(prisma.application.findMany).mockResolvedValue(mockActiveApplications as any)
 
       // Mock adaptability calculation
-      vi.mocked(calculateAdaptabilityScore).mockResolvedValue({
+      vi.mocked(calculateAdaptability).mockResolvedValue({
         score: 85,
         confidence: 'high',
         matchingThemes: ['community', 'leadership'],
@@ -245,11 +247,11 @@ describe('Morgan Router', () => {
       const result = await caller.getReusabilitySuggestions({ studentId: mockStudentId })
 
       expect(result).toHaveLength(1)
-      expect(result[0].essay.title).toBe('Community Service Essay')
-      expect(result[0].adaptabilityScore).toBe(85)
-      expect(result[0].targetScholarship.name).toBe('Leadership Award')
-      expect(result[0].matchingThemes).toContain('community')
-      expect(result[0].matchingThemes).toContain('leadership')
+      expect(result[0]!.essay.title).toBe('Community Service Essay')
+      expect(result[0]!.adaptabilityScore).toBe(85)
+      expect(result[0]!.targetScholarship.name).toBe('Leadership Award')
+      expect(result[0]!.matchingThemes).toContain('community')
+      expect(result[0]!.matchingThemes).toContain('leadership')
     })
 
     it('should filter out suggestions with adaptability < 70%', async () => {
@@ -292,7 +294,7 @@ describe('Morgan Router', () => {
       vi.mocked(prisma.application.findMany).mockResolvedValue(mockActiveApplications as any)
 
       // Mock low adaptability score
-      vi.mocked(calculateAdaptabilityScore).mockResolvedValue({
+      vi.mocked(calculateAdaptability).mockResolvedValue({
         score: 45, // Below 70% threshold
         confidence: 'low',
         matchingThemes: [],
@@ -339,7 +341,7 @@ describe('Morgan Router', () => {
       vi.mocked(prisma.application.findMany).mockResolvedValue(mockActiveApplications as any)
 
       // Return decreasing scores
-      vi.mocked(calculateAdaptabilityScore)
+      vi.mocked(calculateAdaptability)
         .mockResolvedValueOnce({ score: 75, confidence: 'medium', matchingThemes: [], wordCountCompatible: true, structurallyCompatible: true, themeOverlap: 0.7, wordCountRatio: 0.9, structuralSimilarity: 0.75 })
         .mockResolvedValueOnce({ score: 90, confidence: 'high', matchingThemes: [], wordCountCompatible: true, structurallyCompatible: true, themeOverlap: 0.9, wordCountRatio: 0.95, structuralSimilarity: 0.9 })
         .mockResolvedValueOnce({ score: 80, confidence: 'high', matchingThemes: [], wordCountCompatible: true, structurallyCompatible: true, themeOverlap: 0.8, wordCountRatio: 0.9, structuralSimilarity: 0.8 })
@@ -350,9 +352,9 @@ describe('Morgan Router', () => {
 
       // Should return top 3: essay2 (90), essay4 (85), essay3 (80)
       expect(result).toHaveLength(3)
-      expect(result[0].adaptabilityScore).toBe(90)
-      expect(result[1].adaptabilityScore).toBe(85)
-      expect(result[2].adaptabilityScore).toBe(80)
+      expect(result[0]!.adaptabilityScore).toBe(90)
+      expect(result[1]!.adaptabilityScore).toBe(85)
+      expect(result[2]!.adaptabilityScore).toBe(80)
     })
   })
 
@@ -373,8 +375,8 @@ describe('Morgan Router', () => {
           qualityAssessment: {
             dimensions: {
               memorability: { score: 45, explanation: 'Not memorable' },
-              authenticity: { score: 55, explanation: 'Lacks personal voice' },
-              promptAlignment: { score: 48, explanation: 'Partially answers prompt' },
+              authenticity: { score: 48, explanation: 'Lacks personal voice' },
+              promptAlignment: { score: 47, explanation: 'Partially answers prompt' },
             },
             topSuggestions: [
               {
@@ -401,14 +403,14 @@ describe('Morgan Router', () => {
       const result = await caller.getQualityAlerts({ studentId: mockStudentId })
 
       expect(result).toHaveLength(1)
-      expect(result[0].qualityScore).toBe(58)
-      expect(result[0].essay.title).toBe('Needs Improvement Essay')
-      expect(result[0].scholarshipName).toBe('Excellence Scholarship')
-      expect(result[0].criticalIssues).toContain('Low memorability - essay doesn\'t stand out')
-      expect(result[0].criticalIssues).toContain('Lacks authenticity - needs more personal voice')
-      expect(result[0].criticalIssues).toContain('Poor prompt alignment - doesn\'t fully answer question')
-      expect(result[0].topSuggestions).toHaveLength(1)
-      expect(result[0].topSuggestions[0].issue).toBe('Add more specific examples')
+      expect(result[0]!.qualityScore).toBe(58)
+      expect(result[0]!.essay.title).toBe('Needs Improvement Essay')
+      expect(result[0]!.scholarshipName).toBe('Excellence Scholarship')
+      expect(result[0]!.criticalIssues).toContain('Low memorability - essay doesn\'t stand out')
+      expect(result[0]!.criticalIssues).toContain('Lacks authenticity - needs more personal voice')
+      expect(result[0]!.criticalIssues).toContain('Poor prompt alignment - doesn\'t fully answer question')
+      expect(result[0]!.topSuggestions).toHaveLength(1)
+      expect(result[0]!.topSuggestions[0]!.issue).toBe('Add more specific examples')
     })
 
     it('should only return in-progress essays', async () => {
@@ -436,22 +438,22 @@ describe('Morgan Router', () => {
 
       const mockLowQualityEssays = [
         {
-          id: 'essay1',
-          title: 'Essay 1',
-          phase: EssayPhase.DRAFTING,
-          wordCount: 400,
-          qualityScore: 55,
+          id: 'essay2',
+          title: 'Essay 2',
+          phase: EssayPhase.REVISION,
+          wordCount: 500,
+          qualityScore: 45,
           isComplete: false,
           qualityAssessment: { dimensions: {}, topSuggestions: [] },
           application: null,
           applicationId: null,
         },
         {
-          id: 'essay2',
-          title: 'Essay 2',
-          phase: EssayPhase.REVISION,
-          wordCount: 500,
-          qualityScore: 45,
+          id: 'essay1',
+          title: 'Essay 1',
+          phase: EssayPhase.DRAFTING,
+          wordCount: 400,
+          qualityScore: 55,
           isComplete: false,
           qualityAssessment: { dimensions: {}, topSuggestions: [] },
           application: null,
@@ -466,8 +468,8 @@ describe('Morgan Router', () => {
       const result = await caller.getQualityAlerts({ studentId: mockStudentId })
 
       // Should be ordered by qualityScore ascending (lowest first)
-      expect(result[0].qualityScore).toBe(45)
-      expect(result[1].qualityScore).toBe(55)
+      expect(result[0]!.qualityScore).toBe(45)
+      expect(result[1]!.qualityScore).toBe(55)
     })
   })
 })
