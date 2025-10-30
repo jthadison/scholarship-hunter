@@ -9,14 +9,21 @@ import { createHash } from "crypto";
 import OpenAI from "openai";
 import type { PromptAnalysis } from "../../types/essay";
 
-// Initialize OpenAI client with validation
-if (!process.env.OPENAI_API_KEY) {
-  console.warn('⚠️  OPENAI_API_KEY not configured - prompt analysis will use fallback mode');
-}
+// Lazy initialization to avoid build-time errors
+let openaiClient: OpenAI | null = null;
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'sk-fallback',
-});
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      console.warn('⚠️  OPENAI_API_KEY not configured - prompt analysis will use fallback mode');
+    }
+    openaiClient = new OpenAI({
+      apiKey: apiKey || 'sk-fallback',
+    });
+  }
+  return openaiClient;
+}
 
 /**
  * Hash a prompt text for caching identical prompts
@@ -140,6 +147,7 @@ IMPORTANT:
 
   try {
     const startTime = Date.now();
+    const openai = getOpenAIClient();
 
     const response = await openai.chat.completions.create({
       model: "gpt-4",

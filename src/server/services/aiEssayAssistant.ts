@@ -9,16 +9,23 @@
 import OpenAI from "openai";
 import type { Profile } from "@prisma/client";
 
-// Initialize OpenAI client
-if (!process.env.OPENAI_API_KEY) {
-  console.warn(
-    "⚠️  OPENAI_API_KEY not configured - AI essay assistance will use fallback mode"
-  );
-}
+// Lazy initialization to avoid build-time errors
+let openaiClient: OpenAI | null = null;
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "sk-fallback",
-});
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      console.warn(
+        "⚠️  OPENAI_API_KEY not configured - AI essay assistance will use fallback mode"
+      );
+    }
+    openaiClient = new OpenAI({
+      apiKey: apiKey || "sk-fallback",
+    });
+  }
+  return openaiClient;
+}
 
 // Rate limiting tracking (in-memory - consider Redis for production)
 const rateLimitMap = new Map<string, { count: number; resetAt: Date }>();
@@ -123,6 +130,7 @@ Respond in JSON format:
 }`;
 
   try {
+    const openai = getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -219,6 +227,7 @@ Respond in JSON:
 }`;
 
   try {
+    const openai = getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
@@ -305,6 +314,7 @@ Respond in JSON:
 }`;
 
   try {
+    const openai = getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -420,6 +430,7 @@ Respond in JSON format:
 }`;
 
   try {
+    const openai = getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
@@ -522,6 +533,7 @@ Respond in JSON:
 }`;
 
   try {
+    const openai = getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -605,6 +617,7 @@ Respond in JSON:
 }`;
 
   try {
+    const openai = getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [

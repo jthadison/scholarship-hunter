@@ -546,10 +546,9 @@ model Essay {
   aiModel      String?
   personalized Boolean @default(false)
 
-  // Quality Assessment
-  qualityScore           Float? // 0-100
-  qualityBreakdown       Json?
-  improvementSuggestions String? @db.Text
+  // Quality Assessment (Story 4.9)
+  qualityScore      Float? // 0-100 overall score
+  qualityAssessment Json?  // Detailed assessment: { overall, dimensions, suggestions, grammarErrors, authenticityWarnings, assessedAt, assessmentVersion }
 
   // Prompt Analysis (Story 4.6)
   promptAnalysis Json?   // Detailed AI analysis of essay prompt
@@ -583,6 +582,7 @@ model Essay {
   @@index([themes])
   @@index([isComplete])
   @@index([clonedFrom])
+  @@index([qualityScore])
 }
 
 model Recommendation {

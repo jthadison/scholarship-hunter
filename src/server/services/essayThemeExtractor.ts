@@ -7,14 +7,21 @@
 
 import OpenAI from "openai";
 
-// Initialize OpenAI client
-if (!process.env.OPENAI_API_KEY) {
-  console.warn('⚠️  OPENAI_API_KEY not configured - theme extraction will use fallback mode');
-}
+// Lazy initialization to avoid build-time errors
+let openaiClient: OpenAI | null = null;
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'sk-fallback',
-});
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      console.warn('⚠️  OPENAI_API_KEY not configured - theme extraction will use fallback mode');
+    }
+    openaiClient = new OpenAI({
+      apiKey: apiKey || 'sk-fallback',
+    });
+  }
+  return openaiClient;
+}
 
 /**
  * Standard theme taxonomy for scholarship essays
@@ -98,6 +105,7 @@ Analyze the essay and identify the 3-5 most prominent themes. Consider:
 Return ONLY a JSON object with a "themes" array containing 3-5 theme names from the list above.
 Example: {"themes": ["leadership", "community-service", "career-goals"]}`;
 
+    const openai = getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo', // Cost-effective for analysis tasks
       messages: [
