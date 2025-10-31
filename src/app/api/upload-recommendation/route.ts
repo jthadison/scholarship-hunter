@@ -11,14 +11,17 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { getSupabaseAdmin } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
+  const supabase = getSupabaseAdmin()
+
+  if (!supabase) {
+    return NextResponse.json(
+      { error: 'Storage service unavailable' },
+      { status: 503 }
+    )
+  }
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File
