@@ -61,7 +61,16 @@ export function getSupabaseAdmin(): SupabaseClient | null {
  * @deprecated Use getSupabaseClient() instead
  */
 export const supabase = getSupabaseClient;
-export const supabaseAdmin = getSupabaseAdmin();
+// Lazy initialization - only call when actually used to avoid build failures
+export const supabaseAdmin = (() => {
+  let cached: SupabaseClient | null = null;
+  return () => {
+    if (!cached) {
+      cached = getSupabaseAdmin();
+    }
+    return cached;
+  };
+})();
 
 /**
  * Storage bucket configuration

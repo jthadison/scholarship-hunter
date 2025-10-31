@@ -52,8 +52,6 @@ const mockProfile: Profile = {
   additionalContext: null,
   completionPercentage: 75,
   strengthScore: 62,
-  strengthHistory: [],
-  versions: [],
   createdAt: new Date(),
   updatedAt: new Date(),
 }
@@ -161,9 +159,9 @@ describe('Gap Analysis Analyzer', () => {
       const scholarshipWithVolunteer: Scholarship = {
         ...mockScholarship,
         eligibilityCriteria: {
-          ...mockScholarship.eligibilityCriteria,
+          ...(mockScholarship.eligibilityCriteria as object),
           experience: { minVolunteerHours: 100 },
-        },
+        } as typeof mockScholarship.eligibilityCriteria,
       }
 
       const gaps = compareProfileToRequirements(
