@@ -13,6 +13,7 @@ import { meilisearchSync, meilisearchSyncManual } from '@/inngest/functions/meil
 import { dailyScholarshipMatching } from '@/inngest/functions/daily-matching'
 import { deadlineAlertsJob } from '@/inngest/functions/deadline-alerts'
 import { goalCompletionDetectionJob } from '@/inngest/functions/goal-completion-detection'
+import { atRiskDetectionJob } from '@/inngest/functions/at-risk-detection'
 
 /**
  * Inngest handler
@@ -28,6 +29,7 @@ const handler = serve({
     dailyScholarshipMatching, // Daily scholarship matching at 6 AM
     deadlineAlertsJob, // Story 3.4: Daily deadline alerts at 8 AM
     goalCompletionDetectionJob, // Story 5.4: Daily goal completion detection at 2 AM
+    atRiskDetectionJob, // Story 5.6: Daily at-risk detection at 9 AM
   ],
 })
 
