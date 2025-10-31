@@ -21,9 +21,15 @@ const mockSummaryData = {
   },
 }
 
-// Mock tRPC - use a factory function to avoid hoisting issues
+// Create mock function with vi.hoisted to ensure it's available before mocking
+const { mockUseQuery } = vi.hoisted(() => {
+  return {
+    mockUseQuery: vi.fn()
+  }
+})
+
+// Mock tRPC
 vi.mock('@/shared/lib/trpc', () => {
-  const mockUseQuery = vi.fn()
   return {
     trpc: {
       outcome: {
@@ -32,12 +38,8 @@ vi.mock('@/shared/lib/trpc', () => {
         },
       },
     },
-    mockUseQuery, // Export for test access
   }
 })
-
-// Import the mock after it's been set up
-import { mockUseQuery } from '@/shared/lib/trpc'
 
 beforeEach(() => {
   // Reset mock before each test
