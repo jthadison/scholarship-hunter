@@ -12,6 +12,7 @@ import { inngest } from '@/inngest/client'
 import { meilisearchSync, meilisearchSyncManual } from '@/inngest/functions/meilisearch-sync'
 import { dailyScholarshipMatching } from '@/inngest/functions/daily-matching'
 import { deadlineAlertsJob } from '@/inngest/functions/deadline-alerts'
+import { goalCompletionDetectionJob } from '@/inngest/functions/goal-completion-detection'
 
 /**
  * Inngest handler
@@ -26,6 +27,7 @@ const handler = serve({
     meilisearchSyncManual, // Manual sync trigger
     dailyScholarshipMatching, // Daily scholarship matching at 6 AM
     deadlineAlertsJob, // Story 3.4: Daily deadline alerts at 8 AM
+    goalCompletionDetectionJob, // Story 5.4: Daily goal completion detection at 2 AM
   ],
 })
 
