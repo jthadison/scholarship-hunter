@@ -24,7 +24,8 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  student Student?
+  student   Student?
+  counselor Counselor? // Story 5.6: Counselor Portal
 
   @@index([clerkId])
   @@index([email])
@@ -47,20 +48,22 @@ model Student {
   dateOfBirth DateTime?
   phone       String?
 
-  profile            Profile?
-  applications       Application[]
-  documents          Document[]
-  essays             Essay[]
-  matches            Match[]
-  outcomes           Outcome[]
-  analyticsSnapshots AnalyticsSnapshot[]
-  gapAnalysisSnapshots GapAnalysisSnapshot[] // Story 5.3
-  profileGoals       ProfileGoal[] // Story 5.4
+  profile                  Profile?
+  applications             Application[]
+  documents                Document[]
+  essays                   Essay[]
+  matches                  Match[]
+  outcomes                 Outcome[]
+  analyticsSnapshots       AnalyticsSnapshot[]
+  gapAnalysisSnapshots     GapAnalysisSnapshot[] // Story 5.3
+  profileGoals             ProfileGoal[] // Story 5.4
   profilePositionSnapshots ProfilePositionSnapshot[] // Story 5.5
-  achievements       StudentAchievement[] // Story 5.5
-  notifications      Notification[]
-  notificationPreferences NotificationPreferences?
-  alerts             Alert[] // Story 3.4
+  achievements             StudentAchievement[] // Story 5.5
+  notifications            Notification[]
+  notificationPreferences  NotificationPreferences?
+  alerts                   Alert[] // Story 3.4
+  counselorPermissions     StudentCounselorPermission[] // Story 5.6: Counselor access permissions
+  atRiskEvents             AtRiskEvent[] // Story 3.10: At-Risk Application Detection
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -185,15 +188,15 @@ enum FinancialNeed {
 // ============================================================================
 
 model Notification {
-  id            String   @id @default(cuid())
+  id            String       @id @default(cuid())
   studentId     String
-  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student       Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
   scholarshipId String
-  scholarship   Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+  scholarship   Scholarship  @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
   matchScore    Float
   priorityTier  PriorityTier
-  read          Boolean  @default(false)
-  createdAt     DateTime @default(now())
+  read          Boolean      @default(false)
+  createdAt     DateTime     @default(now())
 
   @@index([studentId, read])
   @@index([studentId, createdAt])
@@ -293,14 +296,14 @@ model Match {
   specialCriteriaScore Float @default(0)
 
   // Strategic Metrics
-  successProbability   Float                 @default(0) // 0.0 to 1.0 (Story 2.5: updated to percentage 0-100)
-  successTier          SuccessTier? // Story 2.5: STRONG_MATCH, COMPETITIVE_MATCH, REACH, LONG_SHOT
-  competitionFactor    Float? // Story 2.5: Competition level factor (0.0-1.0)
-  priorityTier         PriorityTier          @default(IF_TIME_PERMITS)
-  strategicValue       Float                 @default(0) // ROI calculation (Story 2.6)
-  applicationEffort    EffortLevel           @default(MEDIUM) // Story 2.6: LOW, MEDIUM, HIGH
-  effortBreakdown      Json? // Story 2.6: { essays: 2, documents: 3, recommendations: 1 }
-  strategicValueTier   StrategicValueTier? // Story 2.6: BEST_BET, HIGH_VALUE, MEDIUM_VALUE, LOW_VALUE
+  successProbability Float               @default(0) // 0.0 to 1.0 (Story 2.5: updated to percentage 0-100)
+  successTier        SuccessTier? // Story 2.5: STRONG_MATCH, COMPETITIVE_MATCH, REACH, LONG_SHOT
+  competitionFactor  Float? // Story 2.5: Competition level factor (0.0-1.0)
+  priorityTier       PriorityTier        @default(IF_TIME_PERMITS)
+  strategicValue     Float               @default(0) // ROI calculation (Story 2.6)
+  applicationEffort  EffortLevel         @default(MEDIUM) // Story 2.6: LOW, MEDIUM, HIGH
+  effortBreakdown    Json? // Story 2.6: { essays: 2, documents: 3, recommendations: 1 }
+  strategicValueTier StrategicValueTier? // Story 2.6: BEST_BET, HIGH_VALUE, MEDIUM_VALUE, LOW_VALUE
 
   // Gap Analysis
   missingCriteria   Json?
@@ -333,17 +336,17 @@ enum EffortLevel {
 }
 
 enum SuccessTier {
-  STRONG_MATCH       // 70-100% success probability
-  COMPETITIVE_MATCH  // 40-69% success probability
-  REACH              // 10-39% success probability
-  LONG_SHOT          // <10% success probability
+  STRONG_MATCH // 70-100% success probability
+  COMPETITIVE_MATCH // 40-69% success probability
+  REACH // 10-39% success probability
+  LONG_SHOT // <10% success probability
 }
 
 enum StrategicValueTier {
-  BEST_BET       // ROI ≥ 5.0 (apply immediately)
-  HIGH_VALUE     // ROI 3.0-4.9 (strong candidates)
-  MEDIUM_VALUE   // ROI 1.5-2.9 (if time permits)
-  LOW_VALUE      // ROI < 1.5 (probably skip)
+  BEST_BET // ROI ≥ 5.0 (apply immediately)
+  HIGH_VALUE // ROI 3.0-4.9 (strong candidates)
+  MEDIUM_VALUE // ROI 1.5-2.9 (if time permits)
+  LOW_VALUE // ROI < 1.5 (probably skip)
 }
 
 // ============================================================================
@@ -363,13 +366,13 @@ model Application {
   priorityTier PriorityTier?
 
   // Progress Tracking
-  essayCount         Int     @default(0)
-  essayComplete      Int     @default(0)
-  documentsRequired  Int     @default(0)
-  documentsUploaded  Int     @default(0)
-  recsRequired       Int     @default(0)
-  recsReceived       Int     @default(0)
-  progressPercentage Float   @default(0) // 0-100
+  essayCount         Int   @default(0)
+  essayComplete      Int   @default(0)
+  documentsRequired  Int   @default(0)
+  documentsUploaded  Int   @default(0)
+  recsRequired       Int   @default(0)
+  recsReceived       Int   @default(0)
+  progressPercentage Float @default(0) // 0-100
 
   // Timeline Dates
   dateAdded        DateTime  @default(now())
@@ -553,10 +556,10 @@ model Essay {
 
   // Quality Assessment (Story 4.9)
   qualityScore      Float? // 0-100 overall score
-  qualityAssessment Json?  // Detailed assessment: { overall, dimensions, suggestions, grammarErrors, authenticityWarnings, assessedAt, assessmentVersion }
+  qualityAssessment Json? // Detailed assessment: { overall, dimensions, suggestions, grammarErrors, authenticityWarnings, assessedAt, assessmentVersion }
 
   // Prompt Analysis (Story 4.6)
-  promptAnalysis Json?   // Detailed AI analysis of essay prompt
+  promptAnalysis Json? // Detailed AI analysis of essay prompt
   promptHash     String? // MD5 hash for caching identical prompts
 
   // Phase-Specific Metadata (Story 4.7)
@@ -572,8 +575,8 @@ model Essay {
 
   // Reusability (Story 4.8)
   themes             String[] // Tags for matching to prompts
-  adaptabilityScores Json?    // Cache: { promptHash: { score, confidence, matchingThemes } }
-  clonedFrom         String?  // Reference to original essay if this is a clone
+  adaptabilityScores Json? // Cache: { promptHash: { score, confidence, matchingThemes } }
+  clonedFrom         String? // Reference to original essay if this is a clone
   originalEssay      Essay?   @relation("EssayClones", fields: [clonedFrom], references: [id], onDelete: SetNull)
   clones             Essay[]  @relation("EssayClones")
 
@@ -611,7 +614,7 @@ model Recommendation {
   submittedAt    DateTime?
 
   // Upload Token
-  uploadToken      String  @unique
+  uploadToken      String    @unique
   uploadLinkExpiry DateTime?
 
   // Document Reference
@@ -749,8 +752,8 @@ model GapAnalysisSnapshot {
   profileStrengthProjected Int // 0-100 with improvements
 
   // Impact metrics
-  scholarshipsUnlockable Int   @default(0) // Count of scholarships improvements would unlock
-  potentialFunding       Int   @default(0) // Total funding in dollars
+  scholarshipsUnlockable Int @default(0) // Count of scholarships improvements would unlock
+  potentialFunding       Int @default(0) // Total funding in dollars
 
   // Roadmap (stored as JSON)
   roadmap Json? // Array of recommendation objects with action steps
@@ -770,9 +773,10 @@ enum AchievabilityCategory {
 
 // Story 3.10: At-Risk Application Detection & Recovery
 model AtRiskEvent {
-  id                  String   @id @default(cuid())
+  id                  String         @id @default(cuid())
   applicationId       String
-  detectedAt          DateTime @default(now())
+  studentId           String
+  detectedAt          DateTime       @default(now())
   resolvedAt          DateTime?
   reason              AtRiskReason
   severity            Severity
@@ -782,8 +786,10 @@ model AtRiskEvent {
   resolutionNotes     String?
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  student     Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([applicationId])
+  @@index([studentId])
   @@index([detectedAt])
 }
 
@@ -804,8 +810,8 @@ enum AtRiskReason {
 }
 
 enum Severity {
-  WARNING  // 7-day threshold
-  URGENT   // 3-day threshold
+  WARNING // 7-day threshold
+  URGENT // 3-day threshold
   CRITICAL // 1-day threshold
 }
 
@@ -819,9 +825,9 @@ enum AtRiskOutcome {
 
 // Story 5.4: Profile Improvement Tracker
 model ProfileGoal {
-  id           String     @id @default(cuid())
-  studentId    String
-  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   goalType     GoalType
   targetValue  Float
@@ -831,16 +837,16 @@ model ProfileGoal {
   status       GoalStatus @default(NOT_STARTED)
 
   // Impact estimation (profile strength points)
-  impactEstimate Float    @default(0)
+  impactEstimate Float @default(0)
 
   // Optional notes
-  notes        String?    @db.Text
+  notes String? @db.Text
 
   // Milestones tracking
-  milestones   ProfileGoalMilestone[]
+  milestones ProfileGoalMilestone[]
 
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([studentId, status])
   @@index([studentId, targetDate])
@@ -848,11 +854,11 @@ model ProfileGoal {
 }
 
 model ProfileGoalMilestone {
-  id                    String      @id @default(cuid())
-  profileGoalId         String
-  profileGoal           ProfileGoal @relation(fields: [profileGoalId], references: [id], onDelete: Cascade)
+  id            String      @id @default(cuid())
+  profileGoalId String
+  profileGoal   ProfileGoal @relation(fields: [profileGoalId], references: [id], onDelete: Cascade)
 
-  achievedDate          DateTime    @default(now())
+  achievedDate          DateTime @default(now())
   description           String
   profileStrengthBefore Float
   profileStrengthAfter  Float
@@ -908,7 +914,7 @@ model ProfilePositionSnapshot {
 }
 
 model AchievementBadge {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   badgeType   BadgeType @unique
   title       String
   description String
@@ -922,9 +928,9 @@ model AchievementBadge {
 }
 
 model StudentAchievement {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   studentId String
-  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
   badgeId   String
   badge     AchievementBadge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
@@ -942,4 +948,75 @@ enum BadgeType {
   COMMUNITY_IMPACT
   QUICK_IMPROVER
   GOAL_ACHIEVER
+}
+
+// Story 5.6: Counselor Portal - Student Monitoring
+model Counselor {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  firstName           String
+  lastName            String
+  email               String  @unique
+  schoolName          String
+  schoolDistrict      String?
+  certificationNumber String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  students StudentCounselorPermission[]
+  notes    CounselorNote[]
+
+  @@index([userId])
+  @@index([email])
+  @@index([schoolName])
+}
+
+model StudentCounselorPermission {
+  id          String    @id @default(cuid())
+  studentId   String
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  counselorId String
+  counselor   Counselor @relation(fields: [counselorId], references: [id], onDelete: Cascade)
+
+  permissionLevel PermissionLevel  @default(VIEW_DETAILED)
+  status          PermissionStatus @default(PENDING)
+
+  grantedAt DateTime?
+  revokedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, counselorId])
+  @@index([counselorId, status])
+  @@index([studentId, status])
+}
+
+model CounselorNote {
+  id          String    @id @default(cuid())
+  counselorId String
+  counselor   Counselor @relation(fields: [counselorId], references: [id], onDelete: Cascade)
+  studentId   String
+  content     String    @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([counselorId, studentId])
+  @@index([studentId])
+}
+
+enum PermissionLevel {
+  VIEW_BASIC // Profile strength, funding totals only
+  VIEW_DETAILED // Full access: applications, essays, documents
+}
+
+enum PermissionStatus {
+  PENDING // Request sent, awaiting student approval
+  ACTIVE // Permission granted
+  REVOKED // Student revoked access
+  EXPIRED // Auto-expired (optional future feature)
 }
