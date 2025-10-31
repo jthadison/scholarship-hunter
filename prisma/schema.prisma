@@ -54,6 +54,7 @@ model Student {
   matches            Match[]
   outcomes           Outcome[]
   analyticsSnapshots AnalyticsSnapshot[]
+  gapAnalysisSnapshots GapAnalysisSnapshot[] // Story 5.3
   notifications      Notification[]
   notificationPreferences NotificationPreferences?
   alerts             Alert[] // Story 3.4
@@ -726,6 +727,42 @@ enum OutcomeResult {
   DENIED
   WAITLISTED
   WITHDRAWN
+}
+
+// Story 5.3: Gap Analysis - Profile Improvement Recommendations
+model GapAnalysisSnapshot {
+  id        String  @id @default(cuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  // Snapshot timing
+  analysisDate DateTime @default(now())
+
+  // Gap data (stored as JSON for flexibility)
+  gaps Json // Array of Gap objects with all properties
+
+  // Profile metrics at analysis time
+  profileStrengthCurrent   Int // 0-100
+  profileStrengthProjected Int // 0-100 with improvements
+
+  // Impact metrics
+  scholarshipsUnlockable Int   @default(0) // Count of scholarships improvements would unlock
+  potentialFunding       Int   @default(0) // Total funding in dollars
+
+  // Roadmap (stored as JSON)
+  roadmap Json? // Array of recommendation objects with action steps
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId, analysisDate])
+  @@index([analysisDate])
+}
+
+enum AchievabilityCategory {
+  EASY
+  MODERATE
+  LONG_TERM
 }
 
 // Story 3.10: At-Risk Application Detection & Recovery
