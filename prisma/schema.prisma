@@ -264,9 +264,10 @@ model Scholarship {
   tags     String[]
   category String?
 
-  applications  Application[]
-  matches       Match[]
-  notifications Notification[]
+  applications         Application[]
+  matches              Match[]
+  notifications        Notification[]
+  recommendations      ScholarshipRecommendation[] // Story 5.7
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -966,8 +967,9 @@ model Counselor {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  students StudentCounselorPermission[]
-  notes    CounselorNote[]
+  students         StudentCounselorPermission[]
+  notes            CounselorNote[]
+  recommendations  ScholarshipRecommendation[] // Story 5.7
 
   @@index([userId])
   @@index([email])
@@ -1019,4 +1021,39 @@ enum PermissionStatus {
   ACTIVE // Permission granted
   REVOKED // Student revoked access
   EXPIRED // Auto-expired (optional future feature)
+}
+
+// Story 5.7: Counselor Recommendation Engine
+model ScholarshipRecommendation {
+  id            String      @id @default(cuid())
+  counselorId   String
+  counselor     Counselor   @relation(fields: [counselorId], references: [id], onDelete: Cascade)
+  studentId     String
+  scholarshipId String
+  scholarship   Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+
+  // Counselor's explanation
+  note String? @db.Text // Why this scholarship is a good fit
+
+  // Status tracking
+  status       RecommendationResponseStatus @default(PENDING)
+  responseNote String?                      @db.Text // Optional student's decline reason
+
+  // Timestamps
+  createdAt    DateTime  @default(now())
+  respondedAt  DateTime?
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([counselorId, studentId, scholarshipId]) // Prevent duplicate recommendations
+  @@index([counselorId])
+  @@index([studentId, status])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum RecommendationResponseStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
 }
