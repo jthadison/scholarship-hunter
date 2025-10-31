@@ -17,17 +17,7 @@ import { ChevronRight, Home } from 'lucide-react'
 import { StatusDropdown } from './StatusDropdown'
 import { DeadlineCountdown } from './DeadlineCountdown'
 import { cn } from '@/lib/utils'
-
-type ApplicationStatus =
-  | 'NOT_STARTED'
-  | 'TODO'
-  | 'IN_PROGRESS'
-  | 'READY_FOR_REVIEW'
-  | 'SUBMITTED'
-  | 'AWAITING_DECISION'
-  | 'AWARDED'
-  | 'DENIED'
-  | 'WITHDRAWN'
+import type { ApplicationStatus } from '@prisma/client'
 
 interface WorkspaceHeaderProps {
   /**

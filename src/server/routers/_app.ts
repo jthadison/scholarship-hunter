@@ -14,6 +14,7 @@ import { recommendationRouter } from './recommendation'
 import { dexterRouter } from './dexter'
 import { essayRouter } from './essay'
 import { morganRouter } from './morgan'
+import { outcomeRouter } from './outcome'
 
 export const appRouter = router({
   auth: authRouter,
@@ -31,6 +32,7 @@ export const appRouter = router({
   dexter: dexterRouter, // Story 4.5: Dexter Agent - Document Manager Dashboard
   essay: essayRouter, // Story 4.6-4.10: Essay Prompt Analysis & Editor
   morgan: morganRouter, // Story 4.10: Morgan Agent - Essay Strategist Dashboard
+  outcome: outcomeRouter, // Story 5.1: Outcome Tracking & Status Updates
 })
 
 export type AppRouter = typeof appRouter

@@ -60,6 +60,7 @@ export function getColumnStatus(status: ApplicationStatus): ColumnStatus {
     case 'AWAITING_DECISION':
     case 'AWARDED':
     case 'DENIED':
+    case 'WAITLISTED': // Story 5.1: WAITLISTED goes to SUBMITTED column
     case 'WITHDRAWN':
       return 'SUBMITTED'
     default:
@@ -143,6 +144,8 @@ export function getStatusText(status: ApplicationStatus): string {
       return 'Awarded'
     case 'DENIED':
       return 'Denied'
+    case 'WAITLISTED': // Story 5.1
+      return 'Waitlisted'
     case 'WITHDRAWN':
       return 'Withdrawn'
     default:
@@ -172,6 +175,8 @@ export function getStatusColor(
       return 'green'
     case 'AWARDED':
       return 'green'
+    case 'WAITLISTED': // Story 5.1
+      return 'yellow'
     case 'DENIED':
     case 'WITHDRAWN':
       return 'gray'

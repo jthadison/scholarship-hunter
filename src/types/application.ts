@@ -95,6 +95,7 @@ export const STATUS_COLORS: Record<ApplicationStatus, string> = {
   AWAITING_DECISION: "green",
   AWARDED: "emerald",
   DENIED: "gray",
+  WAITLISTED: "yellow", // Story 5.1: Added for outcome tracking
   WITHDRAWN: "gray",
 };
 
@@ -113,9 +114,10 @@ export const STATUS_TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> 
   IN_PROGRESS: ["READY_FOR_REVIEW", "TODO", "WITHDRAWN"],
   READY_FOR_REVIEW: ["SUBMITTED", "IN_PROGRESS", "WITHDRAWN"],
   SUBMITTED: ["AWAITING_DECISION", "WITHDRAWN"],
-  AWAITING_DECISION: ["AWARDED", "DENIED", "WITHDRAWN"],
+  AWAITING_DECISION: ["AWARDED", "DENIED", "WAITLISTED", "WITHDRAWN"], // Story 5.1: Added WAITLISTED
   AWARDED: [], // Terminal state
   DENIED: [], // Terminal state
+  WAITLISTED: ["AWARDED", "DENIED", "WITHDRAWN"], // Story 5.1: Can transition from waitlist
   WITHDRAWN: [], // Terminal state
 };
 

@@ -40,17 +40,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-
-type ApplicationStatus =
-  | 'NOT_STARTED'
-  | 'TODO'
-  | 'IN_PROGRESS'
-  | 'READY_FOR_REVIEW'
-  | 'SUBMITTED'
-  | 'AWAITING_DECISION'
-  | 'AWARDED'
-  | 'DENIED'
-  | 'WITHDRAWN'
+import type { ApplicationStatus } from '@prisma/client'
 
 interface StatusDropdownProps {
   /**
@@ -101,9 +91,10 @@ const STATUS_TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
   IN_PROGRESS: ['READY_FOR_REVIEW', 'TODO', 'WITHDRAWN'],
   READY_FOR_REVIEW: ['SUBMITTED', 'IN_PROGRESS'],
   SUBMITTED: ['AWAITING_DECISION'],
-  AWAITING_DECISION: ['AWARDED', 'DENIED'],
+  AWAITING_DECISION: ['AWARDED', 'DENIED', 'WAITLISTED'],
   AWARDED: [],
   DENIED: [],
+  WAITLISTED: ['AWARDED', 'DENIED', 'WITHDRAWN'],
   WITHDRAWN: [],
 }
 
@@ -153,6 +144,11 @@ const STATUS_CONFIG: Record<
     label: 'Not Awarded',
     color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
     description: 'Application not selected',
+  },
+  WAITLISTED: {
+    label: 'Waitlisted',
+    color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    description: 'Placed on waiting list',
   },
   WITHDRAWN: {
     label: 'Withdrawn',

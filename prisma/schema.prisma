@@ -435,6 +435,7 @@ enum ApplicationStatus {
   AWAITING_DECISION
   AWARDED
   DENIED
+  WAITLISTED // Story 5.1: Added for outcome tracking
   WITHDRAWN
 }
 
