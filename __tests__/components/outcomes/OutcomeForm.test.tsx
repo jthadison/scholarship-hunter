@@ -62,7 +62,7 @@ describe('OutcomeForm Component - Story 5.1', () => {
         />
       )
 
-      expect(screen.getByText(/Outcome/i)).toBeInTheDocument()
+      expect(screen.getByRole('combobox', { name: /outcome/i })).toBeInTheDocument()
     })
 
     it('AC3: should render decision date field', () => {
