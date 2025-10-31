@@ -6,7 +6,6 @@
  * Story: 5.3 - Gap Analysis (AC #1, #2, #3, #6)
  */
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // @ts-nocheck - Integration test imports kept for future implementation
 
 import { describe, it, expect } from 'vitest'
