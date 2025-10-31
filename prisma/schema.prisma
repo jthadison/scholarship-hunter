@@ -56,6 +56,8 @@ model Student {
   analyticsSnapshots AnalyticsSnapshot[]
   gapAnalysisSnapshots GapAnalysisSnapshot[] // Story 5.3
   profileGoals       ProfileGoal[] // Story 5.4
+  profilePositionSnapshots ProfilePositionSnapshot[] // Story 5.5
+  achievements       StudentAchievement[] // Story 5.5
   notifications      Notification[]
   notificationPreferences NotificationPreferences?
   alerts             Alert[] // Story 3.4
@@ -873,4 +875,71 @@ enum GoalStatus {
   IN_PROGRESS
   COMPLETED
   ABANDONED
+}
+
+// Story 5.5: Competitive Positioning Over Time
+model ProfilePositionSnapshot {
+  id        String  @id @default(cuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  // Snapshot timing
+  snapshotDate DateTime @default(now())
+
+  // Profile metrics
+  profileStrengthScore Float // 0-100
+
+  // Competitive positioning
+  percentileRanking Float // 0-100 (e.g., 85 = top 15%)
+
+  // Scholarship access metrics
+  totalMatches       Int @default(0)
+  mustApplyCount     Int @default(0)
+  shouldApplyCount   Int @default(0)
+  ifTimePermitsCount Int @default(0)
+
+  // Funding projection
+  projectedFunding Float @default(0) // Expected funding based on match quality
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId, snapshotDate])
+  @@index([snapshotDate])
+}
+
+model AchievementBadge {
+  id          String   @id @default(cuid())
+  badgeType   BadgeType @unique
+  title       String
+  description String
+  iconName    String // For displaying appropriate icon
+
+  students StudentAchievement[]
+
+  createdAt DateTime @default(now())
+
+  @@index([badgeType])
+}
+
+model StudentAchievement {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badge     AchievementBadge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  unlockedAt DateTime @default(now())
+
+  @@unique([studentId, badgeId])
+  @@index([studentId])
+  @@index([badgeId])
+}
+
+enum BadgeType {
+  TOP_25_ACADEMIC
+  TOP_10_ACADEMIC
+  LEADERSHIP_CHAMPION
+  COMMUNITY_IMPACT
+  QUICK_IMPROVER
+  GOAL_ACHIEVER
 }
