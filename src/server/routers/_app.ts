@@ -18,6 +18,7 @@ import { outcomeRouter } from './outcome'
 import { analyticsRouter } from './analytics'
 import { gapAnalysisRouter } from './gap-analysis'
 import { goalsRouter } from './goals'
+import { positioningRouter } from './positioning'
 
 export const appRouter = router({
   auth: authRouter,
@@ -39,6 +40,7 @@ export const appRouter = router({
   analytics: analyticsRouter, // Story 5.2: Analytics Dashboard - Success Metrics
   gapAnalysis: gapAnalysisRouter, // Story 5.3: Gap Analysis - Profile Improvement Recommendations
   goals: goalsRouter, // Story 5.4: Profile Improvement Tracker
+  positioning: positioningRouter, // Story 5.5: Competitive Positioning Over Time
 })
 
 export type AppRouter = typeof appRouter
