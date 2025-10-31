@@ -60,6 +60,7 @@ export function getColumnStatus(status: ApplicationStatus): ColumnStatus {
     case 'AWAITING_DECISION':
     case 'AWARDED':
     case 'DENIED':
+    case 'WAITLISTED': // Story 5.1: WAITLISTED goes to SUBMITTED column
     case 'WITHDRAWN':
       return 'SUBMITTED'
     default:

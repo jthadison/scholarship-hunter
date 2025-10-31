@@ -15,7 +15,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { outcomeRouter } from '@/server/routers/outcome'
-import { TRPCError } from '@trpc/server'
 import { OutcomeResult, ApplicationStatus } from '@prisma/client'
 
 // Mock prisma
@@ -42,6 +41,7 @@ vi.mock('@/server/db', () => ({
 describe('Outcome Router - Story 5.1 Tests', () => {
   const mockCtx = {
     userId: 'student-123',
+    clerkId: 'clerk-123',
     prisma: mockPrisma as any,
   }
 
