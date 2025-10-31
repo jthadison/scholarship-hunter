@@ -55,6 +55,7 @@ model Student {
   outcomes           Outcome[]
   analyticsSnapshots AnalyticsSnapshot[]
   gapAnalysisSnapshots GapAnalysisSnapshot[] // Story 5.3
+  profileGoals       ProfileGoal[] // Story 5.4
   notifications      Notification[]
   notificationPreferences NotificationPreferences?
   alerts             Alert[] // Story 3.4
@@ -812,4 +813,64 @@ enum AtRiskOutcome {
   MISSED_DEADLINE
   WITHDRAWN
   DEADLINE_EXTENDED
+}
+
+// Story 5.4: Profile Improvement Tracker
+model ProfileGoal {
+  id           String     @id @default(cuid())
+  studentId    String
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  goalType     GoalType
+  targetValue  Float
+  currentValue Float      @default(0)
+  startDate    DateTime   @default(now())
+  targetDate   DateTime
+  status       GoalStatus @default(NOT_STARTED)
+
+  // Impact estimation (profile strength points)
+  impactEstimate Float    @default(0)
+
+  // Optional notes
+  notes        String?    @db.Text
+
+  // Milestones tracking
+  milestones   ProfileGoalMilestone[]
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([studentId, status])
+  @@index([studentId, targetDate])
+  @@index([status])
+}
+
+model ProfileGoalMilestone {
+  id                    String      @id @default(cuid())
+  profileGoalId         String
+  profileGoal           ProfileGoal @relation(fields: [profileGoalId], references: [id], onDelete: Cascade)
+
+  achievedDate          DateTime    @default(now())
+  description           String
+  profileStrengthBefore Float
+  profileStrengthAfter  Float
+
+  @@index([profileGoalId])
+  @@index([achievedDate])
+}
+
+enum GoalType {
+  GPA_IMPROVEMENT
+  VOLUNTEER_HOURS
+  LEADERSHIP_POSITION
+  EXTRACURRICULAR
+  TEST_SCORE
+  CUSTOM
+}
+
+enum GoalStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
 }

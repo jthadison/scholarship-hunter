@@ -17,6 +17,7 @@ import { morganRouter } from './morgan'
 import { outcomeRouter } from './outcome'
 import { analyticsRouter } from './analytics'
 import { gapAnalysisRouter } from './gap-analysis'
+import { goalsRouter } from './goals'
 
 export const appRouter = router({
   auth: authRouter,
@@ -37,6 +38,7 @@ export const appRouter = router({
   outcome: outcomeRouter, // Story 5.1: Outcome Tracking & Status Updates
   analytics: analyticsRouter, // Story 5.2: Analytics Dashboard - Success Metrics
   gapAnalysis: gapAnalysisRouter, // Story 5.3: Gap Analysis - Profile Improvement Recommendations
+  goals: goalsRouter, // Story 5.4: Profile Improvement Tracker
 })
 
 export type AppRouter = typeof appRouter
