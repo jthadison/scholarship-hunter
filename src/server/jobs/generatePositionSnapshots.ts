@@ -75,8 +75,8 @@ export async function processPositionSnapshots() {
         // Calculate percentile ranking (rank-based)
         // Top student = 100th percentile, bottom = 0th percentile
         const percentileRanking =
-          students.length > 1
-            ? ((students.length - i) / students.length) * 100
+          sortedStudents.length > 1
+            ? ((sortedStudents.length - i) / sortedStudents.length) * 100
             : 100;
 
         // Count matches by tier

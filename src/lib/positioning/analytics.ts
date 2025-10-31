@@ -304,7 +304,8 @@ export async function getPeerBenchmark(
   const maxStrength = profileStrength + peerRange;
 
   // Get peer snapshots (most recent for each student)
-  const peerSnapshots = await prisma.profilePositionSnapshot.findMany({
+  // Using pagination-friendly approach: Get distinct student IDs first, then fetch their latest snapshots
+  const peerStudentIds = await prisma.profilePositionSnapshot.findMany({
     where: {
       studentId: {
         not: studentId, // Exclude current student
@@ -314,9 +315,21 @@ export async function getPeerBenchmark(
         lte: maxStrength,
       },
     },
+    select: {
+      studentId: true,
+    },
+    distinct: ["studentId"],
+    take: 100, // Limit peer group size for performance
+  });
+
+  const peerSnapshots = await prisma.profilePositionSnapshot.findMany({
+    where: {
+      studentId: {
+        in: peerStudentIds.map((p) => p.studentId),
+      },
+    },
     orderBy: { snapshotDate: "desc" },
     distinct: ["studentId"],
-    take: 100, // Limit for performance
   }) as Array<{ projectedFunding: number; totalMatches: number }>;
 
   if (peerSnapshots.length === 0) {
