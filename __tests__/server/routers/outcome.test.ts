@@ -547,7 +547,7 @@ describe('Outcome Router - Story 5.1 Tests', () => {
       const caller = outcomeRouter.createCaller(mockCtx)
       const result = await caller.getHistory()
 
-      expect(result[0].application.scholarship).toEqual({
+      expect(result[0]?.application.scholarship).toEqual({
         id: 'scholarship-789',
         name: 'Test Scholarship',
         awardAmount: 5000,

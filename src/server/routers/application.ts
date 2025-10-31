@@ -309,6 +309,7 @@ export const applicationRouter = router({
           'AWAITING_DECISION',
           'AWARDED',
           'DENIED',
+          'WAITLISTED',
           'WITHDRAWN',
         ]),
       })
@@ -812,6 +813,7 @@ export const applicationRouter = router({
                 'AWAITING_DECISION',
                 'AWARDED',
                 'DENIED',
+                'WAITLISTED',
                 'WITHDRAWN',
               ])
               .optional(),
