@@ -87,7 +87,9 @@
       "Bash(pgrep:*)",
       "Bash(grep:*)",
       "Bash(git show:*)",
-      "SlashCommand(/bmad:shm:deadline-coordinator)"
+      "SlashCommand(/bmad:shm:deadline-coordinator)",
+      "Bash(npx prisma migrate deploy:*)",
+      "Bash(npx prisma migrate:*)"
     ],
     "deny": [],
     "ask": []
