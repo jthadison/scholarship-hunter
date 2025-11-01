@@ -90,7 +90,9 @@
       "SlashCommand(/bmad:shm:deadline-coordinator)",
       "Bash(npx prisma migrate deploy:*)",
       "Bash(npx prisma migrate:*)",
-      "Bash(perl:*)"
+      "Bash(perl:*)",
+      "Bash(psql:*)",
+      "Bash(tsx scripts/setup-fulltext-search.ts:*)"
     ],
     "deny": [],
     "ask": []

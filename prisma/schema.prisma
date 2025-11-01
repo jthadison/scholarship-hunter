@@ -1151,3 +1151,81 @@ enum ExportFormat {
   PDF
   JSON
 }
+
+// ============================================================================
+// Story 5.10: Platform-Wide Search & Help System
+// ============================================================================
+
+// Recent searches tracking (limit 5 per student)
+model RecentSearch {
+  id        String   @id @default(cuid())
+  studentId String
+  query     String
+  resultCount Int     @default(0)
+  timestamp DateTime @default(now())
+
+  @@index([studentId, timestamp])
+  @@index([timestamp])
+}
+
+// Help articles content management
+model HelpArticle {
+  id          String       @id @default(cuid())
+  title       String
+  slug        String       @unique
+  description String       @db.Text
+  content     String       @db.Text // Markdown content
+  category    HelpCategory
+  context     String[]     // Routes where article is relevant: ['/dashboard', '/scholarships']
+  keywords    String[]     // Search keywords
+  order       Int          @default(0) // Display order within category
+  relatedArticleIds String[] // IDs of related articles
+
+  feedback HelpFeedback[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([slug])
+}
+
+enum HelpCategory {
+  GETTING_STARTED
+  SCHOLARSHIPS
+  APPLICATIONS
+  ESSAYS
+  DOCUMENTS
+  ANALYTICS
+  TROUBLESHOOTING
+}
+
+// Help article feedback tracking
+model HelpFeedback {
+  id            String      @id @default(cuid())
+  helpArticleId String
+  helpArticle   HelpArticle @relation(fields: [helpArticleId], references: [id], onDelete: Cascade)
+  studentId     String
+  helpful       Boolean
+  comment       String?     @db.Text
+  timestamp     DateTime    @default(now())
+
+  @@index([helpArticleId])
+  @@index([studentId, timestamp])
+  @@index([timestamp])
+}
+
+// Search analytics for optimization
+model SearchAnalytics {
+  id               String   @id @default(cuid())
+  studentId        String
+  query            String
+  resultCount      Int      @default(0)
+  clickedResultId  String?
+  clickedResultType String? // 'scholarship', 'application', 'essay', 'document'
+  timestamp        DateTime @default(now())
+
+  @@index([query])
+  @@index([studentId, timestamp])
+  @@index([timestamp])
+}
