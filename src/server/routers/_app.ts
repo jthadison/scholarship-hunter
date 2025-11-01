@@ -22,6 +22,7 @@ import { positioningRouter } from './positioning'
 import { counselorRouter } from './counselor'
 import { scholarshipRecommendationRouter } from './scholarship-recommendation'
 import { parentsRouter } from './parents'
+import { exportsRouter } from './exports'
 
 export const appRouter = router({
   auth: authRouter,
@@ -47,6 +48,7 @@ export const appRouter = router({
   counselor: counselorRouter, // Story 5.6: Counselor Portal - Student Monitoring
   scholarshipRecommendation: scholarshipRecommendationRouter, // Story 5.7: Counselor Recommendation Engine
   parents: parentsRouter, // Story 5.8: Parent/Guardian View - Progress Monitoring
+  exports: exportsRouter, // Story 5.9: Export & Reporting
 })
 
 export type AppRouter = typeof appRouter
