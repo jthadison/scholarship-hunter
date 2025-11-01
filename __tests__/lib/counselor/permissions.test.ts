@@ -105,7 +105,7 @@ describe('Counselor Permission System', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         counselor: mockCounselor,
-      })
+      } as any)
 
       const result = await getCounselorByUserId('clerk-123')
 
@@ -126,7 +126,7 @@ describe('Counselor Permission System', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         counselor: null,
-      })
+      } as any)
 
       await expect(getCounselorByUserId('clerk-123')).rejects.toThrow(
         'User is not a counselor'
@@ -164,7 +164,7 @@ describe('Counselor Permission System', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         student: mockStudent,
-      })
+      } as any)
 
       const result = await getStudentByUserId('clerk-456')
 
@@ -185,7 +185,7 @@ describe('Counselor Permission System', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         student: null,
-      })
+      } as any)
 
       await expect(getStudentByUserId('clerk-456')).rejects.toThrow(
         'User is not a student'

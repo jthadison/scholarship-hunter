@@ -6,7 +6,6 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { TRPCError } from '@trpc/server'
 
 // Mock Prisma client
 const mockPrisma = {
@@ -256,7 +255,7 @@ describe('Scholarship Recommendation Router', () => {
         },
       })
 
-      const existingStudentIds = new Set(existingRecs.map((r) => r.studentId))
+      const existingStudentIds = new Set(existingRecs.map((r: { studentId: string }) => r.studentId))
       const newStudentIds = studentIds.filter((id) => !existingStudentIds.has(id))
 
       expect(newStudentIds).toEqual(['student-1', 'student-3'])
@@ -394,8 +393,8 @@ describe('Scholarship Recommendation Router', () => {
         _count: true,
       })
 
-      const totalSent = metrics.reduce((sum, m) => sum + m._count, 0)
-      const accepted = metrics.find((m) => m.status === 'ACCEPTED')?._count || 0
+      const totalSent = metrics.reduce((sum: number, m: { _count: number }) => sum + m._count, 0)
+      const accepted = metrics.find((m: { status: string }) => m.status === 'ACCEPTED')?._count || 0
       const acceptanceRate = totalSent > 0 ? (accepted / totalSent) * 100 : 0
 
       expect(totalSent).toBe(15)
@@ -419,7 +418,7 @@ describe('Scholarship Recommendation Router', () => {
           select: { createdAt: true, respondedAt: true },
         })
 
-      const totalHours = respondedRecommendations.reduce((sum, r) => {
+      const totalHours = respondedRecommendations.reduce((sum: number, r: { createdAt: Date; respondedAt: Date | null }) => {
         const hours = (r.respondedAt!.getTime() - r.createdAt.getTime()) / (1000 * 60 * 60)
         return sum + hours
       }, 0)
@@ -444,7 +443,7 @@ describe('Scholarship Recommendation Router', () => {
         })
 
       expect(pendingRecommendations).toHaveLength(2)
-      expect(pendingRecommendations.every((r) => r.status === 'PENDING')).toBe(true)
+      expect(pendingRecommendations.every((r: { status: string }) => r.status === 'PENDING')).toBe(true)
     })
   })
 

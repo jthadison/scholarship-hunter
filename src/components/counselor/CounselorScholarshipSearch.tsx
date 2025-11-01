@@ -35,11 +35,11 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { trpc } from '@/lib/trpc'
+import { trpc } from '@/shared/lib/trpc'
 
 export interface CounselorScholarshipSearchProps {
-  /** Callback when recommendation action is triggered */
-  onRecommend?: (scholarshipId: string, studentId: string) => void
+  /** Callback when recommendation action is triggered (currently unused - planned for future implementation) */
+  // onRecommend?: (scholarshipId: string, studentId: string) => void
 }
 
 type SortOption = 'matchScore' | 'awardAmount' | 'deadline' | 'strategicValue'
@@ -51,9 +51,7 @@ type SortOption = 'matchScore' | 'awardAmount' | 'deadline' | 'strategicValue'
  * AC #1: Filter by student eligibility dropdown
  * AC #1: Display scholarships with match scores and priority tiers
  */
-export function CounselorScholarshipSearch({
-  onRecommend,
-}: CounselorScholarshipSearchProps) {
+export function CounselorScholarshipSearch(_props: CounselorScholarshipSearchProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<SortOption>('matchScore')
@@ -116,7 +114,7 @@ export function CounselorScholarshipSearch({
                 <SelectItem value="all">All Scholarships</SelectItem>
                 {students.map((student: any) => (
                   <SelectItem key={student.id} value={student.id}>
-                    {student.firstName} {student.lastName}
+                    {student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim()}
                     {student.profileStrength && (
                       <span className="ml-2 text-xs text-muted-foreground">
                         (Strength: {student.profileStrength}/100)
@@ -150,7 +148,7 @@ export function CounselorScholarshipSearch({
             {selectedStudentId && (
               <Badge variant="secondary">
                 Showing matches for{' '}
-                {students.find((s: any) => s.id === selectedStudentId)?.firstName || 'Student'}
+                {students.find((s: any) => s.id === selectedStudentId)?.name || 'Student'}
               </Badge>
             )}
           </div>
