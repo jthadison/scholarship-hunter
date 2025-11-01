@@ -2,6 +2,7 @@ import { UserProfile } from '@clerk/nextjs'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/server/db'
+import { SettingsTabs } from '@/components/settings/SettingsTabs'
 
 export default async function SettingsPage() {
   const { userId } = await auth()
@@ -10,12 +11,13 @@ export default async function SettingsPage() {
     redirect('/sign-in')
   }
 
-  // Get user account creation date
+  // Get user account creation date and role
   const user = await prisma.user.findUnique({
     where: { clerkId: userId },
     select: {
       createdAt: true,
       email: true,
+      role: true,
     },
   })
 
@@ -47,6 +49,13 @@ export default async function SettingsPage() {
               </span>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Access Management Tabs (Parent & Counselor Access - Story 5.6, 5.8) */}
+      {user?.role === 'STUDENT' && (
+        <div className="mb-6">
+          <SettingsTabs />
         </div>
       )}
 

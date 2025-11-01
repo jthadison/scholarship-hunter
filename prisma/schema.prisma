@@ -1057,3 +1057,56 @@ enum RecommendationResponseStatus {
   DECLINED
   EXPIRED
 }
+
+// Story 5.8: Parent/Guardian View - Progress Monitoring
+model StudentParentAccess {
+  id        String   @id @default(cuid())
+  studentId String
+  parentId  String // User with PARENT role
+
+  permissions    ParentPermission[]
+  accessGranted  Boolean            @default(false)
+  grantedAt      DateTime?
+  revokedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, parentId])
+  @@index([studentId])
+  @@index([parentId])
+  @@index([parentId, accessGranted])
+}
+
+model ParentNotificationPreferences {
+  id        String   @id @default(cuid())
+  parentId  String
+  studentId String
+
+  notifyOnSubmit   Boolean                     @default(true)
+  notifyOnAward    Boolean                     @default(true)
+  notifyOnDeadline Boolean                     @default(true)
+  emailFrequency   ParentNotificationFrequency @default(REALTIME)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([parentId, studentId])
+  @@index([parentId])
+  @@index([studentId])
+  @@index([emailFrequency])
+}
+
+enum ParentPermission {
+  VIEW_APPLICATIONS
+  VIEW_OUTCOMES
+  VIEW_PROFILE
+  RECEIVE_NOTIFICATIONS
+}
+
+enum ParentNotificationFrequency {
+  REALTIME
+  DAILY_DIGEST
+  WEEKLY_DIGEST
+  OFF
+}
