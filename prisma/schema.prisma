@@ -64,6 +64,7 @@ model Student {
   alerts                   Alert[] // Story 3.4
   counselorPermissions     StudentCounselorPermission[] // Story 5.6: Counselor access permissions
   atRiskEvents             AtRiskEvent[] // Story 3.10: At-Risk Application Detection
+  exportHistory            ExportHistory[] // Story 5.9: Export & Reporting
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1109,4 +1110,44 @@ enum ParentNotificationFrequency {
   DAILY_DIGEST
   WEEKLY_DIGEST
   OFF
+}
+
+// Story 5.9: Export & Reporting
+model ExportHistory {
+  id        String       @id @default(cuid())
+  studentId String
+  student   Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  exportType   ExportType
+  format       ExportFormat
+
+  // Date range for the export
+  dateRangeStart DateTime?
+  dateRangeEnd   DateTime?
+
+  // Privacy settings applied (stored as JSON)
+  privacySettings Json? // { excludePersonalInfo: boolean, excludeSensitiveDetails: boolean }
+
+  // File metadata
+  fileSize Int? // Bytes
+
+  // Timestamps
+  downloadedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  @@index([studentId, downloadedAt])
+  @@index([downloadedAt])
+}
+
+enum ExportType {
+  APPLICATIONS_LIST
+  FUNDING_SUMMARY
+  ANALYTICS_REPORT
+  FULL_DATA
+}
+
+enum ExportFormat {
+  CSV
+  PDF
+  JSON
 }

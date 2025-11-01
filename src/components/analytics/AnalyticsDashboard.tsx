@@ -17,7 +17,6 @@
 import { trpc } from '@/shared/lib/trpc'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Button } from '@/components/ui/button'
 import {
   Trophy,
   FileText,
@@ -25,10 +24,7 @@ import {
   TrendingUp,
   DollarSign,
   BarChart3,
-  Download,
 } from 'lucide-react'
-import { downloadAnalyticsReport } from '@/lib/analytics/pdf-export'
-import { useState } from 'react'
 import { MetricCard } from './MetricCard'
 import { GoalProgressCard } from './GoalProgressCard'
 import { FundingTrendChart } from './FundingTrendChart'
@@ -37,9 +33,9 @@ import { CumulativeFundingChart } from './CumulativeFundingChart'
 import { ApplicationsTrendChart } from './ApplicationsTrendChart'
 import { TierSuccessTable } from './TierSuccessTable'
 import { ROICard } from './ROICard'
+import { ExportButton } from '@/components/exports'
 
 export function AnalyticsDashboard() {
-  const [isExporting, setIsExporting] = useState(false)
 
   // Fetch analytics data
   const { data: snapshot, isLoading: snapshotLoading } =
@@ -62,24 +58,6 @@ export function AnalyticsDashboard() {
     distributionLoading ||
     tierLoading ||
     roiLoading
-
-  const handleExportPDF = () => {
-    if (!snapshot || !tierBreakdown) return
-
-    setIsExporting(true)
-    try {
-      downloadAnalyticsReport({
-        studentName: 'Student', // Will be replaced with actual name in production
-        snapshot,
-        tierBreakdown,
-        goalProgress: goalProgress || undefined,
-      })
-    } catch (error) {
-      console.error('Error generating PDF:', error)
-    } finally {
-      setIsExporting(false)
-    }
-  }
 
   if (isLoading) {
     return <AnalyticsDashboardSkeleton />
@@ -113,14 +91,7 @@ export function AnalyticsDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <Button
-            onClick={handleExportPDF}
-            disabled={isExporting || !snapshot}
-            variant="outline"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {isExporting ? 'Generating...' : 'Export PDF'}
-          </Button>
+          <ExportButton />
           <BarChart3 className="h-10 w-10 text-blue-600" />
         </div>
       </div>
