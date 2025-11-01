@@ -9,7 +9,7 @@ import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/server/db'
 import Link from 'next/link'
-import { Home, FileText, BookOpen, Settings, LogOut } from 'lucide-react'
+import { Home, BookOpen, Settings } from 'lucide-react'
 import { UserButton } from '@clerk/nextjs'
 
 export default async function ParentLayout({ children }: { children: React.ReactNode }) {

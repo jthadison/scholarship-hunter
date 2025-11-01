@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { trpc } from '@/shared/lib/trpc'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Switch } from '@/components/ui/switch'
+import { Switch } from '@/shared/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -27,7 +27,7 @@ export function ParentNotificationSettings() {
     trpc.parents.getAccessibleStudents.useQuery()
 
   // Set initial student ID when data loads
-  if (accessibleStudents && accessibleStudents.length > 0 && !selectedStudentId) {
+  if (accessibleStudents?.length && !selectedStudentId) {
     setSelectedStudentId(accessibleStudents[0].studentId)
   }
 
@@ -131,7 +131,7 @@ export function ParentNotificationSettings() {
                 <Switch
                   id="notify-submit"
                   checked={preferences.notifyOnSubmit}
-                  onCheckedChange={(checked) => {
+                  onCheckedChange={(checked: boolean) => {
                     preferences.notifyOnSubmit = checked
                   }}
                 />
@@ -147,7 +147,7 @@ export function ParentNotificationSettings() {
                 <Switch
                   id="notify-award"
                   checked={preferences.notifyOnAward}
-                  onCheckedChange={(checked) => {
+                  onCheckedChange={(checked: boolean) => {
                     preferences.notifyOnAward = checked
                   }}
                 />
@@ -163,7 +163,7 @@ export function ParentNotificationSettings() {
                 <Switch
                   id="notify-deadline"
                   checked={preferences.notifyOnDeadline}
-                  onCheckedChange={(checked) => {
+                  onCheckedChange={(checked: boolean) => {
                     preferences.notifyOnDeadline = checked
                   }}
                 />

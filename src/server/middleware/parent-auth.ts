@@ -8,7 +8,7 @@
  */
 
 import { TRPCError } from '@trpc/server'
-import { db } from '@/server/db'
+import { prisma } from '@/server/db'
 import type { ParentPermission } from '@prisma/client'
 
 /**
@@ -19,7 +19,7 @@ import type { ParentPermission } from '@prisma/client'
  * @returns StudentParentAccess record if access granted, null otherwise
  */
 export async function verifyParentAccess(parentUserId: string, studentId: string) {
-  const access = await db.studentParentAccess.findUnique({
+  const access = await prisma.studentParentAccess.findUnique({
     where: {
       studentId_parentId: {
         studentId,
@@ -65,7 +65,7 @@ export async function hasParentPermission(
  * @returns Array of student IDs with access details
  */
 export async function getParentAccessibleStudents(parentUserId: string) {
-  const accessRecords = await db.studentParentAccess.findMany({
+  const accessRecords = await prisma.studentParentAccess.findMany({
     where: {
       parentId: parentUserId,
       accessGranted: true,

@@ -10,7 +10,7 @@
 import { render } from '@react-email/render'
 import { resend, FROM_EMAIL, validateResendConfig } from '@/lib/email/resend-client'
 import ParentAwardNotificationEmail from '@/emails/ParentAwardNotificationEmail'
-import { db } from '@/server/db'
+import { prisma } from '@/server/db'
 import { ParentNotificationFrequency } from '@prisma/client'
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
@@ -81,7 +81,7 @@ export async function triggerParentOutcomeNotifications(
   }
 
   // Find parents with access and notification preferences enabled
-  const parentAccessRecords = await db.studentParentAccess.findMany({
+  const parentAccessRecords = await prisma.studentParentAccess.findMany({
     where: {
       studentId,
       accessGranted: true,
@@ -92,7 +92,7 @@ export async function triggerParentOutcomeNotifications(
     },
   })
 
-  const student = await db.student.findUnique({
+  const student = await prisma.student.findUnique({
     where: { id: studentId },
     select: { firstName: true },
   })
@@ -105,7 +105,7 @@ export async function triggerParentOutcomeNotifications(
   // Send notifications to each parent
   for (const access of parentAccessRecords) {
     // Check notification preferences
-    const preferences = await db.parentNotificationPreferences.findUnique({
+    const preferences = await prisma.parentNotificationPreferences.findUnique({
       where: {
         parentId_studentId: {
           parentId: access.parentId,
@@ -127,7 +127,7 @@ export async function triggerParentOutcomeNotifications(
     // For digest notifications, this would be queued for batch processing
     if (preferences.emailFrequency === ParentNotificationFrequency.REALTIME) {
       // Get parent email
-      const parent = await db.user.findUnique({
+      const parent = await prisma.user.findUnique({
         where: { id: access.parentId },
         select: { email: true },
       })

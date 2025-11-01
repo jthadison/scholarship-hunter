@@ -24,7 +24,7 @@ export function ParentDashboard() {
     trpc.parents.getAccessibleStudents.useQuery()
 
   // Set initial student ID when data loads
-  if (accessibleStudents && accessibleStudents.length > 0 && !selectedStudentId) {
+  if (accessibleStudents?.length && !selectedStudentId) {
     setSelectedStudentId(accessibleStudents[0].studentId)
   }
 

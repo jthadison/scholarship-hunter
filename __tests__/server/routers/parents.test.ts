@@ -14,7 +14,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { TRPCError } from '@trpc/server'
-import { ParentPermission, UserRole } from '@prisma/client'
+import { ParentPermission } from '@prisma/client'
 
 // Mock the database module FIRST (before imports)
 vi.mock('@/server/db', () => ({
@@ -45,7 +45,7 @@ import {
   enforceParentAccess,
   hasParentPermission,
 } from '@/server/middleware/parent-auth'
-import { db } from '@/server/db'
+import { prisma as db } from '@/server/db'
 
 // Get mocked db for test assertions
 const mockDb = db as unknown as {

@@ -39,11 +39,18 @@ export const parentsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx
+      const { prisma } = ctx
+
+      if (!ctx.userId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'You must be logged in',
+        })
+      }
 
       // Get student record
-      const student = await db.student.findUnique({
-        where: { userId: session.user.id },
+      const student = await prisma.student.findUnique({
+        where: { userId: ctx.userId },
         include: { user: true },
       })
 
@@ -55,7 +62,7 @@ export const parentsRouter = router({
       }
 
       // Check if parent user exists
-      let parentUser = await db.user.findUnique({
+      let parentUser = await prisma.user.findUnique({
         where: { email: input.parentEmail },
       })
 
@@ -77,7 +84,7 @@ export const parentsRouter = router({
       }
 
       // Check if access record already exists
-      const existingAccess = await db.studentParentAccess.findUnique({
+      const existingAccess = await prisma.studentParentAccess.findUnique({
         where: {
           studentId_parentId: {
             studentId: student.id,
@@ -88,7 +95,7 @@ export const parentsRouter = router({
 
       if (existingAccess) {
         // Update existing record (re-grant access if previously revoked)
-        await db.studentParentAccess.update({
+        await prisma.studentParentAccess.update({
           where: { id: existingAccess.id },
           data: {
             permissions: input.permissions,
@@ -99,7 +106,7 @@ export const parentsRouter = router({
         })
       } else {
         // Create new access record
-        await db.studentParentAccess.create({
+        await prisma.studentParentAccess.create({
           data: {
             studentId: student.id,
             parentId: parentUser.id,
@@ -110,7 +117,7 @@ export const parentsRouter = router({
         })
 
         // Create default notification preferences
-        await db.parentNotificationPreferences.create({
+        await prisma.parentNotificationPreferences.create({
           data: {
             parentId: parentUser.id,
             studentId: student.id,
@@ -141,11 +148,18 @@ export const parentsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx
+      const { prisma } = ctx
+
+      if (!ctx.userId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'You must be logged in',
+        })
+      }
 
       // Get student record
-      const student = await db.student.findUnique({
-        where: { userId: session.user.id },
+      const student = await prisma.student.findUnique({
+        where: { userId: ctx.userId },
       })
 
       if (!student) {
@@ -156,7 +170,7 @@ export const parentsRouter = router({
       }
 
       // Find access record
-      const access = await db.studentParentAccess.findUnique({
+      const access = await prisma.studentParentAccess.findUnique({
         where: {
           studentId_parentId: {
             studentId: student.id,
@@ -173,7 +187,7 @@ export const parentsRouter = router({
       }
 
       // Revoke access immediately
-      await db.studentParentAccess.update({
+      await prisma.studentParentAccess.update({
         where: { id: access.id },
         data: {
           accessGranted: false,
@@ -191,11 +205,18 @@ export const parentsRouter = router({
    * Get list of parents with access (Student-only procedure)
    */
   listParents: protectedProcedure.query(async ({ ctx }) => {
-    const { db, session } = ctx
+    const { prisma } = ctx
+
+      if (!ctx.userId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'You must be logged in',
+        })
+      }
 
     // Get student record
-    const student = await db.student.findUnique({
-      where: { userId: session.user.id },
+    const student = await prisma.student.findUnique({
+      where: { userId: ctx.userId },
     })
 
     if (!student) {
@@ -206,7 +227,7 @@ export const parentsRouter = router({
     }
 
     // Get all parent access records
-    const accessRecords = await db.studentParentAccess.findMany({
+    const accessRecords = await prisma.studentParentAccess.findMany({
       where: {
         studentId: student.id,
       },
@@ -229,20 +250,27 @@ export const parentsRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx
+      const { prisma } = ctx
+
+      if (!ctx.userId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'You must be logged in',
+        })
+      }
 
       // Enforce parent access
       const access = await enforceParentAccess(
-        session.user.id,
+        ctx.userId,
         input.studentId,
         ParentPermission.VIEW_APPLICATIONS
       )
 
       // Audit log
-      await auditParentAccess(session.user.id, input.studentId, 'VIEW_DASHBOARD')
+      await auditParentAccess(ctx.userId, input.studentId, 'VIEW_DASHBOARD')
 
       // Fetch student data
-      const student = await db.student.findUnique({
+      const student = await prisma.student.findUnique({
         where: { id: input.studentId },
         include: {
           applications: {
@@ -353,9 +381,9 @@ export const parentsRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const { session } = ctx
+      const { prisma } = ctx
 
-      const access = await verifyParentAccess(session.user.id, input.studentId)
+      const access = await verifyParentAccess(ctx.userId, input.studentId)
 
       if (!access) {
         return {
@@ -374,9 +402,9 @@ export const parentsRouter = router({
    * Get list of students parent has access to (Parent-only procedure)
    */
   getAccessibleStudents: protectedProcedure.query(async ({ ctx }) => {
-    const { session } = ctx
+    const { prisma } = ctx
 
-    const accessRecords = await getParentAccessibleStudents(session.user.id)
+    const accessRecords = await getParentAccessibleStudents(ctx.userId)
 
     // TODO: Include student details once we add the relation to Student model
 
@@ -397,16 +425,23 @@ export const parentsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx
+      const { prisma } = ctx
+
+      if (!ctx.userId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'You must be logged in',
+        })
+      }
 
       // Enforce parent access
-      await enforceParentAccess(session.user.id, input.studentId, ParentPermission.RECEIVE_NOTIFICATIONS)
+      await enforceParentAccess(ctx.userId, input.studentId, ParentPermission.RECEIVE_NOTIFICATIONS)
 
       // Update or create preferences
-      const preferences = await db.parentNotificationPreferences.upsert({
+      const preferences = await prisma.parentNotificationPreferences.upsert({
         where: {
           parentId_studentId: {
-            parentId: session.user.id,
+            parentId: ctx.userId,
             studentId: input.studentId,
           },
         },
@@ -417,7 +452,7 @@ export const parentsRouter = router({
           emailFrequency: input.emailFrequency,
         },
         create: {
-          parentId: session.user.id,
+          parentId: ctx.userId,
           studentId: input.studentId,
           notifyOnSubmit: input.notifyOnSubmit,
           notifyOnAward: input.notifyOnAward,
@@ -439,15 +474,22 @@ export const parentsRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx
+      const { prisma } = ctx
+
+      if (!ctx.userId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'You must be logged in',
+        })
+      }
 
       // Enforce parent access
-      await enforceParentAccess(session.user.id, input.studentId)
+      await enforceParentAccess(ctx.userId, input.studentId)
 
-      const preferences = await db.parentNotificationPreferences.findUnique({
+      const preferences = await prisma.parentNotificationPreferences.findUnique({
         where: {
           parentId_studentId: {
-            parentId: session.user.id,
+            parentId: ctx.userId,
             studentId: input.studentId,
           },
         },

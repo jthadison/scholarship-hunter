@@ -89,7 +89,8 @@
       "Bash(git show:*)",
       "SlashCommand(/bmad:shm:deadline-coordinator)",
       "Bash(npx prisma migrate deploy:*)",
-      "Bash(npx prisma migrate:*)"
+      "Bash(npx prisma migrate:*)",
+      "Bash(perl:*)"
     ],
     "deny": [],
     "ask": []
