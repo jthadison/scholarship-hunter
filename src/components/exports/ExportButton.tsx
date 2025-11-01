@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { Download, FileSpreadsheet, FileText, BarChart3, History } from "lucide-react";
-import { ExportCenter } from "./ExportCenterSimple";
+import { ExportCenter } from "./ExportCenter";
 import { useRouter } from "next/navigation";
 
 interface ExportButtonProps {

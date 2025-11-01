@@ -3,6 +3,6 @@
  * Story 5.9: Export & Reporting
  */
 
-export { ExportCenter } from "./ExportCenterSimple";
+export { ExportCenter } from "./ExportCenter";
 export { ExportHistory } from "./ExportHistory";
 export { ExportButton } from "./ExportButton";

@@ -6,7 +6,6 @@
  * - Export Applications List (CSV)
  * - Export Funding Summary (PDF)
  * - Export Analytics Report (PDF)
- * - Date range selection with presets
  * - Privacy controls
  * - Loading states and error handling
  *
@@ -27,26 +26,11 @@ import {
 import { Button } from "@/shared/components/ui/button";
 import { Label } from "@/shared/components/ui/label";
 import { Checkbox } from "@/shared/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select";
-import { Calendar } from "@/shared/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/shared/components/ui/popover";
-import { FileSpreadsheet, FileText, BarChart3, Calendar as CalendarIcon, Download, Loader2 } from "lucide-react";
-import { format } from "date-fns";
+import { FileSpreadsheet, FileText, BarChart3, Download, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/shared/lib/trpc";
 import { generateApplicationsCsvBlob, generateCsvFilename } from "@/lib/exports/csv-generator";
 import { generateFundingSummaryPDF, generateAnalyticsPDF, generatePdfFilename } from "@/lib/exports/pdf-generator";
-import { DATE_RANGE_PRESETS } from "@/lib/exports/types";
 import { ExportType, ExportFormat } from "@prisma/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -60,36 +44,12 @@ type ExportTypeOption = "CSV" | "FUNDING_PDF" | "ANALYTICS_PDF";
 export function ExportCenter({ open, onClose }: ExportCenterProps) {
   const { toast } = useToast();
   const [selectedExportType, setSelectedExportType] = useState<ExportTypeOption>("CSV");
-  const [dateRangePreset, setDateRangePreset] = useState<string>("all");
-  const [customDateRange, setCustomDateRange] = useState<{
-    start?: Date;
-    end?: Date;
-  }>({});
   const [excludePersonalInfo, setExcludePersonalInfo] = useState(false);
   const [excludeSensitiveDetails, setExcludeSensitiveDetails] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
   const logExportMutation = trpc.exports.logExport.useMutation();
-
-  // Get date range based on preset or custom selection
-  const getDateRange = () => {
-    if (dateRangePreset === "custom") {
-      if (customDateRange.start && customDateRange.end) {
-        return {
-          start: customDateRange.start,
-          end: customDateRange.end,
-        };
-      }
-      return undefined;
-    }
-
-    if (dateRangePreset === "all") {
-      return undefined;
-    }
-
-    const preset = DATE_RANGE_PRESETS.find((p) => p.value === dateRangePreset);
-    return preset ? preset.getRange() : undefined;
-  };
+  const utils = trpc.useContext();
 
   const privacySettings = {
     excludePersonalInfo,
@@ -100,19 +60,12 @@ export function ExportCenter({ open, onClose }: ExportCenterProps) {
   const handleExportCSV = async () => {
     setIsExporting(true);
     try {
-      const dateRange = getDateRange();
-
-      // Fetch data using tRPC
-      const applications = await trpc.exports.getApplicationsForExport.query({
-        dateRange,
-      });
+      // Fetch data using tRPC client utilities
+      const applications = await utils.client.exports.getApplicationsForExport.query({});
 
       // Generate CSV
       const csvBlob = generateApplicationsCsvBlob(applications as any, privacySettings);
-      const filename = generateCsvFilename(
-        applications[0]?.student?.firstName + " " + applications[0]?.student?.lastName || null,
-        privacySettings
-      );
+      const filename = generateCsvFilename("student", privacySettings);
 
       // Trigger download
       const url = URL.createObjectURL(csvBlob);
@@ -128,7 +81,6 @@ export function ExportCenter({ open, onClose }: ExportCenterProps) {
       await logExportMutation.mutateAsync({
         exportType: ExportType.APPLICATIONS_LIST,
         format: ExportFormat.CSV,
-        dateRange,
         privacySettings,
         fileSize: csvBlob.size,
       });
@@ -154,12 +106,8 @@ export function ExportCenter({ open, onClose }: ExportCenterProps) {
   const handleExportFundingPDF = async () => {
     setIsExporting(true);
     try {
-      const dateRange = getDateRange();
-
-      // Fetch data using tRPC
-      const { studentData, fundingData } = await trpc.exports.getFundingData.query({
-        dateRange,
-      });
+      // Fetch data using tRPC client utilities
+      const { studentData, fundingData } = await utils.client.exports.getFundingData.query({});
 
       // Generate PDF
       const pdfBlob = await generateFundingSummaryPDF(studentData, fundingData, privacySettings);
@@ -183,7 +131,6 @@ export function ExportCenter({ open, onClose }: ExportCenterProps) {
       await logExportMutation.mutateAsync({
         exportType: ExportType.FUNDING_SUMMARY,
         format: ExportFormat.PDF,
-        dateRange,
         privacySettings,
         fileSize: pdfBlob.size,
       });
@@ -209,12 +156,8 @@ export function ExportCenter({ open, onClose }: ExportCenterProps) {
   const handleExportAnalyticsPDF = async () => {
     setIsExporting(true);
     try {
-      const dateRange = getDateRange();
-
-      // Fetch data using tRPC
-      const { studentData, analyticsData } = await trpc.exports.getAnalyticsData.query({
-        dateRange,
-      });
+      // Fetch data using tRPC client utilities
+      const { studentData, analyticsData } = await utils.client.exports.getAnalyticsData.query({});
 
       // Generate PDF
       const pdfBlob = await generateAnalyticsPDF(analyticsData, studentData, privacySettings);
@@ -238,7 +181,6 @@ export function ExportCenter({ open, onClose }: ExportCenterProps) {
       await logExportMutation.mutateAsync({
         exportType: ExportType.ANALYTICS_REPORT,
         format: ExportFormat.PDF,
-        dateRange,
         privacySettings,
         fileSize: pdfBlob.size,
       });
@@ -341,92 +283,6 @@ export function ExportCenter({ open, onClose }: ExportCenterProps) {
                 </div>
               </button>
             </div>
-          </div>
-
-          {/* Date Range Selection */}
-          <div className="space-y-3">
-            <Label>Date Range</Label>
-            <Select value={dateRangePreset} onValueChange={setDateRangePreset}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select date range" />
-              </SelectTrigger>
-              <SelectContent>
-                {DATE_RANGE_PRESETS.map((preset) => (
-                  <SelectItem key={preset.value} value={preset.value}>
-                    {preset.label}
-                  </SelectItem>
-                ))}
-                <SelectItem value="custom">Custom range</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {dateRangePreset === "custom" && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-sm">Start Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !customDateRange.start && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {customDateRange.start ? (
-                          format(customDateRange.start, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={customDateRange.start}
-                        onSelect={(date: Date | undefined) =>
-                          setCustomDateRange((prev) => ({ ...prev, start: date }))
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div>
-                  <Label className="text-sm">End Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !customDateRange.end && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {customDateRange.end ? (
-                          format(customDateRange.end, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={customDateRange.end}
-                        onSelect={(date: Date | undefined) =>
-                          setCustomDateRange((prev) => ({ ...prev, end: date }))
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Privacy Controls */}
