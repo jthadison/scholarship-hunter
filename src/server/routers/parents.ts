@@ -231,9 +231,7 @@ export const parentsRouter = router({
       where: {
         studentId: student.id,
       },
-      include: {
-        // Note: We'll need to add parent user relation to fetch parent details
-      },
+      // TODO: Add include once parent User relation is added to StudentParentAccess model
     })
 
     return accessRecords
@@ -381,8 +379,6 @@ export const parentsRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const { prisma } = ctx
-
       const access = await verifyParentAccess(ctx.userId, input.studentId)
 
       if (!access) {
@@ -402,8 +398,6 @@ export const parentsRouter = router({
    * Get list of students parent has access to (Parent-only procedure)
    */
   getAccessibleStudents: protectedProcedure.query(async ({ ctx }) => {
-    const { prisma } = ctx
-
     const accessRecords = await getParentAccessibleStudents(ctx.userId)
 
     // TODO: Include student details once we add the relation to Student model

@@ -18,7 +18,7 @@ import { ParentPermission } from '@prisma/client'
 
 // Mock the database module FIRST (before imports)
 vi.mock('@/server/db', () => ({
-  db: {
+  prisma: {
     studentParentAccess: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
@@ -45,10 +45,10 @@ import {
   enforceParentAccess,
   hasParentPermission,
 } from '@/server/middleware/parent-auth'
-import { prisma as db } from '@/server/db'
+import { prisma } from '@/server/db'
 
 // Get mocked db for test assertions
-const mockDb = db as unknown as {
+const mockDb = prisma as unknown as {
   studentParentAccess: {
     findUnique: ReturnType<typeof vi.fn>
     findMany: ReturnType<typeof vi.fn>

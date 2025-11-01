@@ -27,7 +27,7 @@ export function ParentNotificationSettings() {
     trpc.parents.getAccessibleStudents.useQuery()
 
   // Set initial student ID when data loads
-  if (accessibleStudents?.length && !selectedStudentId) {
+  if (accessibleStudents?.length && !selectedStudentId && accessibleStudents[0]) {
     setSelectedStudentId(accessibleStudents[0].studentId)
   }
 

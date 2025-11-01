@@ -71,9 +71,7 @@ export async function getParentAccessibleStudents(parentUserId: string) {
       accessGranted: true,
       revokedAt: null,
     },
-    include: {
-      // Note: We'll need to join with Student model once we add the relation
-    },
+    // TODO: Add include once Student relation is added to StudentParentAccess model
   })
 
   return accessRecords
