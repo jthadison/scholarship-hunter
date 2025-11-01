@@ -41,8 +41,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { trpc } from '@/lib/trpc'
+} from '@/shared/components/ui/table'
+import { trpc } from '@/shared/lib/trpc'
 import { toast } from 'sonner'
 
 type StatusFilter = 'all' | 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED'
@@ -81,7 +81,9 @@ export function RecommendationTracker() {
       EXPIRED: { variant: 'outline', icon: Clock, label: 'Expired' },
     }
 
-    const config = variants[status] || variants.PENDING
+    const config = variants[status]
+    if (!config) return null
+
     const Icon = config.icon
 
     return (

@@ -29,7 +29,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { trpc } from '@/lib/trpc'
+import { trpc } from '@/shared/lib/trpc'
 import { toast } from 'sonner'
 import { DeclineRecommendationModal } from './DeclineRecommendationModal'
 
@@ -79,7 +79,7 @@ export function ScholarshipRecommendationCard({
   const utils = trpc.useUtils()
 
   const respondMutation = trpc.scholarshipRecommendation.respond.useMutation({
-    onSuccess: (data, variables) => {
+    onSuccess: (data: { applicationCreated?: boolean }, variables: { status: string }) => {
       setIsResponded(true)
       utils.scholarshipRecommendation.getByStudent.invalidate()
 
@@ -95,7 +95,7 @@ export function ScholarshipRecommendationCard({
 
       onRespond?.()
     },
-    onError: (error) => {
+    onError: (error: { message: string }) => {
       toast.error(error.message)
     },
   })

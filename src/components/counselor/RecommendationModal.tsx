@@ -18,7 +18,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Send, Users, User, AlertCircle } from 'lucide-react'
+import { Send, Users, User, AlertCircle } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -34,7 +34,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { trpc } from '@/lib/trpc'
+import { trpc } from '@/shared/lib/trpc'
 import { toast } from 'sonner'
 
 export interface RecommendationModalProps {
@@ -95,14 +95,14 @@ export function RecommendationModal({
         onSuccess?.()
       }, 2000)
     },
-    onError: (error) => {
+    onError: (error: { message: string }) => {
       toast.error(error.message)
     },
   })
 
   // Mutation for bulk recommendations
   const createBulkRecommendation = trpc.scholarshipRecommendation.createBulk.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: { created: number }) => {
       setShowSuccess(true)
       utils.scholarshipRecommendation.getByCounselor.invalidate()
       toast.success(`${data.created} recommendation(s) sent successfully`)
@@ -111,7 +111,7 @@ export function RecommendationModal({
         onSuccess?.()
       }, 2000)
     },
-    onError: (error) => {
+    onError: (error: { message: string }) => {
       toast.error(error.message)
     },
   })
