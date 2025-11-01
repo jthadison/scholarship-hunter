@@ -175,63 +175,40 @@ async function searchScholarships(query: string): Promise<SearchResult[]> {
 
 /**
  * Search student's applications
+ * Optimized to avoid N+1 queries by using Prisma's include
  */
 async function searchApplications(query: string, studentId: string): Promise<SearchResult[]> {
   try {
-    // First search for matching scholarships, then filter applications
-    const scholarshipMatches = await prisma.scholarship.findMany({
-      where: {
-        name: { contains: query, mode: 'insensitive' },
-      },
-      select: { id: true },
-      take: 50,
-    })
-
-    const scholarshipIds = scholarshipMatches.map((s) => s.id)
-
+    // Single optimized query with include - no N+1 problem
     const results = await prisma.application.findMany({
       where: {
         studentId,
-        scholarshipId: { in: scholarshipIds },
+        scholarship: {
+          name: { contains: query, mode: 'insensitive' },
+        },
       },
       take: 20,
       select: {
         id: true,
         status: true,
-        scholarshipId: true,
+        scholarship: {
+          select: {
+            id: true,
+            name: true,
+            provider: true,
+          },
+        },
       },
     })
 
-    // Get scholarship details for results
-    const scholarships = await prisma.scholarship.findMany({
-      where: {
-        id: { in: results.map((r) => r.scholarshipId) },
-      },
-      select: {
-        id: true,
-        name: true,
-        provider: true,
-      },
-    })
-
-    const scholarshipMap = new Map(scholarships.map((s) => [s.id, s]))
-
-    const mappedResults: SearchResult[] = []
-    for (const app of results) {
-      const scholarship = scholarshipMap.get(app.scholarshipId)
-      if (scholarship) {
-        mappedResults.push({
-          id: app.id,
-          type: 'application' as const,
-          title: scholarship.name,
-          excerpt: `Status: ${app.status}`,
-          breadcrumb: `My Applications > ${scholarship.provider}`,
-          url: `/applications/${app.id}`,
-        })
-      }
-    }
-
-    return mappedResults
+    return results.map((app) => ({
+      id: app.id,
+      type: 'application' as const,
+      title: app.scholarship.name,
+      excerpt: `Status: ${app.status}`,
+      breadcrumb: `My Applications > ${app.scholarship.provider}`,
+      url: `/applications/${app.id}`,
+    }))
   } catch (error) {
     console.error('Error searching applications:', error)
     return []
@@ -313,6 +290,7 @@ async function searchDocuments(query: string, studentId: string): Promise<Search
 
 /**
  * Store recent search query (limit 5 per student)
+ * Optimized to avoid fetching all searches
  */
 async function storeRecentSearch(
   studentId: string,
@@ -339,17 +317,19 @@ async function storeRecentSearch(
     },
   })
 
-  // Keep only last 5 searches (delete oldest)
-  const allSearches = await prisma.recentSearch.findMany({
+  // Efficiently delete old searches: Get 6th oldest and delete everything older
+  // This uses a subquery and is much more efficient than fetching all
+  const oldSearches = await prisma.recentSearch.findMany({
     where: { studentId },
     orderBy: { timestamp: 'desc' },
+    skip: 5, // Skip the 5 most recent
+    select: { id: true },
   })
 
-  if (allSearches.length > 5) {
-    const searchesToDelete = allSearches.slice(5).map((s) => s.id)
+  if (oldSearches.length > 0) {
     await prisma.recentSearch.deleteMany({
       where: {
-        id: { in: searchesToDelete },
+        id: { in: oldSearches.map((s) => s.id) },
       },
     })
   }

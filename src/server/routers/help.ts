@@ -12,6 +12,8 @@ import { prisma } from '../db'
 import { TRPCError } from '@trpc/server'
 import { getContextualHelpArticles } from '../lib/help/help-context'
 import { askAIAssistant } from '../lib/help/ai-help'
+import { checkRateLimit, RATE_LIMITS } from '../lib/rate-limit'
+import { helpArticleCache } from '../lib/help/help-cache'
 
 /**
  * Help category enum
@@ -66,6 +68,7 @@ export const helpRouter = router({
 
   /**
    * Get all help articles (optionally filtered by category)
+   * Cached for 1 hour to reduce database load
    */
   getAllArticles: publicProcedure
     .input(
@@ -76,8 +79,35 @@ export const helpRouter = router({
         .optional()
     )
     .query(async ({ input }) => {
-      const where = input?.category ? { category: input.category } : {}
+      // Check cache first
+      if (input?.category) {
+        const cached = helpArticleCache.getByCategory(input.category)
+        if (cached) {
+          return cached.map((a) => ({
+            id: a.id,
+            title: a.title,
+            slug: a.slug,
+            description: a.description,
+            category: a.category,
+            order: a.order,
+          }))
+        }
+      } else {
+        const cached = helpArticleCache.getAll()
+        if (cached) {
+          return cached.map((a) => ({
+            id: a.id,
+            title: a.title,
+            slug: a.slug,
+            description: a.description,
+            category: a.category,
+            order: a.order,
+          }))
+        }
+      }
 
+      // Fetch from database
+      const where = input?.category ? { category: input.category } : {}
       const articles = await prisma.helpArticle.findMany({
         where,
         select: {
@@ -87,15 +117,36 @@ export const helpRouter = router({
           description: true,
           category: true,
           order: true,
+          content: true,
+          context: true,
+          keywords: true,
+          relatedArticleIds: true,
+          createdAt: true,
+          updatedAt: true,
         },
         orderBy: [{ category: 'asc' }, { order: 'asc' }],
       })
 
-      return articles
+      // Store in cache
+      if (input?.category) {
+        helpArticleCache.setByCategory(input.category, articles as any)
+      } else {
+        helpArticleCache.setAll(articles as any)
+      }
+
+      return articles.map((a) => ({
+        id: a.id,
+        title: a.title,
+        slug: a.slug,
+        description: a.description,
+        category: a.category,
+        order: a.order,
+      }))
     }),
 
   /**
    * Get a single help article by slug
+   * Cached for 1 hour to reduce database load
    */
   getArticleBySlug: publicProcedure
     .input(
@@ -104,27 +155,34 @@ export const helpRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const article = await prisma.helpArticle.findUnique({
-        where: { slug: input.slug },
-        include: {
-          feedback: {
-            select: {
-              helpful: true,
-            },
-          },
-        },
-      })
+      // Check cache first (for the article itself)
+      let article = helpArticleCache.getBySlug(input.slug)
 
       if (!article) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Help article not found',
+        // Fetch from database
+        const fetchedArticle = await prisma.helpArticle.findUnique({
+          where: { slug: input.slug },
         })
+
+        if (!fetchedArticle) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Help article not found',
+          })
+        }
+
+        article = fetchedArticle
+        helpArticleCache.setBySlug(input.slug, article)
       }
 
-      // Calculate feedback stats
-      const totalFeedback = article.feedback.length
-      const helpfulCount = article.feedback.filter((f) => f.helpful).length
+      // Feedback stats are not cached (they change frequently)
+      const feedback = await prisma.helpFeedback.findMany({
+        where: { helpArticleId: article.id },
+        select: { helpful: true },
+      })
+
+      const totalFeedback = feedback.length
+      const helpfulCount = feedback.filter((f) => f.helpful).length
       const helpfulPercentage =
         totalFeedback > 0 ? Math.round((helpfulCount / totalFeedback) * 100) : null
 
@@ -188,6 +246,7 @@ export const helpRouter = router({
 
   /**
    * Ask AI help assistant a question
+   * Rate limited to 10 requests per minute to prevent abuse and cost overruns
    */
   askAI: protectedProcedure
     .input(
@@ -195,8 +254,18 @@ export const helpRouter = router({
         question: z.string().min(3).max(500),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { question } = input
+
+      // Apply rate limiting (10 requests per minute)
+      const rateLimitResult = await checkRateLimit(ctx.userId, RATE_LIMITS.AI_ENDPOINT)
+
+      if (!rateLimitResult.success) {
+        throw new TRPCError({
+          code: 'TOO_MANY_REQUESTS',
+          message: `Rate limit exceeded. Please try again in ${rateLimitResult.reset ? Math.ceil((rateLimitResult.reset - Date.now()) / 1000) : 60} seconds.`,
+        })
+      }
 
       try {
         // Use AI assistant to answer question
