@@ -87,6 +87,27 @@ const updateProfileInputSchema = z.object({
   additionalContext: additionalContextSchema,
 }).partial()
 
+// Relaxed schema for draft saves - allows free-text major field
+const saveDraftInputSchema = z.object({
+  ...academicProfileFormSchema.shape,
+  ...demographicProfileSchema.shape,
+  ...financialProfileSchema.shape,
+  // Story 1.5: Major & Field of Study - relaxed validation for drafts
+  intendedMajor: z.string().nullable().optional(), // Allow any string for drafts
+  fieldOfStudy: fieldOfStudySchema,
+  careerGoals: careerGoalsSchema,
+  // Story 1.5: Experience fields
+  extracurriculars: extracurricularsArraySchema,
+  workExperience: workExperienceArraySchema,
+  leadershipRoles: leadershipRolesArraySchema,
+  awardsHonors: awardsHonorsArraySchema,
+  // Story 1.5: Special circumstances
+  firstGeneration: firstGenerationSchema,
+  militaryAffiliation: militaryAffiliationSchema,
+  disabilities: disabilitiesSchema,
+  additionalContext: additionalContextSchema,
+}).partial()
+
 // ============================================================================
 // Profile Router
 // ============================================================================
@@ -725,10 +746,17 @@ export const profileRouter = router({
     })
 
     if (!student?.profile) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Profile not found.',
-      })
+      // Return default empty breakdown instead of throwing 404
+      return {
+        overallScore: 0,
+        academic: 0,
+        experience: 0,
+        leadership: 0,
+        demographics: 0,
+        recommendations: [],
+        strengthAreas: [],
+        improvementAreas: ['Complete your profile to calculate strength score'],
+      }
     }
 
     return calculateStrengthBreakdown(student.profile)
@@ -770,7 +798,7 @@ export const profileRouter = router({
    * Creates or updates profile with draft data
    */
   saveDraft: protectedProcedure
-    .input(updateProfileInputSchema)
+    .input(saveDraftInputSchema)
     .mutation(async ({ ctx, input }) => {
       const student = await prisma.student.findUnique({
         where: { userId: ctx.userId },
