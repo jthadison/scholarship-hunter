@@ -130,11 +130,8 @@ test.describe('Profile Wizard', () => {
     // Fill in a field to trigger auto-save
     await page.getByLabel(/GPA/i).fill('3.75')
 
-    // Wait for auto-save indicator (debounced 500ms)
-    await page.waitForTimeout(600)
-
-    // Should show "Saved" indicator
-    await expect(page.getByText(/Saved/i)).toBeVisible()
+    // Wait for "Saved" indicator (auto-save debounces 500ms, allow up to 2s for network)
+    await expect(page.getByText(/Saved/i)).toBeVisible({ timeout: 2000 })
   })
 
   test('AC7: Review step shows all entered data with edit links', async ({ page }) => {
@@ -144,10 +141,10 @@ test.describe('Profile Wizard', () => {
     // Fill in some academic data
     await page.getByLabel(/GPA/i).fill('3.75')
 
-    // Navigate through all steps to Review
-    for (let i = 0; i < 4; i++) {
+    // Navigate through all steps to Review (wait for step indicator after each click)
+    for (let i = 1; i <= 4; i++) {
       await page.getByRole('button', { name: /Next/i }).click()
-      await page.waitForTimeout(200)
+      await expect(page.getByText(new RegExp(`Step ${i + 1} of 5`, 'i'))).toBeVisible()
     }
 
     // Review step should display entered data
