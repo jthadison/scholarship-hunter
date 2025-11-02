@@ -6,8 +6,8 @@
  */
 
 // Load environment variables - .env.local overrides .env
-import * as dotenv from 'dotenv'
-import * as path from 'path'
+import dotenv from 'dotenv'
+import path from 'path'
 
 // Load .env first
 dotenv.config({ path: path.resolve(process.cwd(), '.env') })

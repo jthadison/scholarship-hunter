@@ -17,7 +17,17 @@ import {
 import { Separator } from '@/shared/components/ui/separator'
 import { Badge } from '@/shared/components/ui/badge'
 
-const navigationItems = [
+interface NavigationItem {
+  label: string
+  href: string
+  icon: any
+  active: boolean
+  badge?: string
+  tooltip?: string
+  comingSoon?: boolean
+}
+
+const navigationItems: NavigationItem[] = [
   {
     label: 'Dashboard',
     href: '/dashboard',
