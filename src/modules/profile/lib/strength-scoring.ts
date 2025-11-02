@@ -43,36 +43,49 @@ function calculateAcademicScore(profile: Profile): number {
   let score = 0
 
   // GPA component (0-40 points): Normalize GPA to 4.0 scale
-  if (profile.gpa !== null && profile.gpaScale !== null) {
+  if (profile.gpa !== null && profile.gpaScale !== null && profile.gpaScale > 0) {
     const normalizedGPA = (profile.gpa / profile.gpaScale) * 4.0
-    score += (normalizedGPA / 4.0) * 40
+    const gpaPoints = (normalizedGPA / 4.0) * 40
+    if (Number.isFinite(gpaPoints)) {
+      score += gpaPoints
+    }
   }
 
   // Test scores component (0-30 points): SAT or ACT (whichever is higher when normalized)
   let testScore = 0
-  if (profile.satScore !== null) {
+  if (profile.satScore !== null && profile.satScore >= 400 && profile.satScore <= 1600) {
     // SAT: 400-1600 range
-    testScore = Math.max(testScore, ((profile.satScore - 400) / (1600 - 400)) * 30)
+    const satPoints = ((profile.satScore - 400) / (1600 - 400)) * 30
+    if (Number.isFinite(satPoints)) {
+      testScore = Math.max(testScore, satPoints)
+    }
   }
-  if (profile.actScore !== null) {
+  if (profile.actScore !== null && profile.actScore >= 1 && profile.actScore <= 36) {
     // ACT: 1-36 range
-    testScore = Math.max(testScore, ((profile.actScore - 1) / (36 - 1)) * 30)
+    const actPoints = ((profile.actScore - 1) / (36 - 1)) * 30
+    if (Number.isFinite(actPoints)) {
+      testScore = Math.max(testScore, actPoints)
+    }
   }
   score += testScore
 
   // Class rank component (0-20 points): Percentile formula
   if (profile.classRank !== null && profile.classSize !== null && profile.classSize > 0) {
     const percentile = 1 - profile.classRank / profile.classSize
-    score += percentile * 20
+    const rankPoints = percentile * 20
+    if (Number.isFinite(rankPoints)) {
+      score += rankPoints
+    }
   }
 
   // Awards/honors component (0-10 points): 2 points per award, max 10
-  const awards = (profile.awardsHonors as unknown as AwardHonor[]) || []
+  const awards = Array.isArray(profile.awardsHonors) ? (profile.awardsHonors as unknown as AwardHonor[]) : []
   const awardPoints = Math.min(awards.length * 2, 10)
   score += awardPoints
 
-  // Cap at 100
-  return Math.min(Math.round(score), 100)
+  // Cap at 100 and ensure finite result
+  const finalScore = Math.min(Math.round(score), 100)
+  return Number.isFinite(finalScore) ? finalScore : 0
 }
 
 // ============================================================================
@@ -87,12 +100,14 @@ function calculateExperienceScore(profile: Profile): number {
   let score = 0
 
   // Extracurriculars component (0-40 points): 8 points per activity, max 40
-  const extracurriculars = (profile.extracurriculars as unknown as ExtracurricularActivity[]) || []
+  const extracurriculars = Array.isArray(profile.extracurriculars)
+    ? (profile.extracurriculars as unknown as ExtracurricularActivity[])
+    : []
   const extracurricularPoints = Math.min(extracurriculars.length * 8, 40)
   score += extracurricularPoints
 
   // Volunteer hours component (0-30 points): Tiered scoring
-  const volunteerHours = profile.volunteerHours || 0
+  const volunteerHours = typeof profile.volunteerHours === 'number' ? profile.volunteerHours : 0
   let volunteerPoints = 0
   if (volunteerHours >= VOLUNTEER_TIERS.EXCELLENT) {
     volunteerPoints = 30
@@ -100,19 +115,24 @@ function calculateExperienceScore(profile: Profile): number {
     volunteerPoints = 20
   } else if (volunteerHours >= VOLUNTEER_TIERS.FAIR) {
     volunteerPoints = 10
-  } else {
+  } else if (volunteerHours > 0) {
     // Proportional for <50 hours
     volunteerPoints = (volunteerHours / VOLUNTEER_TIERS.FAIR) * 10
   }
-  score += volunteerPoints
+  if (Number.isFinite(volunteerPoints)) {
+    score += volunteerPoints
+  }
 
   // Work experience component (0-30 points): 15 points per job, max 30
-  const workExperience = (profile.workExperience as unknown as WorkExperience[]) || []
+  const workExperience = Array.isArray(profile.workExperience)
+    ? (profile.workExperience as unknown as WorkExperience[])
+    : []
   const workPoints = Math.min(workExperience.length * 15, 30)
   score += workPoints
 
-  // Cap at 100
-  return Math.min(Math.round(score), 100)
+  // Cap at 100 and ensure finite result
+  const finalScore = Math.min(Math.round(score), 100)
+  return Number.isFinite(finalScore) ? finalScore : 0
 }
 
 // ============================================================================
@@ -124,7 +144,9 @@ function calculateExperienceScore(profile: Profile): number {
  * Formula: 0 roles=0pts, 1 role=50pts, 2 roles=75pts, 3+ roles=100pts
  */
 function calculateLeadershipScore(profile: Profile): number {
-  const leadershipRoles = (profile.leadershipRoles as unknown as LeadershipRole[]) || []
+  const leadershipRoles = Array.isArray(profile.leadershipRoles)
+    ? (profile.leadershipRoles as unknown as LeadershipRole[])
+    : []
   const roleCount = leadershipRoles.length
 
   if (roleCount === 0) return 0
@@ -356,39 +378,65 @@ export function generateRecommendations(profile: Profile, breakdown: StrengthBre
  * Returns scores for each dimension, weighted overall score, and recommendations
  */
 export function calculateStrengthBreakdown(profile: Profile): StrengthBreakdown {
-  // Calculate dimensional scores
+  // Calculate dimensional scores with NaN guards
   const academic = calculateAcademicScore(profile)
   const experience = calculateExperienceScore(profile)
   const leadership = calculateLeadershipScore(profile)
   const demographics = calculateDemographicsScore(profile)
 
-  // Calculate weighted average (before completeness multiplier)
-  const weightedScore =
-    academic * WEIGHTS.academic +
-    experience * WEIGHTS.experience +
-    leadership * WEIGHTS.leadership +
-    demographics * WEIGHTS.demographics
-
-  // Apply completeness multiplier
-  const completeness = profile.completionPercentage || 0
-  const overallScore = Math.round((weightedScore * completeness) / 100)
-
-  // Generate recommendations based on current scores
-  const recommendations = generateRecommendations(profile, {
-    overallScore,
+  console.log('[calculateStrengthBreakdown] Raw scores:', {
     academic,
     experience,
     leadership,
     demographics,
+    completionPercentage: profile.completionPercentage
+  })
+
+  // Guard against NaN in dimensional scores
+  const safeAcademic = Number.isFinite(academic) ? academic : 0
+  const safeExperience = Number.isFinite(experience) ? experience : 0
+  const safeLeadership = Number.isFinite(leadership) ? leadership : 0
+  const safeDemographics = Number.isFinite(demographics) ? demographics : 0
+
+  // Calculate weighted average (before completeness multiplier)
+  const weightedScore =
+    safeAcademic * WEIGHTS.academic +
+    safeExperience * WEIGHTS.experience +
+    safeLeadership * WEIGHTS.leadership +
+    safeDemographics * WEIGHTS.demographics
+
+  // Apply completeness multiplier with NaN guard
+  const completeness = profile.completionPercentage || 0
+  const rawOverallScore = (weightedScore * completeness) / 100
+  const overallScore = Number.isFinite(rawOverallScore) ? Math.round(rawOverallScore) : 0
+
+  console.log('[calculateStrengthBreakdown] Final scores:', {
+    safeAcademic,
+    safeExperience,
+    safeLeadership,
+    safeDemographics,
+    weightedScore,
+    completeness,
+    rawOverallScore,
+    overallScore
+  })
+
+  // Generate recommendations based on current scores
+  const recommendations = generateRecommendations(profile, {
+    overallScore,
+    academic: safeAcademic,
+    experience: safeExperience,
+    leadership: safeLeadership,
+    demographics: safeDemographics,
     recommendations: [], // Will be populated
   })
 
   return {
     overallScore,
-    academic,
-    experience,
-    leadership,
-    demographics,
+    academic: safeAcademic,
+    experience: safeExperience,
+    leadership: safeLeadership,
+    demographics: safeDemographics,
     recommendations,
   }
 }

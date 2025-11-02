@@ -870,6 +870,17 @@ export const profileRouter = router({
           completionPercentage: completenessResult.completionPercentage,
         } as any)
 
+        // Defensive check: Ensure strengthScore is a valid number
+        const strengthScore = typeof strengthBreakdown.overallScore === 'number' && Number.isFinite(strengthBreakdown.overallScore)
+          ? strengthBreakdown.overallScore
+          : 0
+
+        console.log('[saveDraft] Strength calculation:', {
+          overallScore: strengthBreakdown.overallScore,
+          finalStrengthScore: strengthScore,
+          isFinite: Number.isFinite(strengthBreakdown.overallScore)
+        })
+
         const updatedProfile = await prisma.profile.update({
           where: { id: student.profile.id },
           data: {
@@ -877,7 +888,7 @@ export const profileRouter = router({
             volunteerHours,
             fieldOfStudy,
             completionPercentage: completenessResult.completionPercentage,
-            strengthScore: strengthBreakdown.overallScore,
+            strengthScore,
           },
         })
 
