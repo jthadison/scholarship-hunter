@@ -39,19 +39,15 @@ const navigationItems = [
   },
   {
     label: 'Scholarships',
-    href: '/scholarships',
+    href: '/scholarships/search',
     icon: GraduationCap,
-    active: false,
-    comingSoon: true,
-    tooltip: 'Coming Soon - Epic 2',
+    active: true,
   },
   {
     label: 'Applications',
     href: '/applications',
     icon: FileText,
-    active: false,
-    comingSoon: true,
-    tooltip: 'Coming Soon - Epic 3',
+    active: true,
   },
   {
     label: 'Documents',

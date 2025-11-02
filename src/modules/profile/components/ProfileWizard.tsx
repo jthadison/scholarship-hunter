@@ -56,6 +56,7 @@ export function ProfileWizard({ isEditMode = false }: ProfileWizardProps) {
   const router = useRouter()
   const { user } = useUser()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [profileLoaded, setProfileLoaded] = useState(false)
 
   const {
     currentStep,
@@ -96,6 +97,13 @@ export function ProfileWizard({ isEditMode = false }: ProfileWizardProps) {
     enabled: isEditMode,
   })
 
+  // In edit mode, skip Welcome step and go directly to step 1
+  useEffect(() => {
+    if (isEditMode && currentStep === 0) {
+      goToStep(1)
+    }
+  }, [isEditMode, currentStep, goToStep])
+
   // Load existing profile data into wizard
   useEffect(() => {
     if (isEditMode && existingProfile) {
@@ -129,12 +137,17 @@ export function ProfileWizard({ isEditMode = false }: ProfileWizardProps) {
         disabilities: existingProfile.disabilities,
         additionalContext: existingProfile.additionalContext,
       })
+      setProfileLoaded(true)
     }
   }, [isEditMode, existingProfile, updateFormData])
 
   // Auto-save functionality
   const { isSaving, lastSaved } = useAutoSave(formData, {
-    enabled: currentStep > 0 && currentStep < 5, // Don't auto-save on Welcome or Review
+    // In edit mode: enable auto-save only after profile data has loaded (use profileLoaded flag for stability)
+    // In wizard mode: only enable between steps 1-4 (not on Welcome or Review)
+    enabled: isEditMode
+      ? profileLoaded  // Only enable after profile has been loaded once (stable flag)
+      : (currentStep > 0 && currentStep < 5),
     onSaveSuccess: () => {
       const now = new Date()
       setLastSaved(now)

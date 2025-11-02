@@ -45,7 +45,7 @@ export default function ScholarshipSearchPage() {
 
   // Parse initial state from URL
   const initialQuery = searchParams?.get('q') || ''
-  const initialSort = (searchParams?.get('sort') as SortOption) || (isSignedIn ? 'match' : 'amount')
+  const initialSort = (searchParams?.get('sort') as SortOption) || 'amount' // Default to 'amount' to avoid hydration mismatch
   const initialPage = parseInt(searchParams?.get('page') || '0', 10)
 
   // Parse filters from URL

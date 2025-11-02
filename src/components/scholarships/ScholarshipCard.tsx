@@ -76,7 +76,7 @@ export function ScholarshipCard({ scholarship }: ScholarshipCardProps) {
     : 'Amount varies'
 
   return (
-    <Link href={`/scholarships/${scholarship.id}`}>
+    <Link href={`/scholarships/${scholarship.id}`} className="block cursor-pointer">
       <div className="group relative rounded-lg border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md">
         {/* Header: Name + Priority Badge */}
         <div className="mb-3 flex items-start justify-between gap-4">

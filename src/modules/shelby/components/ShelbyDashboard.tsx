@@ -31,6 +31,12 @@ export function ShelbyDashboard({ firstName }: ShelbyDashboardProps) {
   const { data: sessionData, isLoading: studentLoading } = trpc.auth.getSession.useQuery()
   const studentId = sessionData?.student?.id ?? ''
 
+  // Debug logging
+  console.log('[ShelbyDashboard] Component mounted')
+  console.log('[ShelbyDashboard] studentLoading:', studentLoading)
+  console.log('[ShelbyDashboard] sessionData:', sessionData)
+  console.log('[ShelbyDashboard] studentId:', studentId)
+
   // Fetch top MUST_APPLY matches
   const {
     data: topMatchesData,
