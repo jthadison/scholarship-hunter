@@ -194,11 +194,116 @@ export const scholarshipRouter = router({
           hasMore: offset + limit < (searchResults.estimatedTotalHits ?? 0),
         }
       } catch (error) {
-        console.error('Scholarship search error:', error)
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to search scholarships. Please try again.',
-        })
+        console.error('Meilisearch error, falling back to Prisma:', error)
+
+        // Fallback to Prisma when Meilisearch is unavailable
+        try {
+          const whereConditions: any = {}
+
+          // Add text search conditions
+          if (query) {
+            whereConditions.OR = [
+              { name: { contains: query, mode: 'insensitive' } },
+              { provider: { contains: query, mode: 'insensitive' } },
+              { description: { contains: query, mode: 'insensitive' } },
+            ]
+          }
+
+          // Add filter conditions
+          if (filters?.minAward) {
+            whereConditions.awardAmount = { ...whereConditions.awardAmount, gte: filters.minAward }
+          }
+          if (filters?.maxAward) {
+            whereConditions.awardAmount = { ...whereConditions.awardAmount, lte: filters.maxAward }
+          }
+          if (filters?.category) {
+            whereConditions.category = filters.category
+          }
+
+          // Build orderBy based on sort option
+          const orderBy: any = []
+          if (sort === 'amount') {
+            orderBy.push({ awardAmount: 'desc' })
+          } else if (sort === 'deadline') {
+            orderBy.push({ deadline: 'asc' })
+          } else {
+            // Default to name for relevance sort
+            orderBy.push({ name: 'asc' })
+          }
+
+          // Get total count
+          const total = await prisma.scholarship.count({ where: whereConditions })
+
+          // Get scholarships with pagination
+          const scholarships = await prisma.scholarship.findMany({
+            where: whereConditions,
+            include: {
+              matches: ctx.userId
+                ? {
+                    where: { studentId: ctx.userId },
+                    select: {
+                      overallMatchScore: true,
+                      priorityTier: true,
+                      strategicValue: true,
+                      successProbability: true,
+                      applicationEffort: true,
+                    },
+                  }
+                : false,
+            },
+            orderBy,
+            take: limit,
+            skip: offset,
+          })
+
+          // Apply client-side filters that depend on Match data
+          let filteredScholarships = scholarships
+
+          // Filter by priority tier (requires Match data)
+          if (filters?.priorityTier && filters.priorityTier.length > 0 && ctx.userId) {
+            filteredScholarships = filteredScholarships.filter((s) => {
+              const match = s.matches?.[0]
+              return match && filters.priorityTier!.includes(match.priorityTier)
+            })
+          }
+
+          // Filter by minimum match score
+          if (filters?.minMatchScore !== undefined && ctx.userId) {
+            filteredScholarships = filteredScholarships.filter((s) => {
+              const match = s.matches?.[0]
+              return match && match.overallMatchScore >= filters.minMatchScore!
+            })
+          }
+
+          // Filter by effort level
+          if (filters?.effortLevel) {
+            filteredScholarships = filteredScholarships.filter((s) => {
+              const match = s.matches?.[0]
+              return match?.applicationEffort === filters.effortLevel
+            })
+          }
+
+          // Apply strategic value sort if needed
+          if (sort === 'strategicValue' && ctx.userId) {
+            filteredScholarships.sort((a, b) => {
+              const aValue = a.matches?.[0]?.strategicValue ?? 0
+              const bValue = b.matches?.[0]?.strategicValue ?? 0
+              return bValue - aValue
+            })
+          }
+
+          return {
+            scholarships: filteredScholarships,
+            total,
+            hasMore: offset + limit < total,
+          }
+        } catch (fallbackError) {
+          console.error('Prisma fallback error:', fallbackError)
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to search scholarships. Please try again.',
+          })
+        }
       }
     }),
 

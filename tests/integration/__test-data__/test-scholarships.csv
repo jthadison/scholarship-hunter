@@ -1,3 +1,0 @@
-name,provider,description,awardAmount,deadline,minGPA,verified
-[TEST-IMPORT] CSV Scholarship 1,Test Provider,Test scholarship for CSV import testing with detailed description,5000,2026-11-01T03:53:13.824Z,3.5,true
-[TEST-IMPORT] CSV Scholarship 2,Test Provider,Another test scholarship for CSV import with complete details,3000,2026-11-01T03:53:13.824Z,3.0,true

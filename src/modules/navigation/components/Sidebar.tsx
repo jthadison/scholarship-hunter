@@ -17,7 +17,17 @@ import {
 import { Separator } from '@/shared/components/ui/separator'
 import { Badge } from '@/shared/components/ui/badge'
 
-const navigationItems = [
+interface NavigationItem {
+  label: string
+  href: string
+  icon: any
+  active: boolean
+  badge?: string
+  tooltip?: string
+  comingSoon?: boolean
+}
+
+const navigationItems: NavigationItem[] = [
   {
     label: 'Dashboard',
     href: '/dashboard',
@@ -39,19 +49,15 @@ const navigationItems = [
   },
   {
     label: 'Scholarships',
-    href: '/scholarships',
+    href: '/scholarships/search',
     icon: GraduationCap,
-    active: false,
-    comingSoon: true,
-    tooltip: 'Coming Soon - Epic 2',
+    active: true,
   },
   {
     label: 'Applications',
     href: '/applications',
     icon: FileText,
-    active: false,
-    comingSoon: true,
-    tooltip: 'Coming Soon - Epic 3',
+    active: true,
   },
   {
     label: 'Documents',

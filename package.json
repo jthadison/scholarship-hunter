@@ -111,6 +111,7 @@
     "@types/react-dropzone": "^5.1.0",
     "@vitejs/plugin-react": "^4.3.0",
     "autoprefixer": "^10.4.0",
+    "dotenv": "^17.2.3",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.0",
     "jsdom": "^25.0.0",
