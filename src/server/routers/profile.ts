@@ -753,9 +753,13 @@ export const profileRouter = router({
         experience: 0,
         leadership: 0,
         demographics: 0,
-        recommendations: [],
-        strengthAreas: [],
-        improvementAreas: ['Complete your profile to calculate strength score'],
+        recommendations: [{
+          category: 'Academic' as const,
+          message: 'Complete your profile to calculate your strength score and unlock personalized recommendations',
+          impact: 0,
+          priority: 1 as const,
+          actionLink: '/profile/wizard',
+        }],
       }
     }
 

@@ -2,9 +2,24 @@ import { prisma } from '../src/server/db'
 
 async function testSaveDraft() {
   try {
-    // Find the user j.thadison@gmail.com
+    // Get email from command line args or environment variable
+    const email = process.argv[2] || process.env.TEST_USER_EMAIL
+
+    if (!email) {
+      console.error('❌ Error: No email provided')
+      console.error('\nUsage:')
+      console.error('  npx tsx scripts/test-save-draft.ts <email>')
+      console.error('  Or set TEST_USER_EMAIL environment variable')
+      console.error('\nExample:')
+      console.error('  npx tsx scripts/test-save-draft.ts j.thadison@gmail.com')
+      process.exit(1)
+    }
+
+    console.log(`🔍 Looking for user: ${email}\n`)
+
+    // Find the specified user
     const user = await prisma.user.findUnique({
-      where: { email: 'j.thadison@gmail.com' },
+      where: { email },
       include: {
         student: {
           include: {
