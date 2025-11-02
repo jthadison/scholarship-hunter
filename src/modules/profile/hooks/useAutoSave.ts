@@ -58,15 +58,23 @@ export function useAutoSave(
   })
 
   useEffect(() => {
-    if (!enabled) return
+    console.log('[useAutoSave] Effect triggered', { enabled, hasFormData: !!formData })
+
+    if (!enabled) {
+      console.log('[useAutoSave] Auto-save disabled')
+      return
+    }
 
     // Serialize current form data for comparison
     const currentData = JSON.stringify(formData)
 
     // Skip if data hasn't changed
     if (currentData === previousDataRef.current) {
+      console.log('[useAutoSave] Data unchanged, skipping save')
       return
     }
+
+    console.log('[useAutoSave] Data changed, scheduling save in', debounceMs, 'ms')
 
     // Clear existing timeout
     if (timeoutRef.current) {
@@ -75,6 +83,7 @@ export function useAutoSave(
 
     // Set new debounced save
     timeoutRef.current = setTimeout(() => {
+      console.log('[useAutoSave] Executing save mutation')
       setIsSaving(true)
       previousDataRef.current = currentData
       // Cast to any to bypass type mismatch - formData is superset of profile schema
@@ -87,7 +96,7 @@ export function useAutoSave(
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [formData, enabled, debounceMs])
+  }, [formData, enabled, debounceMs, saveDraftMutation])
 
   return {
     isSaving,
