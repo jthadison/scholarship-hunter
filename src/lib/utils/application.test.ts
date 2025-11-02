@@ -84,12 +84,23 @@ describe('isAtRisk', () => {
   })
 
   it('should return false for deadline exactly 7 days with progress <50% (boundary)', () => {
+    // Use a specific time to avoid flakiness due to millisecond precision
+    const now = new Date('2025-01-01T12:00:00.000Z')
+    const deadline = addDays(now, 7)
     const app = createMockApplication({
-      scholarship: { deadline: addDays(new Date(), 7) },
+      scholarship: { deadline },
       progressPercentage: 40,
     })
 
-    expect(isAtRisk(app)).toBe(false)
+    // Mock the current time to match our test scenario
+    const originalDateNow = Date.now
+    Date.now = () => now.getTime()
+
+    try {
+      expect(isAtRisk(app)).toBe(false)
+    } finally {
+      Date.now = originalDateNow
+    }
   })
 
   it('should return false for deadline <7 days with progress exactly 50% (boundary)', () => {

@@ -238,7 +238,8 @@ describe('calculateRequiredPace', () => {
 
     const pace = calculateRequiredPace(app)
 
-    expect(pace.hoursRemaining).toBe(72)
+    expect(pace.hoursRemaining).toBeGreaterThanOrEqual(71) // Allow for rounding in differenceInHours
+    expect(pace.hoursRemaining).toBeLessThanOrEqual(72)
     expect(pace.hoursNeeded).toBe(7)
     expect(pace.feasible).toBe(true)
     expect(pace.paceDescription).toContain('hours per day')

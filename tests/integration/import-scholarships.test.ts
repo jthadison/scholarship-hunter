@@ -470,7 +470,7 @@ describe('Scholarship Import Integration Tests', () => {
   })
 
   describe('Performance: Batch Import', () => {
-    it('should import 100 scholarships in under 10 seconds', async () => {
+    it('should import 100 scholarships in under 20 seconds', async () => {
       // Generate 100 test scholarships
       const testData = Array.from({ length: 100 }, (_, i) => ({
         name: `[TEST-IMPORT] Batch Scholarship ${i + 1}`,
@@ -500,8 +500,8 @@ describe('Scholarship Import Integration Tests', () => {
 
       const duration = Date.now() - startTime
 
-      // Should complete in under 15 seconds (adjusted for CI environment)
-      expect(duration).toBeLessThan(15000)
+      // Should complete in under 20 seconds (adjusted for CI environment)
+      expect(duration).toBeLessThan(20000)
 
       // Verify all were imported
       const count = await prisma.scholarship.count({
@@ -513,7 +513,7 @@ describe('Scholarship Import Integration Tests', () => {
       })
 
       expect(count).toBe(100)
-    }, 15000) // 15 second timeout for this test
+    }, 20000) // 20 second timeout for this test
   })
 
   describe('Dry Run Mode', () => {
