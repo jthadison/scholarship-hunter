@@ -95,7 +95,7 @@ export function calculateRequiredPace(
   feasible: boolean;
   paceDescription: string;
 } {
-  const hoursRemaining = Math.max(0, differenceInHours(app.scholarship.deadline, new Date()));
+  const hoursRemaining = Math.max(0, Math.floor(differenceInHours(app.scholarship.deadline, new Date())));
 
   // Calculate hours needed based on incomplete work
   const essaysRemaining = app.essayCount - app.essayComplete;

@@ -10,9 +10,11 @@ import OpenAI from 'openai'
 import { prisma } from '../../db'
 
 // Initialize OpenAI client (only if API key is available)
+// dangerouslyAllowBrowser is set for test environments only
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
+      dangerouslyAllowBrowser: process.env.NODE_ENV === 'test',
     })
   : null
 
