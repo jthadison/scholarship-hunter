@@ -72,10 +72,18 @@ export const test = base.extend<TestFixtures>({
   },
 
   // Pre-authenticated page fixture
-  // Creates a test user and returns a page with active session
-  authenticatedPage: async ({ page, userFactory, authHelper }: any, use: any) => {
-    const user = await userFactory.createUser()
-    await authHelper.setAuthState(user)
+  // Uses the real test user from environment variables for Clerk authentication
+  authenticatedPage: async ({ page, authHelper }: any, use: any) => {
+    // Use the actual test user that exists in Clerk
+    const testUser = {
+      email: process.env.TEST_USER_EMAIL || 'test@example.com',
+      clerkId: 'test-clerk-id', // Not used for UI login
+      id: 'test-user-id',
+      role: 'STUDENT' as const,
+      emailVerified: true,
+    }
+
+    await authHelper.setAuthState(testUser)
     await use(page)
   },
 })

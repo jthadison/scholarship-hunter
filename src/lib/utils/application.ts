@@ -30,7 +30,7 @@ export function isAtRisk(
 ): boolean {
   const daysRemaining = differenceInDays(
     new Date(application.scholarship.deadline),
-    new Date()
+    new Date(Date.now())
   )
   return daysRemaining < 7 && application.progressPercentage < 50
 }

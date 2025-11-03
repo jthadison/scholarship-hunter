@@ -17,6 +17,7 @@
 
 import { Page } from '@playwright/test'
 import type { TestUser } from '../fixtures/factories/user-factory'
+import { clerk } from '@clerk/testing/playwright'
 
 export class AuthHelper {
   constructor(private page: Page) {}
@@ -25,53 +26,39 @@ export class AuthHelper {
    * Set authentication state without going through UI login
    *
    * This is the PREFERRED method for authenticated tests as it's much faster
-   * than using the UI login flow.
+   * than using the UI login flow. Uses Clerk's official testing package.
    *
    * @param user - Test user to authenticate as
    */
   async setAuthState(user: TestUser): Promise<void> {
-    // In a real implementation, you would:
-    // 1. Generate a valid Clerk session token
-    // 2. Set the session cookie
-    // 3. Set localStorage/sessionStorage if needed
+    try {
+      // Use Clerk's programmatic sign-in for better cross-browser compatibility
+      // This is more reliable than UI-based login, especially in Firefox/WebKit
+      await clerk.signIn({
+        page: this.page,
+        signInParams: {
+          strategy: 'email_code',
+          identifier: user.email,
+        },
+      })
 
-    // For now, we'll create a mock session token
-    const mockSessionToken = this.generateMockSessionToken(user.clerkId)
+      console.log(`✅ Set auth state for user: ${user.email}`)
+    } catch (error) {
+      console.error('❌ Failed to set auth state:', error)
+      console.log('⚠️  Falling back to UI-based login...')
 
-    // Set Clerk session cookie
-    await this.page.context().addCookies([
-      {
-        name: '__session',
-        value: mockSessionToken,
-        domain: 'localhost',
-        path: '/',
-        httpOnly: true,
-        secure: false,
-        sameSite: 'Lax',
-      },
-    ])
-
-    // Set additional Clerk client state if needed
-    await this.page.evaluate(
-      ({ userId, email }) => {
-        // Clerk stores some state in localStorage
-        localStorage.setItem('__clerk_db_jwt', 'mock-jwt-token')
-        localStorage.setItem(
-          '__clerk_client',
-          JSON.stringify({
-            sessions: [
-              {
-                user: {
-                  id: userId,
-                  primaryEmailAddress: { emailAddress: email },
-                },
-              },
-            ],
-          })
+      // Fallback to UI-based login if programmatic sign-in fails
+      try {
+        await this.loginViaUI(
+          user.email,
+          process.env.TEST_USER_PASSWORD || 'defaultPassword123!'
         )
-      },
-      { userId: user.clerkId, email: user.email }
-    )
+        console.log(`✅ Set auth state for user (via UI fallback): ${user.email}`)
+      } catch (uiError) {
+        console.error('❌ UI login also failed:', uiError)
+        throw new Error(`Failed to authenticate test user: ${error}`)
+      }
+    }
   }
 
   /**
@@ -84,31 +71,51 @@ export class AuthHelper {
    * @param password - User password
    */
   async loginViaUI(email: string, password: string): Promise<void> {
-    await this.page.goto('/sign-in')
+    // Navigate to sign-in page with increased timeout and better wait strategy for cross-browser compatibility
+    await this.page.goto('/sign-in', {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000
+    })
 
-    // Wait for Clerk component to load
-    await this.page.waitForSelector('[data-clerk-component]', { timeout: 10000 })
+    // Wait for Clerk sign-in form to load
+    // Look for the email input field instead of data-clerk-component
+    await this.page.waitForSelector('input[name="identifier"]', { timeout: 15000 })
 
-    // Fill in credentials
+    // Fill in email
     const emailInput = this.page.locator('input[name="identifier"]')
     await emailInput.fill(email)
 
-    // Clerk has a multi-step flow
-    const continueButton = this.page.locator('button:has-text("Continue")')
-    if (await continueButton.isVisible()) {
-      await continueButton.click()
-    }
+    // Click Continue button to proceed to password step (use more specific selector)
+    const continueButton = this.page.locator('button[data-localization-key="formButtonPrimary"]')
+    await continueButton.click()
+
+    // Give Clerk a moment to validate the email and enable password field
+    await this.page.waitForTimeout(500)
+
+    // Wait for password field to appear AND be enabled (increased timeout for Clerk's async validation)
+    await this.page.waitForSelector('input[name="password"]:not([disabled])', { timeout: 15000 })
 
     // Fill password
     const passwordInput = this.page.locator('input[name="password"]')
     await passwordInput.fill(password)
 
-    // Submit
-    const submitButton = this.page.locator('button[type="submit"]')
+    // Submit the form (use the same specific selector)
+    const submitButton = this.page.locator('button[data-localization-key="formButtonPrimary"]')
     await submitButton.click()
 
     // Wait for redirect to dashboard or home
-    await this.page.waitForURL(/\/(dashboard|$)/, { timeout: 10000 })
+    await this.page.waitForURL(/\/(dashboard|$)/, { timeout: 15000 })
+
+    // Additional wait to ensure auth state is fully settled across all browsers
+    // Firefox/WebKit need extra time for cookies/session to propagate
+    await this.page.waitForTimeout(1000)
+
+    // Verify auth cookie is set
+    const cookies = await this.page.context().cookies()
+    const hasAuthCookie = cookies.some((cookie) => cookie.name === '__session')
+    if (!hasAuthCookie) {
+      throw new Error('Authentication cookie not found after login')
+    }
   }
 
   /**
@@ -143,37 +150,6 @@ export class AuthHelper {
     )
   }
 
-  /**
-   * Generate a mock session token for testing
-   * In production, you would call Clerk's API to generate a real token
-   */
-  private generateMockSessionToken(clerkId: string): string {
-    // This is a simplified mock token
-    // In a real implementation, you would:
-    // 1. Call Clerk's backend API to create a session
-    // 2. Or use Clerk's testing tokens if available
-    const payload = Buffer.from(JSON.stringify({ sub: clerkId, iat: Date.now() })).toString('base64')
-    return `mock_session_${payload}`
-  }
-
-  /**
-   * Create a Clerk session using backend API (production implementation)
-   *
-   * This would be used in a real test suite to create valid Clerk sessions
-   * without going through the UI.
-   */
-  async createClerkSession(clerkId: string): Promise<string> {
-    // TODO: Implement with Clerk Backend API
-    // const clerkClient = new Clerk({ secretKey: process.env.CLERK_SECRET_KEY })
-    // const session = await clerkClient.sessions.createSession({
-    //   userId: clerkId,
-    //   expiresInSeconds: 3600,
-    // })
-    // return session.id
-
-    // For now, return mock
-    return this.generateMockSessionToken(clerkId)
-  }
 }
 
 /**

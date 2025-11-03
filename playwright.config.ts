@@ -13,6 +13,9 @@ import { defineConfig, devices } from '@playwright/test'
  * See: tests/README.md for usage instructions
  */
 export default defineConfig({
+  // Global setup - runs once before all tests
+  globalSetup: require.resolve('./tests/global-setup'),
+
   // Test directory
   testDir: './tests/e2e',
 
@@ -50,6 +53,10 @@ export default defineConfig({
     // Timeouts
     actionTimeout: 15 * 1000, // Action timeout: 15s
     navigationTimeout: 30 * 1000, // Navigation timeout: 30s
+
+    // Navigation wait strategy - 'domcontentloaded' is more reliable across browsers
+    // than 'networkidle' which can be problematic with SSR, streaming, and keep-alive connections
+    // Tests can override this on a per-navigation basis if needed
 
     // Failure artifacts (only on failure to save storage)
     screenshot: 'only-on-failure',
@@ -94,13 +101,14 @@ export default defineConfig({
   ],
 
   // Local dev server
+  // Automatically starts dev server if not running
   webServer: {
     command: 'pnpm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env.CI, // Reuse in local dev, fresh start in CI
     timeout: 120 * 1000, // 2 minutes for server to start
-    stdout: 'ignore',
-    stderr: 'pipe',
+    stdout: 'pipe', // Capture stdout for debugging
+    stderr: 'pipe', // Capture stderr for debugging
   },
 
   // Output folder for test results
