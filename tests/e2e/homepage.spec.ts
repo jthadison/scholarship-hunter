@@ -39,25 +39,23 @@ test.describe('Homepage', () => {
     expect(url).toContain('/sign-in')
 
     // Verify Clerk component loads
-    await page.waitForSelector('[data-clerk-component]')
-    await expect(page.locator('[data-clerk-component]')).toBeVisible()
+    await page.waitForSelector('input[name="identifier"]')
+    await expect(page.locator('input[name="identifier"]')).toBeVisible()
   })
 
-  test('should redirect authenticated users to dashboard', async ({
+  test('should allow authenticated users to view homepage', async ({
     authenticatedPage,
-    userFactory
   }) => {
-    // ✅ NEW: Test authenticated user experience
-    const user = await userFactory.createUserWithProfile()
-
-    // Authenticated users visiting homepage should see dashboard
+    // ✅ Test authenticated user can access homepage
+    // Note: Homepage is a public route, so authenticated users can still view it
     await authenticatedPage.goto('/')
 
-    // Check if redirected to dashboard or still on homepage
-    // (behavior may vary based on your app's design)
+    // Should successfully load homepage
     const url = authenticatedPage.url()
+    expect(url).toContain('/')
 
-    // Either on homepage or redirected to dashboard
-    expect(url === '/' || url.includes('/dashboard')).toBe(true)
+    // Verify homepage content is visible
+    await expect(authenticatedPage.locator('[data-testid="app-title"]')).toBeVisible()
+    await expect(authenticatedPage.locator('[data-testid="app-tagline"]')).toBeVisible()
   })
 })

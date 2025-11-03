@@ -1,127 +1,52 @@
-import { test, expect } from '@playwright/test'
-import * as dotenv from 'dotenv'
-import * as path from 'path'
-
-// Load test environment variables
-dotenv.config({ path: path.resolve(__dirname, '../../.env.test') })
+import { test, expect } from '../support/fixtures'
 
 /**
  * Shelby Page Tests with Real Authentication
  *
- * This test uses Clerk's UI login flow to authenticate a real test user.
- * Credentials are loaded from .env.test file.
+ * Uses the authenticatedPage fixture for pre-authenticated access.
  */
 
-const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL || 'test@example.com'
-const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD || 'TestPassword123!'
-
-console.log('Using test user:', TEST_USER_EMAIL)
-
 test.describe('/shelby page with authentication', () => {
-  test.beforeEach(async ({ page }) => {
-    console.log('Logging in with email:', TEST_USER_EMAIL)
-
-    // Navigate to sign-in page
-    await page.goto('/sign-in')
-
-    // Wait for Clerk sign-in form to load (either by data attribute or email input)
-    try {
-      await page.waitForSelector('[data-clerk-component]', { timeout: 5000 })
-    } catch {
-      // If data-clerk-component doesn't exist, wait for email input instead
-      await page.waitForSelector('input[name="identifier"]', { timeout: 10000 })
-    }
-
-    // Fill in email
-    const emailInput = page.locator('input[name="identifier"]').first()
-    await emailInput.waitFor({ state: 'visible', timeout: 5000 })
-    await emailInput.fill(TEST_USER_EMAIL)
-    console.log('Filled email input')
-
-    // Click Continue button
-    const continueButton = page.locator('button:has-text("Continue")').first()
-    await continueButton.click()
-    console.log('Clicked Continue button')
-
-    // Wait for password field to appear
-    const passwordInput = page.locator('input[name="password"]').first()
-    await passwordInput.waitFor({ state: 'visible', timeout: 10000 })
-    await passwordInput.fill(TEST_USER_PASSWORD)
-    console.log('Filled password input')
-
-    // Click submit
-    const submitButton = page.locator('button[type="submit"]').first()
-    await submitButton.click()
-    console.log('Clicked submit button')
-
-    // Wait for redirect (to dashboard or other authenticated page)
-    await page.waitForURL(/\/(dashboard|profile|shelby)/, { timeout: 15000 })
-    console.log('Successfully logged in, redirected to:', page.url())
-  })
-
-  test('should load and display Shelby dashboard content', async ({ page }) => {
+  test('should load and display Shelby dashboard content', async ({ authenticatedPage }) => {
     // Navigate to /shelby
-    await page.goto('/shelby')
+    await authenticatedPage.goto('/shelby')
 
-    // Wait for page to load
-    await page.waitForLoadState('networkidle', { timeout: 15000 })
-
-    // Take screenshot for debugging
-    await page.screenshot({ path: 'tests/screenshots/shelby-authenticated.png', fullPage: true })
-
-    // Check page title
-    const title = await page.title()
-    console.log('Page title:', title)
-    expect(title).toBeTruthy()
+    // Verify page loaded
+    await expect(authenticatedPage).toHaveURL(/\/shelby/)
 
     // Check for main content area
-    const mainElement = page.locator('main')
-    await expect(mainElement).toBeVisible()
+    await expect(authenticatedPage.locator('main')).toBeVisible()
 
-    // Check for some expected content (adjust based on actual Shelby page structure)
-    // You may need to update these selectors based on the actual page content
-    const bodyText = await page.locator('body').textContent()
-    expect(bodyText).toBeTruthy()
-    expect(bodyText!.length).toBeGreaterThan(0)
-
-    // Log what's visible
-    console.log('Body content preview:', bodyText?.substring(0, 300))
-
-    // Check if we're actually on the shelby page (not redirected elsewhere)
-    expect(page.url()).toContain('/shelby')
+    // Verify we're on the shelby page
+    expect(authenticatedPage.url()).toContain('/shelby')
   })
 
-  test('should display Shelby header and navigation', async ({ page }) => {
-    await page.goto('/shelby')
-    await page.waitForLoadState('networkidle', { timeout: 15000 })
+  test('should display Shelby header and navigation', async ({ authenticatedPage }) => {
+    await authenticatedPage.goto('/shelby')
+
+    // Verify page loaded
+    await expect(authenticatedPage).toHaveURL(/\/shelby/)
 
     // Check for header/navigation elements
-    const hasHeader = await page.locator('header, [role="banner"]').count()
-    const hasNav = await page.locator('nav, [role="navigation"]').count()
-
-    console.log('Has header:', hasHeader > 0)
-    console.log('Has navigation:', hasNav > 0)
+    const hasHeader = await authenticatedPage.locator('header, [role="banner"]').count()
+    const hasNav = await authenticatedPage.locator('nav, [role="navigation"]').count()
 
     // Should have navigation elements
     expect(hasHeader + hasNav).toBeGreaterThan(0)
   })
 
-  test('should check for Shelby-specific content', async ({ page }) => {
-    await page.goto('/shelby')
-    await page.waitForLoadState('networkidle', { timeout: 15000 })
+  test('should check for Shelby-specific content', async ({ authenticatedPage }) => {
+    await authenticatedPage.goto('/shelby')
+
+    // Verify page loaded
+    await expect(authenticatedPage).toHaveURL(/\/shelby/)
 
     // Get all visible text
-    const pageText = await page.locator('body').textContent()
+    const pageText = await authenticatedPage.locator('body').textContent()
 
-    // Log what we find
-    console.log('Page contains "Shelby":', pageText?.includes('Shelby') || pageText?.includes('shelby'))
-    console.log('Page contains "scholarship":', pageText?.toLowerCase().includes('scholarship'))
-
-    // Take screenshot for manual verification
-    await page.screenshot({ path: 'tests/screenshots/shelby-content.png', fullPage: true })
-
-    // Check URL to ensure we're on the right page
-    expect(page.url()).toContain('/shelby')
+    // Basic assertion - page should have content
+    expect(pageText).toBeTruthy()
+    expect(pageText!.length).toBeGreaterThan(50)
   })
 })
 
