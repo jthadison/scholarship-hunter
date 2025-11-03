@@ -10,13 +10,28 @@
 
 import { test, expect } from '../support/fixtures'
 
-test.describe('Profile Wizard', () => {
-  test.beforeEach(async ({ authenticatedPage }) => {
-    // Navigate to wizard with authenticated user
-    await authenticatedPage.goto('/profile/wizard')
+// Helper function to navigate to wizard and wait for it to load
+async function navigateToWizard(page: any) {
+  await page.goto('/profile/wizard', {
+    waitUntil: 'domcontentloaded',
+    timeout: 30000
   })
 
+  // Wait for wizard to fully load (check for Welcome heading or loading spinner)
+  await page.waitForSelector('h1:has-text("Welcome"), [class*="animate-spin"]', { timeout: 15000 })
+}
+
+test.describe('Profile Wizard', () => {
   test('AC1: should display 6-step wizard flow', async ({ authenticatedPage }) => {
+    // Navigate to wizard (auth is already set up by fixture)
+    await authenticatedPage.goto('/profile/wizard', {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000
+    })
+
+    // Wait for the wizard to fully load (dynamic imports may take time)
+    await authenticatedPage.waitForSelector('h1:has-text("Welcome")', { timeout: 15000 })
+
     // Welcome step (step 0)
     await expect(authenticatedPage.getByRole('heading', { name: /Welcome to Scholarship Hunter/i })).toBeVisible()
     await expect(authenticatedPage.getByText(/6 Steps/i)).toBeVisible()

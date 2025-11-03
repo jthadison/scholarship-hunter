@@ -32,14 +32,21 @@ export class AuthHelper {
    */
   async setAuthState(user: TestUser): Promise<void> {
     try {
-      // Use Clerk's programmatic sign-in for better cross-browser compatibility
-      // This is more reliable than UI-based login, especially in Firefox/WebKit
+      // IMPORTANT: Clerk requires navigating to a non-protected page that loads Clerk BEFORE calling clerk.signIn()
+      // We navigate to the homepage (public page) first to initialize Clerk
+      await this.page.goto('/', {
+        waitUntil: 'domcontentloaded',
+        timeout: 30000
+      })
+
+      // Wait for Clerk to be fully loaded on the page
+      await clerk.loaded({ page: this.page })
+
+      // Use Clerk's email-based sign-in (finds user by email, creates ticket automatically)
+      // This requires TEST_USER_EMAIL to match an existing user in Clerk
       await clerk.signIn({
         page: this.page,
-        signInParams: {
-          strategy: 'email_code',
-          identifier: user.email,
-        },
+        emailAddress: user.email,
       })
 
       console.log(`✅ Set auth state for user: ${user.email}`)
