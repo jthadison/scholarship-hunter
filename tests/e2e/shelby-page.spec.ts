@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from '../support/fixtures'
 
 test.describe('/shelby page diagnostics', () => {
-  test('should load and display content on /shelby page', async ({ page }) => {
+  test('should load and display content on /shelby page', async ({ authenticatedPage: page }) => {
     // Capture console messages and errors
     const consoleMessages: string[] = []
     const consoleErrors: string[] = []
@@ -24,7 +24,7 @@ test.describe('/shelby page diagnostics', () => {
     // Navigate to /shelby
     console.log('Navigating to /shelby...')
     const response = await page.goto('http://localhost:3000/shelby', {
-      waitUntil: 'networkidle',
+      waitUntil: 'domcontentloaded', // More reliable across browsers than 'networkidle'
       timeout: 30000
     })
 
@@ -84,9 +84,9 @@ test.describe('/shelby page diagnostics', () => {
     expect(bodyText!.length).toBeGreaterThan(0)
   })
 
-  test('should check for specific Shelby page elements', async ({ page }) => {
+  test('should check for specific Shelby page elements', async ({ authenticatedPage: page }) => {
     await page.goto('http://localhost:3000/shelby', {
-      waitUntil: 'networkidle',
+      waitUntil: 'domcontentloaded', // More reliable across browsers than 'networkidle'
       timeout: 30000
     })
 
@@ -109,7 +109,7 @@ test.describe('/shelby page diagnostics', () => {
     console.log('Error boundary visible:', errorBoundary > 0)
 
     if (errorBoundary > 0) {
-      const errorText = await page.locator('[role="alert"]').textContent()
+      const errorText = await page.locator('[role="alert"]').first().textContent()
       console.log('Error boundary content:', errorText)
     }
 
