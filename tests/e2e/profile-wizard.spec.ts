@@ -47,11 +47,13 @@ test.describe('Profile Wizard', () => {
     await expect(authenticatedPage.getByText(/6 Steps/i)).toBeVisible()
 
     // Start wizard
-    await authenticatedPage.getByRole('button', { name: /Get Started/i }).click()
+    const getStartedButton = authenticatedPage.getByRole('button', { name: /Get Started/i })
+    await expect(getStartedButton).toBeVisible()
+    await getStartedButton.click()
 
-    // Academic step (step 1)
-    await expect(authenticatedPage.getByRole('heading', { name: /Academic Information/i })).toBeVisible()
-    await expect(authenticatedPage.getByText(/Step 1 of 5/i)).toBeVisible()
+    // Academic step (step 1) - wait for step indicator and heading
+    await expect(authenticatedPage.getByText(/Step 1 of 5/i)).toBeVisible({ timeout: 10000 })
+    await expect(authenticatedPage.getByRole('heading', { name: /Academic (Information|Profile)/i })).toBeVisible()
 
     // Fill required field: graduation year (select dropdown)
     await authenticatedPage.getByLabel(/Expected Graduation Year/i).click()
@@ -101,13 +103,20 @@ test.describe('Profile Wizard', () => {
     // Start wizard
     await authenticatedPage.getByRole('button', { name: /Get Started/i }).click()
 
-    // Step 1 should be highlighted
+    // Wait for step 1 to load
+    await expect(authenticatedPage.getByText(/Step 1 of 5/i)).toBeVisible()
+
+    // Step 1 indicator should be highlighted
     const step1Indicator = authenticatedPage.locator('[class*="bg-primary"]').filter({ hasText: '1' }).first()
     await expect(step1Indicator).toBeVisible()
 
-    // Progress bar should show 20% (step 1 of 5)
+    // Progress bar should be visible on step 1
     const progressBar = authenticatedPage.locator('[role="progressbar"]').first()
     await expect(progressBar).toBeVisible()
+
+    // Fill required field before navigating
+    await authenticatedPage.getByLabel(/Expected Graduation Year/i).click()
+    await authenticatedPage.getByRole('option', { name: '2026' }).click()
 
     // Navigate to step 2
     await authenticatedPage.getByRole('button', { name: /Next/i }).click()
@@ -118,18 +127,29 @@ test.describe('Profile Wizard', () => {
 
   test('AC3: navigation controls work correctly', async ({ authenticatedPage }) => {
     // Start wizard
-    await authenticatedPage.getByRole('button', { name: /Get Started/i }).click()
+    const getStartedButton = authenticatedPage.getByRole('button', { name: /Get Started/i })
+    await expect(getStartedButton).toBeVisible()
+    await expect(getStartedButton).toBeEnabled()
+    await getStartedButton.click()
+
+    // Wait for Welcome page to disappear and step 1 to load
+    await expect(authenticatedPage.getByRole('heading', { name: /Welcome to Scholarship Hunter/i })).not.toBeVisible({ timeout: 5000 })
+    await expect(authenticatedPage.getByText(/Step 1 of 5/i)).toBeVisible({ timeout: 10000 })
 
     // Back button should be disabled on step 1
     const backButton = authenticatedPage.getByRole('button', { name: /Back/i })
     await expect(backButton).toBeDisabled()
+
+    // Fill required field before navigating
+    await authenticatedPage.getByLabel(/Expected Graduation Year/i).click()
+    await authenticatedPage.getByRole('option', { name: '2026' }).click()
 
     // Next button advances to step 2
     const nextButton = authenticatedPage.getByRole('button', { name: /Next/i })
     await nextButton.click()
     await expect(authenticatedPage.getByText(/Step 2 of 5/i)).toBeVisible()
 
-    // Back button should work (no validation)
+    // Back button should work (no validation on going back)
     await backButton.click()
     await expect(authenticatedPage.getByText(/Step 1 of 5/i)).toBeVisible()
 
@@ -141,13 +161,20 @@ test.describe('Profile Wizard', () => {
     // Start wizard
     await authenticatedPage.getByRole('button', { name: /Get Started/i }).click()
 
+    // Wait for step 1
+    await expect(authenticatedPage.getByText(/Step 1 of 5/i)).toBeVisible()
+
     // Academic step should show only academic fields
-    await expect(authenticatedPage.getByText(/Academic Profile/i)).toBeVisible()
-    await expect(authenticatedPage.getByLabel(/GPA/i)).toBeVisible()
+    await expect(authenticatedPage.getByText(/Academic Profile/i).first()).toBeVisible()
+    await expect(authenticatedPage.getByLabel(/^GPA$/i)).toBeVisible()
 
     // Should NOT show demographic fields
     await expect(authenticatedPage.getByLabel(/Gender/i)).not.toBeVisible()
     await expect(authenticatedPage.getByLabel(/Ethnicity/i)).not.toBeVisible()
+
+    // Fill required field before navigating
+    await authenticatedPage.getByLabel(/Expected Graduation Year/i).click()
+    await authenticatedPage.getByRole('option', { name: '2026' }).click()
 
     // Navigate to Demographics step
     await authenticatedPage.getByRole('button', { name: /Next/i }).click()
@@ -177,10 +204,17 @@ test.describe('Profile Wizard', () => {
 
   test('AC6: auto-save shows saving indicator', async ({ authenticatedPage }) => {
     // Start wizard
-    await authenticatedPage.getByRole('button', { name: /Get Started/i }).click()
+    const getStartedButton = authenticatedPage.getByRole('button', { name: /Get Started/i })
+    await expect(getStartedButton).toBeVisible()
+    await expect(getStartedButton).toBeEnabled()
+    await getStartedButton.click()
+
+    // Wait for Welcome page to disappear and step 1 to load
+    await expect(authenticatedPage.getByRole('heading', { name: /Welcome to Scholarship Hunter/i })).not.toBeVisible({ timeout: 5000 })
+    await expect(authenticatedPage.getByText(/Step 1 of 5/i)).toBeVisible({ timeout: 10000 })
 
     // Fill in a field to trigger auto-save
-    await authenticatedPage.getByLabel(/GPA/i).fill('3.75')
+    await authenticatedPage.getByLabel(/^GPA$/i).fill('3.75')
 
     // Wait for "Saved" indicator (auto-save debounces 500ms, allow up to 2s for network)
     await expect(authenticatedPage.getByText(/Saved/i)).toBeVisible({ timeout: 2000 })
@@ -188,16 +222,47 @@ test.describe('Profile Wizard', () => {
 
   test('AC7: Review step shows all entered data with edit links', async ({ authenticatedPage }) => {
     // Start wizard and navigate to Review
-    await authenticatedPage.getByRole('button', { name: /Get Started/i }).click()
+    const getStartedButton = authenticatedPage.getByRole('button', { name: /Get Started/i })
+    await expect(getStartedButton).toBeVisible()
+    await expect(getStartedButton).toBeEnabled()
+    await getStartedButton.click()
+
+    // Wait for Welcome page to disappear and step 1 to load
+    await expect(authenticatedPage.getByRole('heading', { name: /Welcome to Scholarship Hunter/i })).not.toBeVisible({ timeout: 5000 })
+    await expect(authenticatedPage.getByText(/Step 1 of 5/i)).toBeVisible({ timeout: 10000 })
 
     // Fill in some academic data
-    await authenticatedPage.getByLabel(/GPA/i).fill('3.75')
+    await authenticatedPage.getByLabel(/^GPA$/i).fill('3.75')
 
-    // Navigate through all steps to Review (wait for step indicator after each click)
-    for (let i = 1; i <= 4; i++) {
-      await authenticatedPage.getByRole('button', { name: /Next/i }).click()
-      await expect(authenticatedPage.getByText(new RegExp(`Step ${i + 1} of 5`, 'i'))).toBeVisible()
-    }
+    // Fill required field: graduation year before advancing
+    await authenticatedPage.getByLabel(/Expected Graduation Year/i).click()
+    await authenticatedPage.getByRole('option', { name: '2026' }).click()
+
+    // Step 1 -> Step 2
+    await authenticatedPage.getByRole('button', { name: /Next/i }).click()
+    await expect(authenticatedPage.getByText(/Step 2 of 5/i)).toBeVisible()
+
+    // Fill required fields for step 2
+    await authenticatedPage.getByLabel(/Citizenship Status/i).click()
+    await authenticatedPage.keyboard.press('Enter')
+    await authenticatedPage.getByLabel(/State/i, { exact: true }).click()
+    await authenticatedPage.keyboard.type('CA')
+    await authenticatedPage.keyboard.press('Enter')
+
+    // Step 2 -> Step 3
+    await authenticatedPage.getByRole('button', { name: /Next/i }).click()
+    await expect(authenticatedPage.getByText(/Step 3 of 5/i)).toBeVisible()
+
+    // Fill required field for step 3
+    await authenticatedPage.getByLabel(/Intended Major/i).fill('Computer Science')
+
+    // Step 3 -> Step 4
+    await authenticatedPage.getByRole('button', { name: /Next/i }).click()
+    await expect(authenticatedPage.getByText(/Step 4 of 5/i)).toBeVisible()
+
+    // Step 4 -> Step 5 (Review)
+    await authenticatedPage.getByRole('button', { name: /Next/i }).click()
+    await expect(authenticatedPage.getByText(/Step 5 of 5/i)).toBeVisible()
 
     // Review step should display entered data
     await expect(authenticatedPage.getByText(/Review Your Profile/i)).toBeVisible()
@@ -210,7 +275,7 @@ test.describe('Profile Wizard', () => {
 
     // Click edit for Academic section should jump back to step 1
     await editButtons.first().click()
-    await expect(authenticatedPage.getByText(/Academic Information/i)).toBeVisible()
+    await expect(authenticatedPage.getByText(/Step 1 of 5/i)).toBeVisible()
   })
 
   test.skip('AC8: wizard can be re-entered for updates', async () => {
@@ -227,20 +292,40 @@ test.describe('Profile Wizard', () => {
   test('complete wizard flow from start to finish', async ({ authenticatedPage }) => {
     // Welcome step
     await expect(authenticatedPage.getByRole('heading', { name: /Welcome/i })).toBeVisible()
-    await authenticatedPage.getByRole('button', { name: /Get Started/i }).click()
+    const getStartedButton = authenticatedPage.getByRole('button', { name: /Get Started/i })
+    await expect(getStartedButton).toBeEnabled()
+    await getStartedButton.click()
 
-    // Step 1: Academic
-    await expect(authenticatedPage.getByText(/Step 1 of 5/i)).toBeVisible()
-    await authenticatedPage.getByLabel(/GPA/i).fill('3.8')
-    await authenticatedPage.getByLabel(/GPA Scale/i).fill('4.0')
+    // Wait for Welcome page to disappear and step 1 to load
+    await expect(authenticatedPage.getByRole('heading', { name: /Welcome/i })).not.toBeVisible({ timeout: 5000 })
+    await expect(authenticatedPage.getByText(/Step 1 of 5/i)).toBeVisible({ timeout: 10000 })
+    await authenticatedPage.getByLabel(/^GPA$/i).fill('3.8')
+    await authenticatedPage.getByLabel(/^GPA Scale$/i).fill('4.0')
+
+    // Fill required field: graduation year
+    await authenticatedPage.getByLabel(/Expected Graduation Year/i).click()
+    await authenticatedPage.getByRole('option', { name: '2026' }).click()
+
     await authenticatedPage.getByRole('button', { name: /Next/i }).click()
 
     // Step 2: Demographics
     await expect(authenticatedPage.getByText(/Step 2 of 5/i)).toBeVisible()
+
+    // Fill required fields for step 2
+    await authenticatedPage.getByLabel(/Citizenship Status/i).click()
+    await authenticatedPage.keyboard.press('Enter') // Select first option
+    await authenticatedPage.getByLabel(/State/i, { exact: true }).click()
+    await authenticatedPage.keyboard.type('CA')
+    await authenticatedPage.keyboard.press('Enter')
+
     await authenticatedPage.getByRole('button', { name: /Next/i }).click()
 
     // Step 3: Major & Experience
     await expect(authenticatedPage.getByText(/Step 3 of 5/i)).toBeVisible()
+
+    // Fill required field: intended major
+    await authenticatedPage.getByLabel(/Intended Major/i).fill('Computer Science')
+
     await authenticatedPage.getByRole('button', { name: /Next/i }).click()
 
     // Step 4: Special Circumstances
@@ -260,10 +345,15 @@ test.describe('Profile Wizard', () => {
 
   test('Save & Continue Later saves progress and redirects', async ({ authenticatedPage }) => {
     // Start wizard
-    await authenticatedPage.getByRole('button', { name: /Get Started/i }).click()
+    const getStartedButton = authenticatedPage.getByRole('button', { name: /Get Started/i })
+    await expect(getStartedButton).toBeVisible()
+    await getStartedButton.click()
+
+    // Wait for step 1 to load
+    await expect(authenticatedPage.getByText(/Step 1 of 5/i)).toBeVisible({ timeout: 10000 })
 
     // Fill in some data
-    await authenticatedPage.getByLabel(/GPA/i).fill('3.9')
+    await authenticatedPage.getByLabel(/^GPA$/i).fill('3.9')
 
     // Click Save & Continue Later
     await authenticatedPage.getByRole('button', { name: /Save.*Continue Later/i }).click()
