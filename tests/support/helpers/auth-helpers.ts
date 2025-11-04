@@ -49,6 +49,37 @@ export class AuthHelper {
         emailAddress: user.email,
       })
 
+      // CRITICAL: Wait for Clerk session to be fully established
+      // After clerk.signIn(), we need to wait for the session cookies and client state to be set
+      // This ensures subsequent navigations to protected routes work correctly
+      await this.page.waitForFunction(
+        () => {
+          // Check if Clerk client is loaded and has an active session
+          return window.Clerk?.client?.sessions?.length > 0
+        },
+        { timeout: 10000 }
+      )
+
+      // Verify __session cookie is set (this is what middleware checks)
+      const cookies = await this.page.context().cookies()
+      const sessionCookie = cookies.find(c => c.name === '__session')
+      if (!sessionCookie) {
+        throw new Error('Clerk __session cookie not found after sign-in')
+      }
+
+      // Navigate to a protected route to verify auth works
+      // This ensures session persists across navigations
+      await this.page.goto('/dashboard', {
+        waitUntil: 'domcontentloaded',
+        timeout: 15000
+      })
+
+      // Verify we didn't get redirected to sign-in
+      const url = this.page.url()
+      if (url.includes('sign-in')) {
+        throw new Error('Auth verification failed - redirected to sign-in')
+      }
+
       console.log(`✅ Set auth state for user: ${user.email}`)
     } catch (error) {
       console.error('❌ Failed to set auth state:', error)
