@@ -22,15 +22,25 @@ async function navigateToWizard(page: any) {
 }
 
 test.describe('Profile Wizard', () => {
-  test('AC1: should display 6-step wizard flow', async ({ authenticatedPage }) => {
+  // Setup: Navigate to wizard and clear localStorage before each test
+  test.beforeEach(async ({ authenticatedPage }) => {
+    // Clear wizard localStorage to prevent hydration mismatches
+    await authenticatedPage.goto('/dashboard')
+    await authenticatedPage.evaluate(() => {
+      localStorage.removeItem('profile-wizard-storage')
+    })
+
     // Navigate to wizard (auth is already set up by fixture)
     await authenticatedPage.goto('/profile/wizard', {
       waitUntil: 'domcontentloaded',
       timeout: 30000
     })
 
-    // Wait for the wizard to fully load (dynamic imports may take time)
+    // Wait for the wizard to fully load
     await authenticatedPage.waitForSelector('h1:has-text("Welcome")', { timeout: 15000 })
+  })
+
+  test('AC1: should display 6-step wizard flow', async ({ authenticatedPage }) => {
 
     // Welcome step (step 0)
     await expect(authenticatedPage.getByRole('heading', { name: /Welcome to Scholarship Hunter/i })).toBeVisible()
@@ -43,15 +53,38 @@ test.describe('Profile Wizard', () => {
     await expect(authenticatedPage.getByRole('heading', { name: /Academic Information/i })).toBeVisible()
     await expect(authenticatedPage.getByText(/Step 1 of 5/i)).toBeVisible()
 
+    // Fill required field: graduation year (select dropdown)
+    await authenticatedPage.getByLabel(/Expected Graduation Year/i).click()
+    await authenticatedPage.getByRole('option', { name: '2026' }).click()
+
+    // NOTE: Step navigation validates required fields, so we need to fill them
+    // Step 1 requires: graduationYear (filled above)
+    // Step 2 requires: citizenship, state
+    // Step 3 requires: intendedMajor
+    // Step 4: No required fields
+
     // Navigate to Demographics step (step 2)
     await authenticatedPage.getByRole('button', { name: /Next/i }).click()
     await expect(authenticatedPage.getByRole('heading', { name: /Demographics/i })).toBeVisible()
     await expect(authenticatedPage.getByText(/Step 2 of 5/i)).toBeVisible()
 
+    // Fill required fields for step 2
+    // Select citizenship (using keyboard to interact with custom select)
+    await authenticatedPage.getByLabel(/Citizenship Status/i).click()
+    await authenticatedPage.keyboard.press('Enter') // Select first option (U.S. Citizen)
+
+    // Select state
+    await authenticatedPage.getByLabel(/State/i, { exact: true }).click()
+    await authenticatedPage.keyboard.type('CA')
+    await authenticatedPage.keyboard.press('Enter')
+
     // Navigate to Major & Experience step (step 3)
     await authenticatedPage.getByRole('button', { name: /Next/i }).click()
     await expect(authenticatedPage.getByRole('heading', { name: /Major.*Experience/i })).toBeVisible()
     await expect(authenticatedPage.getByText(/Step 3 of 5/i)).toBeVisible()
+
+    // Fill required field: intended major (text input)
+    await authenticatedPage.getByLabel(/Intended Major/i).fill('Computer Science')
 
     // Navigate to Special Circumstances step (step 4)
     await authenticatedPage.getByRole('button', { name: /Next/i }).click()
