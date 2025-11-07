@@ -1,17 +1,19 @@
 /**
- * Story 1.8: Major & Experience Step - Full implementation with simplified content
+ * Story 1.8: Major & Experience Step - Full implementation with detailed forms
  */
 
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { BookOpen, Plus, X } from 'lucide-react'
+import { BookOpen } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
 import type { WizardFormData } from '@/modules/profile/hooks/useWizardStore'
-import { useState } from 'react'
+import { ExtracurricularForm } from '../ExtracurricularForm'
+import { WorkExperienceForm } from '../WorkExperienceForm'
+import { AwardsHonorsForm } from '../AwardsHonorsForm'
+import type { ExtracurricularActivity, WorkExperience, LeadershipRole, AwardHonor } from '@/modules/profile/types'
 
 interface MajorExperienceStepProps {
   formData: WizardFormData
@@ -110,11 +112,10 @@ export function MajorExperienceStepFull({ formData, onUpdate }: MajorExperienceS
             Clubs, sports, arts, or other activities you participate in (+3% completion)
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <ExperienceList
-            items={formData.extracurriculars as any[] || []}
-            onChange={(items) => onUpdate({ extracurriculars: items })}
-            placeholder="e.g., Debate Club, Varsity Soccer, School Newspaper"
+        <CardContent>
+          <ExtracurricularForm
+            initialActivities={formData.extracurriculars as ExtracurricularActivity[] || []}
+            onSave={(activities) => onUpdate({ extracurriculars: activities })}
           />
         </CardContent>
       </Card>
@@ -126,101 +127,28 @@ export function MajorExperienceStepFull({ formData, onUpdate }: MajorExperienceS
             Part-time jobs, internships, or professional experience (+3% completion)
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <ExperienceList
-            items={formData.workExperience as any[] || []}
-            onChange={(items) => onUpdate({ workExperience: items })}
-            placeholder="e.g., Barista at Starbucks, Software Intern at Google"
+        <CardContent>
+          <WorkExperienceForm
+            initialWork={formData.workExperience as WorkExperience[] || []}
+            onSave={(work) => onUpdate({ workExperience: work })}
           />
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Leadership Roles (optional)</CardTitle>
+          <CardTitle>Awards & Honors (optional)</CardTitle>
           <CardDescription>
-            Positions where you led or organized activities (+3% completion)
+            Academic awards, scholarships, and recognition you've received (+3% completion)
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <ExperienceList
-            items={formData.leadershipRoles as any[] || []}
-            onChange={(items) => onUpdate({ leadershipRoles: items })}
-            placeholder="e.g., Student Body President, Team Captain, Club Founder"
+        <CardContent>
+          <AwardsHonorsForm
+            initialAwards={formData.awardsHonors as AwardHonor[] || []}
+            onSave={(awards) => onUpdate({ awardsHonors: awards })}
           />
         </CardContent>
       </Card>
-    </div>
-  )
-}
-
-// Reusable component for managing list of experience items
-interface ExperienceListProps {
-  items: Array<{ name: string; description?: string }>
-  onChange: (items: Array<{ name: string; description?: string }>) => void
-  placeholder: string
-}
-
-function ExperienceList({ items, onChange, placeholder }: ExperienceListProps) {
-  const [newItemName, setNewItemName] = useState('')
-
-  const addItem = () => {
-    if (newItemName.trim()) {
-      onChange([...items, { name: newItemName.trim() }])
-      setNewItemName('')
-    }
-  }
-
-  const removeItem = (index: number) => {
-    onChange(items.filter((_, i) => i !== index))
-  }
-
-  return (
-    <div className="space-y-3">
-      {/* Existing items */}
-      {items.map((item, index) => (
-        <div key={index} className="flex items-start gap-2 p-3 border rounded-lg bg-muted/50">
-          <div className="flex-1">
-            <p className="font-medium">{item.name}</p>
-            {item.description && (
-              <p className="text-sm text-muted-foreground">{item.description}</p>
-            )}
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => removeItem(index)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      ))}
-
-      {/* Add new item */}
-      <div className="flex gap-2">
-        <Input
-          placeholder={placeholder}
-          value={newItemName}
-          onChange={(e) => setNewItemName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              addItem()
-            }
-          }}
-        />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={addItem}
-          disabled={!newItemName.trim()}
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Add
-        </Button>
-      </div>
     </div>
   )
 }

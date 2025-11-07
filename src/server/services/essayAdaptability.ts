@@ -229,7 +229,7 @@ Respond in JSON format:
 
     const openai = getOpenAIClient();
     const response = await openai.chat.completions.create({
-      model: 'gpt-4', // Use GPT-4 for higher quality strategic advice
+      model: 'gpt-4o', // Use GPT-4o for higher quality strategic advice
       messages: [{ role: 'user', content: userPrompt }],
       temperature: 0.3,
       response_format: { type: 'json_object' },

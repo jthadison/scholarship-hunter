@@ -9,25 +9,61 @@
 
 'use client'
 
+import { useState, useCallback } from 'react'
 import Head from 'next/head'
 import { useParams, useRouter } from 'next/navigation'
 import { trpc } from '@/shared/lib/trpc'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2, ArrowLeft, Sparkles, FileText } from 'lucide-react'
 import { QualityAssessmentPanel } from '@/components/essay/quality'
+import { EssayEditor } from '@/components/essay/EssayEditor'
 
 export default function EssayEditorPage() {
   const params = useParams()
   const router = useRouter()
   const essayId = params?.id as string
 
+  // Local state for editor content
+  const [content, setContent] = useState('')
+  const [wordCount, setWordCount] = useState(0)
+
   // Fetch essay data
-  const { data: essay, isLoading, error } = trpc.essay.getById.useQuery(
+  const { data: essay, isLoading, error, refetch } = trpc.essay.getById.useQuery(
     { id: essayId },
-    { enabled: !!essayId, refetchOnWindowFocus: false }
+    {
+      enabled: !!essayId,
+      refetchOnWindowFocus: false,
+      onSuccess: (data) => {
+        setContent(data.content || '')
+        setWordCount(data.wordCount || 0)
+      }
+    }
   )
+
+  // Update essay mutation
+  const updateEssay = trpc.essay.update.useMutation({
+    onSuccess: () => {
+      refetch()
+    }
+  })
+
+  // Handle content updates from editor
+  const handleContentUpdate = useCallback((newContent: string, newWordCount: number) => {
+    setContent(newContent)
+    setWordCount(newWordCount)
+  }, [])
+
+  // Handle auto-save
+  const handleAutoSave = useCallback(() => {
+    if (content !== essay?.content) {
+      updateEssay.mutate({
+        id: essayId,
+        content,
+      })
+    }
+  }, [essayId, content, essay?.content, updateEssay])
 
   if (isLoading) {
     return (
@@ -124,41 +160,21 @@ export default function EssayEditorPage() {
           <TabsContent value="editor">
             <Card>
               <CardHeader>
-                <CardTitle>Essay Editor</CardTitle>
-                <CardDescription>
-                  Full essay editor with 6-phase workflow will be displayed here.
-                  This is a placeholder - the complete editor is available via the essay router endpoints.
-                </CardDescription>
+                <CardTitle>Write Your Essay</CardTitle>
+                <div className="mt-2 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-900 font-medium mb-1">Essay Prompt:</p>
+                  <p className="text-sm text-blue-800">{essay.prompt}</p>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="rounded-lg border bg-gray-50 p-6">
-                    <h3 className="font-semibold text-gray-900 mb-2">Essay Content</h3>
-                    <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                      {essay.content ? (
-                        <p className="text-gray-900">{essay.content}</p>
-                      ) : (
-                        <p className="text-gray-500">No content yet. Start writing your essay...</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm text-gray-600 bg-blue-50 p-4 rounded-lg">
-                    <div>
-                      <p className="font-medium">Integration Note</p>
-                      <p>Full essay editor with all 6 phases is implemented in Story 4.7 components.</p>
-                      <p className="mt-1">This page focuses on the quality assessment integration from Story 4.9.</p>
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={() => router.push('/dashboard/essays/library')}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    View in Library
-                  </Button>
-                </div>
+                <EssayEditor
+                  essayId={essayId}
+                  content={content}
+                  wordCount={wordCount}
+                  onUpdate={handleContentUpdate}
+                  onAutoSave={handleAutoSave}
+                  placeholder="Start writing your essay here..."
+                />
               </CardContent>
             </Card>
           </TabsContent>

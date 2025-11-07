@@ -107,7 +107,7 @@ Example: {"themes": ["leadership", "community-service", "career-goals"]}`;
 
     const openai = getOpenAIClient();
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo', // Cost-effective for analysis tasks
+      model: 'gpt-4o-mini', // Cost-effective for analysis tasks
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }

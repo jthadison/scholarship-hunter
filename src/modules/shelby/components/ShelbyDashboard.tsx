@@ -15,18 +15,23 @@
 import { trpc } from '@/shared/lib/trpc'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, RefreshCw } from 'lucide-react'
 import { ShelbyHeader } from './ShelbyHeader'
 import { StatCard } from './StatCard'
 import { ScholarshipMatchCard } from './ScholarshipMatchCard'
 import { ActionPrompts } from './ActionPrompts'
 import { Trophy, DollarSign, Star } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/use-toast'
 
 interface ShelbyDashboardProps {
   firstName: string
 }
 
 export function ShelbyDashboard({ firstName }: ShelbyDashboardProps) {
+  const { toast } = useToast()
+  const utils = trpc.useUtils()
+
   // Get student ID from session
   const { data: sessionData, isLoading: studentLoading } = trpc.auth.getSession.useQuery()
   const studentId = sessionData?.student?.id ?? ''
@@ -37,10 +42,41 @@ export function ShelbyDashboard({ firstName }: ShelbyDashboardProps) {
   console.log('[ShelbyDashboard] sessionData:', sessionData)
   console.log('[ShelbyDashboard] studentId:', studentId)
 
-  // Fetch top MUST_APPLY matches
+  // Matching mutation
+  const recalculateMatches = trpc.matching.recalculateMatches.useMutation({
+    onSuccess: (data) => {
+      toast({
+        title: 'Matches Calculated!',
+        description: data.message,
+      })
+      // Invalidate all matching queries to refetch fresh data
+      utils.matching.invalidate()
+    },
+    onError: (error) => {
+      toast({
+        title: 'Matching Failed',
+        description: error.message,
+        variant: 'destructive',
+      })
+    },
+  })
+
+  const handleFindMatches = () => {
+    if (!studentId) {
+      toast({
+        title: 'Error',
+        description: 'Student ID not found. Please try refreshing the page.',
+        variant: 'destructive',
+      })
+      return
+    }
+    recalculateMatches.mutate({ studentId })
+  }
+
+  // Fetch top matches (try MUST_APPLY first, fall back to SHOULD_APPLY)
   const {
-    data: topMatchesData,
-    isLoading: matchesLoading,
+    data: mustApplyData,
+    isLoading: mustApplyLoading,
     error: matchesError,
   } = trpc.matching.getMatchesByTier.useQuery(
     {
@@ -53,6 +89,25 @@ export function ShelbyDashboard({ firstName }: ShelbyDashboardProps) {
       staleTime: 30000, // 30 seconds
     }
   )
+
+  const {
+    data: shouldApplyData,
+    isLoading: shouldApplyLoading,
+  } = trpc.matching.getMatchesByTier.useQuery(
+    {
+      studentId,
+      tier: 'SHOULD_APPLY',
+      limit: 5,
+    },
+    {
+      enabled: !!studentId && (!mustApplyData || mustApplyData.matches.length === 0),
+      staleTime: 30000,
+    }
+  )
+
+  const matchesLoading = mustApplyLoading || shouldApplyLoading
+  const topMatchesData = mustApplyData?.matches.length ? mustApplyData : shouldApplyData
+  const displayTier = mustApplyData?.matches.length ? 'MUST_APPLY' : 'SHOULD_APPLY'
 
   // Fetch match statistics for quick stats
   const { data: statsData, isLoading: statsLoading } = trpc.matching.getMatchStats.useQuery(
@@ -161,14 +216,32 @@ export function ShelbyDashboard({ firstName }: ShelbyDashboardProps) {
         <ActionPrompts matches={topMatches} tierCounts={tierCounts} />
       )}
 
-      {/* Top 5 MUST_APPLY Scholarships */}
+      {/* Top Scholarships */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-gray-900">Your Top Opportunities</h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Your Top Opportunities</h2>
+            {topMatches.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                Showing top {displayTier === 'MUST_APPLY' ? 'MUST APPLY' : 'SHOULD APPLY'} matches
+              </p>
+            )}
+          </div>
+          <Button
+            onClick={handleFindMatches}
+            disabled={recalculateMatches.isPending}
+            variant="outline"
+            size="sm"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${recalculateMatches.isPending ? 'animate-spin' : ''}`} />
+            {recalculateMatches.isPending ? 'Finding Matches...' : 'Find Matches'}
+          </Button>
+        </div>
 
         {topMatches.length === 0 ? (
           <Alert>
             <AlertDescription>
-              No MUST_APPLY scholarships yet! Complete your profile to unlock matched opportunities.
+              No scholarship matches yet! Click "Find Matches" to discover opportunities.
             </AlertDescription>
           </Alert>
         ) : (
