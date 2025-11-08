@@ -25,6 +25,7 @@ import { QuickActionButtons } from './QuickActionButtons'
 import { CollapsibleCard } from './CollapsibleCard'
 import { useCollapsibleSections } from '@/hooks/useCollapsibleSections'
 import { useWorkspaceModalStore } from '@/stores/workspaceModalStore'
+import { EssayCreateModal } from './modals/EssayCreateModal'
 import { Button } from '@/components/ui/button'
 import { Loader2, CheckCircle2, Maximize, Minimize } from 'lucide-react'
 import { useAuth } from '@clerk/nextjs'
@@ -40,12 +41,18 @@ interface ApplicationWorkspaceProps {
 export function ApplicationWorkspace({ applicationId }: ApplicationWorkspaceProps) {
   const router = useRouter()
   const { userId } = useAuth()
-  const { openModal } = useWorkspaceModalStore()
+  const { activeModal, openModal, closeModal } = useWorkspaceModalStore()
 
   // Fetch workspace data
   const { data: workspace, isLoading, error } = trpc.application.getWorkspaceData.useQuery({
     applicationId,
   })
+
+  // Refetch workspace data after modal actions
+  const utils = trpc.useUtils()
+  const handleModalSuccess = () => {
+    utils.application.getWorkspaceData.invalidate({ applicationId })
+  }
 
   // Collapsible sections state
   const { isExpanded, toggleSection, collapseAll, expandAll } = useCollapsibleSections(
@@ -54,7 +61,6 @@ export function ApplicationWorkspace({ applicationId }: ApplicationWorkspaceProp
   )
 
   // Status update mutation
-  const utils = trpc.useUtils()
   const updateStatus = trpc.application.updateStatus.useMutation({
     onSuccess: () => {
       utils.application.getWorkspaceData.invalidate({ applicationId })
@@ -232,7 +238,7 @@ export function ApplicationWorkspace({ applicationId }: ApplicationWorkspaceProp
               isExpanded={isExpanded('essays')}
               onToggle={toggleSection}
               onStartEssay={() => openModal('essay')}
-              onEditEssay={(essayId) => router.push(`/applications/${applicationId}/essay/${essayId}`)}
+              onEditEssay={(essayId) => router.push(`/dashboard/essays/${essayId}`)}
             />
 
             <DocumentSectionCard
@@ -241,7 +247,7 @@ export function ApplicationWorkspace({ applicationId }: ApplicationWorkspaceProp
               documentsUploaded={workspace.documentsUploaded}
               isExpanded={isExpanded('documents')}
               onToggle={toggleSection}
-              onUploadDocument={(category) => openModal('document', { documentCategory: category })}
+              onUploadDocument={(_category) => toast.info('Document upload - Story 4.1')}
               onDownloadDocument={(_docId) => toast.info('Download functionality - Story 4.1')}
             />
 
@@ -251,7 +257,7 @@ export function ApplicationWorkspace({ applicationId }: ApplicationWorkspaceProp
               recsReceived={workspace.recsReceived}
               isExpanded={isExpanded('recommendations')}
               onToggle={toggleSection}
-              onRequestRecommendation={() => openModal('recommendation')}
+              onRequestRecommendation={() => toast.info('Recommendation request - Story 4.4')}
               onSendReminder={(_recId) => toast.info('Reminder functionality - Story 4.4')}
             />
           </div>
@@ -279,8 +285,30 @@ export function ApplicationWorkspace({ applicationId }: ApplicationWorkspaceProp
       {/* Quick Actions FAB - Mobile */}
       <QuickActionButtons variant="fab" />
 
-      {/* TODO: Modal components for essay/document/recommendation will be added in Epic 4 */}
-      {/* For now, modals will show toast notifications */}
+      {/* Modals */}
+      {activeModal === 'essay' && workspace.studentId && (() => {
+        // Debug: Log studentId before rendering modal
+        console.log('[ApplicationWorkspace] Rendering EssayCreateModal with studentId:', {
+          studentId: workspace.studentId,
+          type: typeof workspace.studentId,
+          length: workspace.studentId?.length,
+          isValidFormat: /^c[a-z0-9]{24}$/i.test(workspace.studentId),
+        });
+        return (
+          <EssayCreateModal
+            isOpen={true}
+            onClose={closeModal}
+            applicationId={applicationId}
+            studentId={workspace.studentId}
+            onSuccess={() => {
+              console.log('Essay created successfully, workspace.studentId:', workspace.studentId)
+              handleModalSuccess()
+            }}
+          />
+        );
+      })()}
+
+      {/* TODO: Document and recommendation modals will be added in Epic 4 */}
     </div>
   )
 }

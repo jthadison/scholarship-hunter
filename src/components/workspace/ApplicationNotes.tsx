@@ -67,9 +67,11 @@ export function ApplicationNotes({
   const [debouncedContent] = useDebounce(content, 500) // 500ms debounce
 
   // Initialize TipTap editor
+  // IMPORTANT: immediatelyRender: false prevents SSR hydration mismatches
   const editor = useEditor({
     extensions: [StarterKit],
     content: initialNotes || '',
+    immediatelyRender: false, // Prevents SSR hydration errors
     editorProps: {
       attributes: {
         class:

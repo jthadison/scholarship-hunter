@@ -32,15 +32,53 @@ export class AuthHelper {
    */
   async setAuthState(user: TestUser): Promise<void> {
     try {
-      // Use Clerk's programmatic sign-in for better cross-browser compatibility
-      // This is more reliable than UI-based login, especially in Firefox/WebKit
+      // IMPORTANT: Clerk requires navigating to a non-protected page that loads Clerk BEFORE calling clerk.signIn()
+      // We navigate to the homepage (public page) first to initialize Clerk
+      await this.page.goto('/', {
+        waitUntil: 'domcontentloaded',
+        timeout: 30000
+      })
+
+      // Wait for Clerk to be fully loaded on the page
+      await clerk.loaded({ page: this.page })
+
+      // Use Clerk's email-based sign-in (finds user by email, creates ticket automatically)
+      // This requires TEST_USER_EMAIL to match an existing user in Clerk
       await clerk.signIn({
         page: this.page,
-        signInParams: {
-          strategy: 'email_code',
-          identifier: user.email,
-        },
+        emailAddress: user.email,
       })
+
+      // CRITICAL: Wait for Clerk session to be fully established
+      // After clerk.signIn(), we need to wait for the session cookies and client state to be set
+      // This ensures subsequent navigations to protected routes work correctly
+      await this.page.waitForFunction(
+        () => {
+          // Check if Clerk client is loaded and has an active session
+          return window.Clerk?.client?.sessions?.length > 0
+        },
+        { timeout: 10000 }
+      )
+
+      // Verify __session cookie is set (this is what middleware checks)
+      const cookies = await this.page.context().cookies()
+      const sessionCookie = cookies.find(c => c.name === '__session')
+      if (!sessionCookie) {
+        throw new Error('Clerk __session cookie not found after sign-in')
+      }
+
+      // Navigate to a protected route to verify auth works
+      // This ensures session persists across navigations
+      await this.page.goto('/dashboard', {
+        waitUntil: 'domcontentloaded',
+        timeout: 15000
+      })
+
+      // Verify we didn't get redirected to sign-in
+      const url = this.page.url()
+      if (url.includes('sign-in')) {
+        throw new Error('Auth verification failed - redirected to sign-in')
+      }
 
       console.log(`✅ Set auth state for user: ${user.email}`)
     } catch (error) {

@@ -49,28 +49,31 @@ export default function ApplicationsPage() {
   const { clearSelection, selectAll } = useSelectionStore()
 
   // Fetch applications using new getByStudent query (Story 3.9: conditionally show archived)
+  // IMPORTANT: Only enable query after Clerk user is loaded to avoid infinite loading state
   const {
     data: applications,
     isLoading,
+    error: applicationsError,
     refetch,
   } = trpc.application.getByStudent.useQuery(undefined, {
-    enabled: !!user && !showArchived,
+    enabled: isUserLoaded && !!user && !showArchived,
   })
 
   // Story 3.9: Fetch archived applications
   const {
     data: archivedApplications,
     isLoading: isLoadingArchived,
+    error: archivedError,
     refetch: refetchArchived,
   } = trpc.application.getArchived.useQuery(undefined, {
-    enabled: !!user && showArchived,
+    enabled: isUserLoaded && !!user && showArchived,
   })
 
   // Story 3.10: Fetch at-risk applications
   const {
     data: atRiskApplications,
   } = trpc.application.getAtRisk.useQuery(undefined, {
-    enabled: !!user && !showArchived,
+    enabled: isUserLoaded && !!user && !showArchived,
   })
 
   // Choose which dataset to show - use proper type narrowing
@@ -147,11 +150,61 @@ export default function ApplicationsPage() {
   }
 
   // Loading state
-  const loading = isLoading || isLoadingArchived || !isUserLoaded
+  // Wait for Clerk to load user state first
+  if (!isUserLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+      </div>
+    )
+  }
+
+  // Then check if tRPC queries are loading
+  // IMPORTANT: Only check the loading state of the currently ACTIVE query
+  // When a query is disabled (enabled: false), it may still report isLoading: true
+  // So we need to check showArchived to know which query is actually active
+  const loading = showArchived ? isLoadingArchived : isLoading
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+      </div>
+    )
+  }
+
+  // Error state - handle missing Student profile
+  const currentError = showArchived ? archivedError : applicationsError
+  if (currentError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="max-w-md text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+            <Plus className="h-8 w-8 text-red-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Unable to Load Applications
+          </h3>
+          <p className="text-gray-600 mb-6">
+            {currentError.message.includes('Student profile not found')
+              ? 'Please complete your student profile to view applications.'
+              : currentError.message || 'An error occurred while loading your applications.'}
+          </p>
+          <div className="flex gap-3 justify-center">
+            {currentError.message.includes('Student profile not found') ? (
+              <Button onClick={() => router.push('/profile/wizard')}>
+                Complete Profile
+              </Button>
+            ) : (
+              <Button onClick={() => refetch()}>
+                Try Again
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => router.push('/dashboard')}>
+              <Home className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </div>
+        </div>
       </div>
     )
   }

@@ -58,6 +58,7 @@ export function EssayEditor({
     ],
     content,
     editable: !readOnly,
+    immediatelyRender: false, // Fix SSR hydration issues
     editorProps: {
       attributes: {
         class:

@@ -774,7 +774,8 @@ export const essayRouter = router({
       // Build where clause
       const where: Prisma.EssayWhereInput = {
         studentId,
-        isComplete: true, // Only completed essays in library
+        // TODO: Re-enable this filter when essays are being completed properly
+        // isComplete: true, // Only completed essays in library
         ...(filterThemes && filterThemes.length > 0 && {
           themes: {
             hasSome: filterThemes,
@@ -849,7 +850,8 @@ export const essayRouter = router({
       const essays = await ctx.prisma.essay.findMany({
         where: {
           studentId,
-          isComplete: true,
+          // TODO: Re-enable when essays are being completed
+          // isComplete: true,
           OR: [
             { title: { contains: searchTerm, mode: 'insensitive' as const } },
             { content: { contains: searchTerm, mode: 'insensitive' as const } },
@@ -986,7 +988,8 @@ export const essayRouter = router({
       const libraryEssays = await ctx.prisma.essay.findMany({
         where: {
           studentId,
-          isComplete: true,
+          // TODO: Re-enable when essays are being completed
+          // isComplete: true,
         },
         select: {
           id: true,
@@ -1151,7 +1154,8 @@ export const essayRouter = router({
       const essays = await ctx.prisma.essay.findMany({
         where: {
           studentId: input.studentId,
-          isComplete: true,
+          // TODO: Re-enable when essays are being completed
+          // isComplete: true,
         },
         select: {
           id: true,
@@ -1367,7 +1371,8 @@ export const essayRouter = router({
       const essays = await ctx.prisma.essay.findMany({
         where: {
           studentId: input.studentId,
-          isComplete: true,
+          // TODO: Re-enable when essays are being completed
+          // isComplete: true,
           qualityScore: {
             not: null,
           },

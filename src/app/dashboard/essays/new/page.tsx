@@ -34,7 +34,10 @@ export default function NewEssayPage() {
   const [title, setTitle] = useState('')
   const [promptText, setPromptText] = useState('')
   const [analysis, setAnalysis] = useState<PromptAnalysis | null>(null)
-  const [studentId, setStudentId] = useState('') // In real app, get from auth context
+
+  // Get student ID from authenticated session
+  const { data: session, isLoading: sessionLoading } = trpc.auth.getSession.useQuery()
+  const studentId = session?.student?.id || ''
 
   // tRPC mutations
   const analyzePromptMutation = trpc.essay.analyzePrompt.useMutation()
@@ -59,8 +62,13 @@ export default function NewEssayPage() {
   }
 
   const handleCreateEssay = async () => {
-    if (!title || !promptText || !studentId) {
+    if (!title || !promptText) {
       alert('Please fill in all required fields')
+      return
+    }
+
+    if (!studentId) {
+      alert('Student profile not loaded. Please refresh the page.')
       return
     }
 
@@ -81,6 +89,17 @@ export default function NewEssayPage() {
     }
   }
 
+  // Show loading state while session loads
+  if (sessionLoading) {
+    return (
+      <div className="container max-w-4xl mx-auto py-8 px-4">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4">
       <div className="mb-6">
@@ -99,20 +118,6 @@ export default function NewEssayPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Student ID (temporary - should come from auth) */}
-            <div className="space-y-2">
-              <Label htmlFor="studentId">Student ID (temporary)</Label>
-              <Input
-                id="studentId"
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                placeholder="Enter student ID"
-              />
-              <p className="text-xs text-gray-500">
-                In production, this will be auto-filled from your profile
-              </p>
-            </div>
-
             {/* Essay Title */}
             <div className="space-y-2">
               <Label htmlFor="title">Essay Title</Label>

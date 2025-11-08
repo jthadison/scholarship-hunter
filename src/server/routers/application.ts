@@ -23,6 +23,26 @@ import { getSuggestedFix } from '@/lib/document/autoFixSuggestions'
 import { DocumentType } from '@prisma/client'
 
 /**
+ * Helper function to get Student ID from User ID
+ * Prevents foreign key constraint violations
+ */
+async function getStudentId(userId: string): Promise<string> {
+  const student = await prisma.student.findUnique({
+    where: { userId },
+    select: { id: true },
+  })
+
+  if (!student) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: 'Student profile not found. Please complete your profile first.',
+    })
+  }
+
+  return student.id
+}
+
+/**
  * Application router with CRUD operations
  */
 export const applicationRouter = router({
@@ -45,7 +65,7 @@ export const applicationRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { scholarshipId } = input
-      const studentId = ctx.userId
+      const studentId = await getStudentId(ctx.userId)
 
       // Fetch scholarship to validate and get deadline
       const scholarship = await prisma.scholarship.findUnique({
@@ -170,7 +190,7 @@ export const applicationRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const { scholarshipId } = input
-      const studentId = ctx.userId
+      const studentId = await getStudentId(ctx.userId)
 
       const application = await prisma.application.findUnique({
         where: {
@@ -200,7 +220,7 @@ export const applicationRouter = router({
    * @returns Array of applications with scholarship and timeline details
    */
   getByStudent: protectedProcedure.query(async ({ ctx }) => {
-    const studentId = ctx.userId
+    const studentId = await getStudentId(ctx.userId)
 
     const applications = await prisma.application.findMany({
       where: {
@@ -258,7 +278,7 @@ export const applicationRouter = router({
         .optional()
     )
     .query(async ({ input, ctx }) => {
-      const studentId = ctx.userId
+      const studentId = await getStudentId(ctx.userId)
 
       const applications = await prisma.application.findMany({
         where: {
@@ -316,7 +336,7 @@ export const applicationRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { applicationId, status } = input
-      const studentId = ctx.userId
+      const studentId = await getStudentId(ctx.userId)
 
       // Verify ownership and get progress fields
       const application = await prisma.application.findUnique({
@@ -435,7 +455,7 @@ export const applicationRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { applicationId, update } = input
-      const studentId = ctx.userId
+      const studentId = await getStudentId(ctx.userId)
 
       // Verify ownership
       const application = await prisma.application.findUnique({
@@ -537,7 +557,7 @@ export const applicationRouter = router({
         .optional()
     )
     .query(async ({ input, ctx }) => {
-      const studentId = ctx.userId
+      const studentId = await getStudentId(ctx.userId)
       const statusFilter = input?.statusFilter
 
       const applications = await prisma.application.findMany({
@@ -586,7 +606,7 @@ export const applicationRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const studentId = ctx.userId
+      const studentId = await getStudentId(ctx.userId)
 
       // Verify ownership before deleting
       const application = await prisma.application.findUnique({
@@ -634,7 +654,7 @@ export const applicationRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const { applicationId } = input
-      const studentId = ctx.userId
+      const studentId = await getStudentId(ctx.userId)
 
       const application = await prisma.application.findUnique({
         where: { id: applicationId },
@@ -721,8 +741,12 @@ export const applicationRouter = router({
         },
       })
 
+      // Debug: Log what we're returning
+      console.log('[getWorkspaceData] Returning studentId:', application.studentId, 'type:', typeof application.studentId);
+
       return {
         ...application,
+        studentId: application.studentId, // Explicitly include studentId for modal
         match: match || null,
       }
     }),
@@ -748,7 +772,7 @@ export const applicationRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { applicationId, notes } = input
-      const studentId = ctx.userId
+      const studentId = await getStudentId(ctx.userId)
 
       // Verify ownership
       const application = await prisma.application.findUnique({
@@ -826,7 +850,7 @@ export const applicationRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { applicationIds, action, params } = input
-      const studentId = ctx.userId
+      const studentId = await getStudentId(ctx.userId)
 
       // Validate ownership for all applications
       const applications = await prisma.application.findMany({
@@ -935,7 +959,7 @@ export const applicationRouter = router({
    * @returns Array of archived applications
    */
   getArchived: protectedProcedure.query(async ({ ctx }) => {
-    const studentId = ctx.userId
+    const studentId = await getStudentId(ctx.userId)
 
     const applications = await prisma.application.findMany({
       where: {
@@ -977,7 +1001,7 @@ export const applicationRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { applicationIds } = input
-      const studentId = ctx.userId
+      const studentId = await getStudentId(ctx.userId)
 
       // Verify ownership
       const applications = await prisma.application.findMany({
@@ -1016,7 +1040,7 @@ export const applicationRouter = router({
    * @returns Array of at-risk applications with reason and severity
    */
   getAtRisk: protectedProcedure.query(async ({ ctx }) => {
-    const studentId = ctx.userId
+    const studentId = await getStudentId(ctx.userId)
 
     // Fetch active applications with deadline in next 7 days
     const applications = await prisma.application.findMany({
@@ -1058,7 +1082,7 @@ export const applicationRouter = router({
         .optional()
     )
     .query(async ({ input, ctx }) => {
-      const studentId = ctx.userId
+      const studentId = await getStudentId(ctx.userId)
 
       const events = await prisma.atRiskEvent.findMany({
         where: {
@@ -1107,7 +1131,7 @@ export const applicationRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const { applicationId } = input
-      const studentId = ctx.userId
+      const studentId = await getStudentId(ctx.userId)
 
       // Fetch application with scholarship and documents
       const application = await prisma.application.findUnique({
