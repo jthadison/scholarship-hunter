@@ -14,6 +14,9 @@ import { subDays } from 'date-fns'
 // Mock prisma
 vi.mock('@/server/db', () => ({
   prisma: {
+    student: {
+      findUnique: vi.fn(),
+    },
     application: {
       create: vi.fn(),
       findUnique: vi.fn(),
@@ -100,6 +103,12 @@ describe('Application Router - Story 3.2 Tests', () => {
 
   describe('AC2, AC6, AC7: application.create', () => {
     it('should create application with status TODO and inherit deadline', async () => {
+      // Mock student lookup
+      vi.mocked(prisma.student.findUnique).mockResolvedValue({
+        id: 'student-123',
+        userId: 'student-123',
+      } as any)
+
       // Mock scholarship found
       vi.mocked(prisma.scholarship.findUnique).mockResolvedValue(
         mockScholarship as any
@@ -166,6 +175,12 @@ describe('Application Router - Story 3.2 Tests', () => {
     })
 
     it('should derive priority tier from match data', async () => {
+      // Mock student lookup
+      vi.mocked(prisma.student.findUnique).mockResolvedValue({
+        id: 'student-123',
+        userId: 'student-123',
+      } as any)
+
       vi.mocked(prisma.scholarship.findUnique).mockResolvedValue(
         mockScholarship as any
       )
@@ -195,6 +210,12 @@ describe('Application Router - Story 3.2 Tests', () => {
     })
 
     it('should extract essay count and requirements from scholarship', async () => {
+      // Mock student lookup
+      vi.mocked(prisma.student.findUnique).mockResolvedValue({
+        id: 'student-123',
+        userId: 'student-123',
+      } as any)
+
       vi.mocked(prisma.scholarship.findUnique).mockResolvedValue(
         mockScholarship as any
       )
@@ -226,6 +247,12 @@ describe('Application Router - Story 3.2 Tests', () => {
     })
 
     it('should throw CONFLICT error for duplicate application (AC5)', async () => {
+      // Mock student lookup
+      vi.mocked(prisma.student.findUnique).mockResolvedValue({
+        id: 'student-123',
+        userId: 'student-123',
+      } as any)
+
       vi.mocked(prisma.scholarship.findUnique).mockResolvedValue(
         mockScholarship as any
       )
@@ -243,6 +270,12 @@ describe('Application Router - Story 3.2 Tests', () => {
     })
 
     it('should throw NOT_FOUND error if scholarship not found', async () => {
+      // Mock student lookup
+      vi.mocked(prisma.student.findUnique).mockResolvedValue({
+        id: 'student-123',
+        userId: 'student-123',
+      } as any)
+
       vi.mocked(prisma.scholarship.findUnique).mockResolvedValue(null)
 
       const caller = applicationRouter.createCaller(mockCtx as any)
@@ -253,6 +286,12 @@ describe('Application Router - Story 3.2 Tests', () => {
     })
 
     it('should throw NOT_FOUND error if scholarship not verified', async () => {
+      // Mock student lookup
+      vi.mocked(prisma.student.findUnique).mockResolvedValue({
+        id: 'student-123',
+        userId: 'student-123',
+      } as any)
+
       vi.mocked(prisma.scholarship.findUnique).mockResolvedValue({
         ...mockScholarship,
         verified: false,
@@ -268,6 +307,12 @@ describe('Application Router - Story 3.2 Tests', () => {
 
   describe('AC5: application.checkExists', () => {
     it('should return exists: true when application exists', async () => {
+      // Mock student lookup
+      vi.mocked(prisma.student.findUnique).mockResolvedValue({
+        id: 'student-123',
+        userId: 'student-123',
+      } as any)
+
       vi.mocked(prisma.application.findUnique).mockResolvedValue({
         id: 'application-789',
       } as any)
@@ -280,6 +325,12 @@ describe('Application Router - Story 3.2 Tests', () => {
     })
 
     it('should return exists: false when application does not exist', async () => {
+      // Mock student lookup
+      vi.mocked(prisma.student.findUnique).mockResolvedValue({
+        id: 'student-123',
+        userId: 'student-123',
+      } as any)
+
       vi.mocked(prisma.application.findUnique).mockResolvedValue(null)
 
       const caller = applicationRouter.createCaller(mockCtx as any)
@@ -292,6 +343,12 @@ describe('Application Router - Story 3.2 Tests', () => {
 
   describe('AC4: application.list', () => {
     it('should return student applications with scholarship details', async () => {
+      // Mock student lookup
+      vi.mocked(prisma.student.findUnique).mockResolvedValue({
+        id: 'student-123',
+        userId: 'student-123',
+      } as any)
+
       const mockApplications = [
         {
           ...mockApplication,
@@ -319,6 +376,12 @@ describe('Application Router - Story 3.2 Tests', () => {
     })
 
     it('should filter by status when provided', async () => {
+      // Mock student lookup
+      vi.mocked(prisma.student.findUnique).mockResolvedValue({
+        id: 'student-123',
+        userId: 'student-123',
+      } as any)
+
       vi.mocked(prisma.application.findMany).mockResolvedValue([])
 
       const caller = applicationRouter.createCaller(mockCtx as any)
@@ -334,6 +397,12 @@ describe('Application Router - Story 3.2 Tests', () => {
     })
 
     it('should filter by priority tier when provided', async () => {
+      // Mock student lookup
+      vi.mocked(prisma.student.findUnique).mockResolvedValue({
+        id: 'student-123',
+        userId: 'student-123',
+      } as any)
+
       vi.mocked(prisma.application.findMany).mockResolvedValue([])
 
       const caller = applicationRouter.createCaller(mockCtx as any)
@@ -349,6 +418,12 @@ describe('Application Router - Story 3.2 Tests', () => {
     })
 
     it('should order by targetSubmitDate ascending', async () => {
+      // Mock student lookup
+      vi.mocked(prisma.student.findUnique).mockResolvedValue({
+        id: 'student-123',
+        userId: 'student-123',
+      } as any)
+
       vi.mocked(prisma.application.findMany).mockResolvedValue([])
 
       const caller = applicationRouter.createCaller(mockCtx as any)
