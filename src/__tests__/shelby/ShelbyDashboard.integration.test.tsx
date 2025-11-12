@@ -13,6 +13,11 @@ import { addDays } from 'date-fns'
 // Mock tRPC
 vi.mock('@/shared/lib/trpc', () => ({
   trpc: {
+    useUtils: vi.fn(() => ({
+      matching: {
+        invalidate: vi.fn(),
+      },
+    })),
     auth: {
       getSession: {
         useQuery: vi.fn(),
@@ -30,6 +35,12 @@ vi.mock('@/shared/lib/trpc', () => ({
       },
       getMatches: {
         useQuery: vi.fn(),
+      },
+      recalculateMatches: {
+        useMutation: vi.fn(() => ({
+          mutate: vi.fn(),
+          isLoading: false,
+        })),
       },
     },
   },
@@ -289,7 +300,7 @@ describe('ShelbyDashboard Integration Tests', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/No MUST_APPLY scholarships yet! Complete your profile/)
+        screen.getByText(/No scholarship matches yet! Click "Find Matches" to discover opportunities./)
       ).toBeInTheDocument()
     })
   })
