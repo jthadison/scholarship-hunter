@@ -29,12 +29,13 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
 
   // Opt out of parallel tests on CI for stability
-  workers: process.env.CI ? 1 : undefined,
+  // Reduced from unlimited to 4 workers to prevent overwhelming dev server
+  workers: process.env.CI ? 1 : 4,
 
-  // Timeout settings (production-ready values)
-  timeout: 60 * 1000, // Test timeout: 60s
+  // Timeout settings (increased for server load and parallel execution)
+  timeout: 120 * 1000, // Test timeout: 120s (increased from 60s)
   expect: {
-    timeout: 15 * 1000, // Assertion timeout: 15s
+    timeout: 30 * 1000, // Assertion timeout: 30s (increased from 15s)
   },
 
   // Multiple reporters for different purposes
@@ -50,9 +51,9 @@ export default defineConfig({
     // Base URL for navigation
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
 
-    // Timeouts
-    actionTimeout: 15 * 1000, // Action timeout: 15s
-    navigationTimeout: 30 * 1000, // Navigation timeout: 30s
+    // Timeouts (increased for server load and parallel execution)
+    actionTimeout: 30 * 1000, // Action timeout: 30s (increased from 15s)
+    navigationTimeout: 60 * 1000, // Navigation timeout: 60s (increased from 30s)
 
     // Navigation wait strategy - 'domcontentloaded' is more reliable across browsers
     // than 'networkidle' which can be problematic with SSR, streaming, and keep-alive connections

@@ -84,8 +84,10 @@ describe('ActionPrompts Component', () => {
 
     render(<ActionPrompts matches={matches} tierCounts={tierCounts} />)
 
-    expect(screen.getByText(/12/)).toBeInTheDocument()
-    expect(screen.getByText(/SHOULD_APPLY opportunities/)).toBeInTheDocument()
+    // Check for the exploration prompt components (text is split across elements)
+    expect(screen.getByText('12')).toBeInTheDocument()
+    expect(screen.getByText(/SHOULD_APPLY/)).toBeInTheDocument()
+    expect(screen.getByText(/opportunities that match your profile/)).toBeInTheDocument()
   })
 
   it('should use singular "opportunity" for 1 SHOULD_APPLY match', () => {

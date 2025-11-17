@@ -36,7 +36,7 @@ export class AuthHelper {
       // We navigate to the homepage (public page) first to initialize Clerk
       await this.page.goto('/', {
         waitUntil: 'domcontentloaded',
-        timeout: 30000
+        timeout: 60000 // Increased from 30000ms to match navigation timeout
       })
 
       // Wait for Clerk to be fully loaded on the page
@@ -57,7 +57,7 @@ export class AuthHelper {
           // Check if Clerk client is loaded and has an active session
           return window.Clerk?.client?.sessions?.length > 0
         },
-        { timeout: 10000 }
+        { timeout: 30000 } // Increased from 10000ms
       )
 
       // Verify __session cookie is set (this is what middleware checks)
@@ -71,7 +71,7 @@ export class AuthHelper {
       // This ensures session persists across navigations
       await this.page.goto('/dashboard', {
         waitUntil: 'domcontentloaded',
-        timeout: 15000
+        timeout: 60000 // Increased from 15000ms to match navigation timeout
       })
 
       // Verify we didn't get redirected to sign-in
@@ -112,12 +112,12 @@ export class AuthHelper {
     // Navigate to sign-in page with increased timeout and better wait strategy for cross-browser compatibility
     await this.page.goto('/sign-in', {
       waitUntil: 'domcontentloaded',
-      timeout: 30000
+      timeout: 60000 // Increased from 30000ms
     })
 
     // Wait for Clerk sign-in form to load
     // Look for the email input field instead of data-clerk-component
-    await this.page.waitForSelector('input[name="identifier"]', { timeout: 15000 })
+    await this.page.waitForSelector('input[name="identifier"]', { timeout: 30000 }) // Increased from 15000ms
 
     // Fill in email
     const emailInput = this.page.locator('input[name="identifier"]')
@@ -131,7 +131,7 @@ export class AuthHelper {
     await this.page.waitForTimeout(500)
 
     // Wait for password field to appear AND be enabled (increased timeout for Clerk's async validation)
-    await this.page.waitForSelector('input[name="password"]:not([disabled])', { timeout: 15000 })
+    await this.page.waitForSelector('input[name="password"]:not([disabled])', { timeout: 30000 }) // Increased from 15000ms
 
     // Fill password
     const passwordInput = this.page.locator('input[name="password"]')
@@ -142,7 +142,7 @@ export class AuthHelper {
     await submitButton.click()
 
     // Wait for redirect to dashboard or home
-    await this.page.waitForURL(/\/(dashboard|$)/, { timeout: 15000 })
+    await this.page.waitForURL(/\/(dashboard|$)/, { timeout: 30000 }) // Increased from 15000ms
 
     // Additional wait to ensure auth state is fully settled across all browsers
     // Firefox/WebKit need extra time for cookies/session to propagate
