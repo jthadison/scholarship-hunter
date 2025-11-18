@@ -36,7 +36,15 @@ export function SuccessIndicator({
 
   if (!successData) return null;
 
-  const { probability, confidence, message } = successData;
+  const {
+    probability,
+    confidence,
+    message,
+    profileStrength,
+    matchScore,
+    usingDefaultProfile,
+    usingDefaultMatch
+  } = successData;
 
   // Determine color scheme based on probability
   const getColorScheme = (prob: number) => {
@@ -139,10 +147,31 @@ export function SuccessIndicator({
           <div className="font-medium">Success factors:</div>
           <div className="ml-2 space-y-0.5">
             <div>• Essay quality: {qualityScore}/100 (40% weight)</div>
-            <div>• Profile strength (25% weight)</div>
-            <div>• Match score (20% weight)</div>
-            <div>• Competition level (15% weight)</div>
+            <div>
+              • Profile strength: {profileStrength}/100 (25% weight)
+              {usingDefaultProfile && (
+                <span className="ml-1 text-amber-600 font-medium">
+                  *estimated
+                </span>
+              )}
+            </div>
+            <div>
+              • Match score: {matchScore}/100 (20% weight)
+              {usingDefaultMatch && (
+                <span className="ml-1 text-amber-600 font-medium">
+                  *estimated
+                </span>
+              )}
+            </div>
+            <div>• Competition level: {competitionLevel} (15% weight)</div>
           </div>
+          {(usingDefaultProfile || usingDefaultMatch) && (
+            <div className="mt-2 rounded-md bg-amber-50 border border-amber-200 p-2">
+              <p className="text-xs text-amber-800">
+                * Estimated values are being used. Complete your student profile to get more accurate success predictions.
+              </p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

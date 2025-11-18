@@ -10,7 +10,7 @@
 
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useCallback, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import debounce from "lodash.debounce";
 import { EditorToolbar } from "./EditorToolbar";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
@@ -39,13 +39,22 @@ export function EssayEditor({
   readOnly = false,
   placeholder: _placeholder = "Start writing your essay here...",
 }: EssayEditorProps) {
+  // Use ref to keep stable reference to onAutoSave callback
+  const onAutoSaveRef = useRef(onAutoSave);
+
+  // Update ref when onAutoSave changes
+  useEffect(() => {
+    onAutoSaveRef.current = onAutoSave;
+  }, [onAutoSave]);
+
   // Debounced auto-save - triggers 10 seconds after user stops typing
-  const debouncedAutoSave = useCallback(
+  // Use useMemo instead of useCallback to create debounced function only once
+  const debouncedAutoSave = useRef(
     debounce(() => {
-      onAutoSave();
-    }, 10000),
-    [onAutoSave]
-  );
+      console.log('🚀 Debounced auto-save executing');
+      onAutoSaveRef.current();
+    }, 10000)
+  ).current;
 
   // Initialize Tiptap editor
   const editor = useEditor({
