@@ -1258,6 +1258,13 @@ export const essayRouter = router({
         throw new Error("Unauthorized: You can only assess your own essays");
       }
 
+      // Validate essay has content
+      if (!essay.content || essay.content.trim().length === 0) {
+        throw new Error(
+          "Cannot assess essay quality: Essay content is missing. Please add content to your essay before requesting an assessment."
+        );
+      }
+
       // 2. Check if we should use cached assessment
       if (!input.forceReassess && essay.qualityAssessment) {
         const assessment = essay.qualityAssessment as any;
@@ -1484,14 +1491,21 @@ export const essayRouter = router({
         "../services/essayQualityAssessor"
       );
 
-      const profileStrength =
-        input.profileStrength || essay.student.profile?.strengthScore || 50;
+      // Determine actual profile strength
+      const providedProfileStrength = input.profileStrength || essay.student.profile?.strengthScore;
+      const profileStrength = providedProfileStrength || 70;
+
+      // Determine actual match score
+      const providedMatchScore = input.matchScore;
+      const matchScore = providedMatchScore || 70;
 
       return calculateSuccessProbability(
         essay.qualityScore,
         profileStrength,
-        input.matchScore || 50,
-        input.competitionLevel
+        matchScore,
+        input.competitionLevel,
+        providedProfileStrength,
+        providedMatchScore
       );
     }),
 

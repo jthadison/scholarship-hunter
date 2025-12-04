@@ -65,6 +65,10 @@ export interface SuccessProbability {
   probability: number; // 0-100
   confidence: 'high' | 'medium' | 'low';
   message: string;
+  profileStrength: number;
+  matchScore: number;
+  usingDefaultProfile: boolean;
+  usingDefaultMatch: boolean;
 }
 
 /**
@@ -85,6 +89,11 @@ export async function assessEssayQuality(
   essayContent: string,
   prompt: string
 ): Promise<QualityAssessment> {
+  // Validate essay content
+  if (!essayContent || essayContent.trim().length === 0) {
+    throw new Error('Essay content is required for quality assessment');
+  }
+
   // First, run technical analysis locally
   const technicalReport = analyzeGrammarAndStyle(essayContent);
   const readabilityMetrics = calculateReadabilityMetrics(essayContent);
@@ -265,10 +274,16 @@ Respond ONLY with valid JSON (no markdown, no extra text):
  */
 export function calculateSuccessProbability(
   qualityScore: number,
-  profileStrength: number = 50,
-  matchScore: number = 50,
-  competitionLevel: 'low' | 'medium' | 'high' = 'medium'
+  profileStrength: number = 70,
+  matchScore: number = 70,
+  competitionLevel: 'low' | 'medium' | 'high' = 'medium',
+  providedProfileStrength?: number,
+  providedMatchScore?: number
 ): SuccessProbability {
+  // Track if we're using default values
+  const usingDefaultProfile = providedProfileStrength === undefined || providedProfileStrength === null;
+  const usingDefaultMatch = providedMatchScore === undefined || providedMatchScore === null;
+
   // Weight factors
   const weights = {
     quality: 0.40,
@@ -295,8 +310,8 @@ export function calculateSuccessProbability(
 
   // Determine confidence level based on data availability
   let confidence: 'high' | 'medium' | 'low' = 'high';
-  if (!profileStrength || !matchScore) confidence = 'medium';
-  if (!profileStrength && !matchScore) confidence = 'low';
+  if (usingDefaultProfile || usingDefaultMatch) confidence = 'medium';
+  if (usingDefaultProfile && usingDefaultMatch) confidence = 'low';
 
   // Generate contextual message
   let message = '';
@@ -312,6 +327,10 @@ export function calculateSuccessProbability(
     probability: Math.max(0, Math.min(100, probability)),
     confidence,
     message,
+    profileStrength,
+    matchScore,
+    usingDefaultProfile,
+    usingDefaultMatch,
   };
 }
 
